@@ -34,6 +34,6 @@ jobs:
     - name: Build and Deploy
       uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-        BRANCH: gh-pages # The branch the action should deploy to.
-        FOLDER: site # The folder the action should deploy.
+        branch: gh-pages       # 部署目标分支
+        folder: site           # 构建产物目录
+        token: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 默认的 Token
