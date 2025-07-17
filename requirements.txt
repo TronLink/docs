@@ -1,0 +1,5 @@
+python-pptx==0.6.21
+mkdocs>=1.5.0
+mkdocs-material>=9.0.0
+mkdocs-minify-plugin>=0.7.0 
+mkdocs-static-i18n>=1.0.0
