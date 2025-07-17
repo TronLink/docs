@@ -32,7 +32,7 @@ jobs:
       run: mkdocs build
 
     - name: Build and Deploy
-      uses: JamesIves/github-pages-deploy-action@releases/v3
+      uses: JamesIves/github-pages-deploy-action@v4
       with:
         branch: gh-pages       # 部署目标分支
         folder: site           # 构建产物目录
