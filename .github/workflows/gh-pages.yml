@@ -2,11 +2,12 @@ name: Publish Document
 
 on:
   push:
-    branches: [main]  # 合并后触发
+    branches:
+      - '**' # 监听所有分支
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]  # PR 创建/更新时触发（仅测试）
-  workflow_dispatch:
+    branches: [main]  # PR 创建/更新时触发（仅测试）    
+  workflow_dispatch: # 仍保留手动触发的功能
 
 jobs:
   build:

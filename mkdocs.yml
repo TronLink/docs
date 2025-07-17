@@ -1,11 +1,10 @@
 site_name: TronLink 开发者文档
 site_description: TronLink 钱包开发者文档，包含移动端、插件钱包和 DApp 开发指南
 site_author: TronLink Team
-site_url: https://xueyuanying.github.io/tronlink-doc/
 
 # 仓库信息
 repo_name: tronlink-doc
-repo_url: https://github.com/xueyuanying/tronlink-doc
+repo_url: https://github.com/TronLink/docs.git
 
 # 主题配置
 theme:
@@ -158,16 +157,8 @@ plugins:
       suffix_mode: true 
 
 
-# # 额外配置
-# extra:
-#   social:
-#     - icon: fontawesome/brands/github
-#       link: https://github.com/your-username/tronlink-docs
-#     - icon: fontawesome/brands/twitter
-#       link: https://twitter.com/tronlink
-
 # 版权信息
-copyright: Copyright &copy; 2024 TronLink Team
+copyright: Copyright &copy; 2025 TronLink Team
 
 # 验证
 validation:
