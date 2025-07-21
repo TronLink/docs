@@ -44,7 +44,6 @@ extra_javascript:
 # 插件配置
 plugins:
   - search
-  - tooltips
   - minify:
       minify_html: true
   - i18n:
