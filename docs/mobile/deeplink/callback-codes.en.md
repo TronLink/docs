@@ -1,7 +1,8 @@
 # Result Code
 
-| 0 | success |  |
+| id | Message |  |
 |:-------|:-------|:-------|
+| 0 | success |  |
 | 10001  | Incorrect JSON format   |   |
 | 10002  | Missing Action   |   |
 | 10003  | Unknown Action   |   |

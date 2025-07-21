@@ -2,6 +2,7 @@
 
 | id | 消息 | 备注 |
 |:-------|:-------|:-------|
+| 0 | success |  |
 | 10001  | Incorrect JSON format   |   |
 | 10002  | Missing Action   |   |
 | 10003  | Unknown Action   |   |

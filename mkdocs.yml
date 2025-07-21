@@ -44,11 +44,12 @@ extra_javascript:
 # 插件配置
 plugins:
   - search
+  - tooltips
   - minify:
       minify_html: true
   - i18n:
       default_language: en
-      docs_structure: suffix  
+      docs_structure: suffix   
       languages:
         - locale: en
           name: English
@@ -65,7 +66,7 @@ plugins:
                 - Overview: mobile/asset-management.en.md
                 - Custom Token: mobile/asset-management/custom-tokens.en.md
               - DeepLink: 
-                - Overview: mobile/deeplink.en.md
+                - overview: mobile/deeplink.en.md
                 - Open Wallet: mobile/deeplink/open-wallet.en.md
                 - Open DApp: mobile/deeplink/open-dapp.md
                 - Login by TronLink: mobile/deeplink/login-auth.en.md
@@ -156,9 +157,8 @@ plugins:
       use_directory_urls: true  # 推荐保持为 true     
       suffix_mode: true 
 
-
 # 版权信息
-copyright: Copyright &copy; 2024 TronLink Team
+copyright: Copyright &copy; 2025 TronLink Team
 
 # 验证
 validation:

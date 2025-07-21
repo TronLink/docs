@@ -28,18 +28,15 @@ TronLink supports TRX transfers, contract signature, authorization, etc. initiat
 **Parameters**
 
 ```shell
-    
-    
     interface RequestAccountsParams {
       websiteIcon?: string;
       websiteName?: string;
     }
-``
+```
+
 **Returns**
 
 ```shell
-    
-    
     interface ReqestAccountsResponse {
       code: 200 | 4000 | 4001,
       message: string

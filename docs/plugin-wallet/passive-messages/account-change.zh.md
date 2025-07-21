@@ -1,4 +1,3 @@
-
 # 账户改变消息
 
 消息标识： `accountsChanged`
