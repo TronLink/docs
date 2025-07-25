@@ -25,8 +25,8 @@
 
 1. 克隆仓库
 ```bash
-git clone git@github.com:xueyuanying/tronlink-doc.git
-cd tronlink-doc
+git clone https://github.com/TronLink/docs.git
+cd docs
 ```
 
 2. 安装依赖
