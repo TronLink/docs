@@ -6,14 +6,14 @@ This is the official developer documentation for the TronLink wallet, providing 
 
 - **Introduction** - Overview of TronLink and the TRON ecosystem
 - **HD Wallet** - Documentation related to HD wallets
-- **TronLink App** 
+- **TronLink App** - Mobile integration guide
   - Asset Management
   - DeepLink
   - DApp Support
-- **TronLink Wallet Extension** 
+- **TronLink Wallet Extension** - Browser extension development
   - Request TronLink Extension
   - Receive messages from TronLink
-- **DApp** 
+- **DApp** - Decentralized application development
   - Start Developing
   - Multi-Signature Transfer
   - Message Signature
