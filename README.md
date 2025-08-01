@@ -25,7 +25,6 @@ This is the official developer documentation for the TronLink wallet, providing 
 ### Local Development
 
 1. Clone the repository
-
 ```bash
 git clone https://github.com/TronLink/docs.git
 cd docs
