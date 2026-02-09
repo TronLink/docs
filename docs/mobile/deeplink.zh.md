@@ -9,11 +9,6 @@ img {
 }
 </style>
 
-操作流程图
-
-注意：只有已添加至白名单的 DApp 才能成功连接至 TronLink。请在此处填写白名单申请：[填写表单](https://docs.google.com/forms/d/e/1FAIpQLSdFmYGxVZzwCSsvmdOTq064sxWD22STYth1g5GO5zn3OrB5Jw/viewform?usp=sf_link)
-
-
 ## 打开钱包
 
 使用 DeepLink 方式唤起钱包
