@@ -161,7 +161,7 @@ Generated when:
 
 1. A DApp requests connection and the user rejects it in the popup.
 
-<img src="/images/plugin-wallet_rejectWeb.png" width=50%>
+![image](/images/plugin-wallet_rejectWeb.png){ width="350" }
 
 Developers can listen for this message:
 
@@ -183,7 +183,7 @@ Generated when:
 
 1. The user manually disconnects the website.
 
-<img src="/images/plugin-wallet_disconnectWeb.png" width=50%>
+![image](/images/plugin-wallet_disconnectWeb.png){ width="350" }
 
 Developers can listen for this message:
 
@@ -204,7 +204,7 @@ Generated when:
 
 1. The user confirms the connection request.
 
-<img src="/images/plugin-wallet_acceptWeb.png" width=50%>
+![image](/images/plugin-wallet_acceptWeb.png){ width="350" }
 
 Developers can listen for this message:
 
@@ -225,7 +225,7 @@ Generated when:
 
 1. The user proactively connects to the website.
 
-<img src="/images/plugin-wallet_connectWeb.png" width=50%>
+![image](/images/plugin-wallet_connectWeb.png){ width="350" }
 
 Developers can listen for this message:
 

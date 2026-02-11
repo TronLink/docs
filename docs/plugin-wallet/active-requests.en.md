@@ -41,11 +41,11 @@ If it fails, an error code and error message will be returned. See the **Error C
 
 After triggering `eth_requestAccounts`, if TronLink is locked, an unlock popup appears:
 
-<img src="/images/plugin-wallet_lock-page.png" width="350" border="1" />
+![image](../images/plugin-wallet_lock-page.png){ width="350" }
 
 After unlocking, or if already unlocked, a connection confirmation popup appears:
 
-<img src="/images/plugin-wallet_request-accounts.png" width="350" border="1" />
+![image](../images/plugin-wallet_request-accounts.png){ width="350" }
 
 
 
@@ -382,6 +382,6 @@ Supported chain IDs:
 
 Triggering the request shows an unlock popup if TronLink is locked, then a network switch confirmation popup after unlocking.
 
-<img src="/images/plugin-wallet_lock-page.png" width="350" border="1" />
+![image](../images/plugin-wallet_lock-page.png){ width="350" }
 
-<img src="/images/plugin-wallet_switch-chain.png" width="350" border="1" />
+![image](../images/plugin-wallet_switch-chain.png){ width="350" }
