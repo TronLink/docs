@@ -1,323 +1,239 @@
-# Receive messages from TronLink
+# Passively Receiving Messages from the TronLink Plugin
 
-The message is sent using "window.postMessage", and the content received by the Dapp is a MessageEvent.You can refer to <a class="tooltip" href="https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent" data-tooltip="https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent">MDN documentation of MessageEvent</a>.
+Messages are sent using `window.postMessage`.  
+The content received by a DApp is a `MessageEvent`.  
+Refer to the [MessageEvent MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent).
 
 
-## Account Change Message
+### Account Change Message
 
-Message ID: `accountsChanged`
+Message identifier: `accountsChanged`
 
-**Overview**
+#### Overview
+
+This message is generated in the following situations:
+
+1. User logs in  
+2. User switches account  
+3. User locks the wallet  
+4. Wallet auto-locks due to timeout  
+
+#### Technical Specification
+
+##### Code Example
+
+```typescript
+window.tron.on('accountsChanged', (accountArray) => {
+  // handler logic
+  console.log('got accountsChanged event', accountArray)
+})
+```
+
+##### Return Value
+
+```typescript
+['your_current_account_address']
+```
+
+###### Return Value Examples
+
+1. When the user logs in:
+
+```json
+['TZ5XixnRyraxJJy996Q1sip85PHWuj4793']
+```
+
+(Current account)
+
+2. When the user switches accounts:
+
+```json
+['TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq']
+```
+
+(Newly selected account)
+
+3. When the wallet is locked or auto-locked:
+
+```json
+[]
+```
+
+
+### Network Change Message
+
+Message identifier: `chainChanged`
+
+#### Overview
+
+Developers can listen to this message to detect network changes.
 
 This message is generated when:
 
-  1. Users log in
+1. The user changes the network.
 
-  2. Users switch accounts
+#### Technical Specification
 
-  3. Users lock accounts
+##### Code Example
 
-  4. The wallet is automatically locked after timeout
-
-
-
-
-**Specification**
-
-**Example**
-
-```shell
-    
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action === "accountsChanged") {
-        // handler logic
-        console.log('got accountsChanged event', e.data)
-      }
-    })
+```typescript
+window.tron.on('chainChanged', ({chainId}) => {
+  // handler logic
+  console.log('got accountsChanged event', chainId)
+})
 ```
-**Returns**
 
-```shell
-    
-    
-    interface MessageEventAccountsChangedData {
-      isTronLink: boolean;
-      message: {
-        action: string;
-        data: {
-          address: string | boolean;
-        }
-      }
-    }
+##### Return Value
+
+```json
+{
+  chainId: string;
+}
 ```
-**Return value example**
 
-  1. When users log in, the content of the message body is:
+Currently supported `chainId` values:
 
+- Mainnet: `0x2b6653dc`
+- Shasta Testnet: `0x94a9059e`
+- Nile Testnet: `0xcd8690dc`
 
+**Note:** Chain IDs are case-sensitive.
 
+### TronLink Service Availability Message
 
-```shell
-    
-    
-    {
-      "data": {
-        "address": "TZ5XixnRyraxJJy996Q1sip85PHWuj4793" // Last selected account address
-      }
-    }
-```
-  1. When users switch accounts, the content of the message body is:
+Message identifier: `connect`
 
+#### Overview
 
+If TronLink and the `window.tron` object are available, this event will always be emitted.
 
+This includes:
 
-```shell
-    {
-      "data": {
-        "address": "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq" // Newly selected account address
-      }
-    }
-```
-  1. When users lock accounts and the wallet is automatically locked due to timeout, the message body content is:
+- After the provider initializes and connects to a chain.  
+- After a `disconnect` event when the provider reconnects to a chain.  
 
+#### Technical Specification
 
+##### Code Example
 
-
-```shell
-    {
-      "data": {
-        "address": false
-      }
-    }
+```typescript
+window.tron.on('connect', ({chainId}) => {
+  // handler logic
+  console.log('got accountsChanged event', chainId)
+})
 ```
 
 
-## Network Change Message
+### Website Disconnect Message
 
-Message ID: `setNode`
+Message identifier: `disconnect`
 
-**Overview**
+#### Overview
 
-Developers can monitor this message to know network changes 
+If the provider disconnects from all chains, it must emit a `disconnect` event and return a `ProviderRpcError` object.
 
-This message is generated when:
+#### Technical Specification
 
-  1. When the user changes the network
+##### Code Example
 
-
-
-
-**Specification**
-
-**Example**
-
-```shell
-    
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "setNode") {
-        // handler logic
-        console.log('got setNode event', e.data)
-      }
-    })
-```
-**Returns**
-
-```shell
-    
-    
-    {
-      "node": {
-        // Information about the current network
-      },
-      "connectNode": {
-        // Node information of DApp chain
-      }
-    }
+```typescript
+tron.on('disconnect', (providerRpcError: ProviderRpcError) => {
+  console.error(connectInfo); // { code: 4900, message: 'Disconnected' }
+})
 ```
 
-## Successful connection message
+---
 
-Message ID: `connect`
+### Legacy Compatibility Messages
 
-**Overview**
+The following four messages are retained for compatibility with version 3.x and will be deprecated in future versions:
 
-Developers can monitor this message for connection changes. 
+1. User rejected connection → `rejectWeb`  
+2. User disconnected the website → `disconnectWeb`  
+3. User confirmed connection → `acceptWeb`  
+4. User proactively connected the website → `connectWeb`  
 
-This message is generated when:
+### User Rejected Connection Message
 
-  1. The DApp requests a connection, and the user confirms the connection in the pop-up window
+Message identifier: `rejectWeb`
 
-  2. Users connect to the website
+Generated when:
 
+1. A DApp requests connection and the user rejects it in the popup.
 
+<img src="/images/plugin-wallet_rejectWeb.png" width=50%>
 
+Developers can listen for this message:
 
-**Specification**
-
-**Example**
-
-```shell
-    
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "connect") {
-        // handler logic
-        console.log('got connect event', e.data)
-      }
-    })
+```typescript
+window.addEventListener('message', function (e) {
+  if (e.data.message && e.data.message.action == "rejectWeb") {
+      // handler logic
+      console.log('got rejectWeb event', e.data)
+  }
+})
 ```
 
 
-## Disconnect website message
+### User Disconnected Website Message
 
-Message ID: `disconnect`
+Message identifier: `disconnectWeb`
 
-**Overview**
+Generated when:
 
-Developers can monitor this message for connection changes. 
+1. The user manually disconnects the website.
 
-This message is generated when:
+<img src="/images/plugin-wallet_disconnectWeb.png" width=50%>
 
-  1. The DApp requests a connection, and the user rejects the connection in the pop-up window
+Developers can listen for this message:
 
-  2. Users disconnect from the website
-
-
-
-
-**Specification**
-
-**Example**
-
-```shell
-    
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "disconnect") {
-        // handler logic
-        console.log('got connect event', e.data)
-      }
-    })
+```typescript
+window.addEventListener('message', function (e) {
+  if (e.data.message && e.data.message.action == "disconnectWeb") {
+      // handler logic
+      console.log('got disconnectWeb event', e.data)
+  }
+})
 ```
 
+### User Confirmed Connection Message
 
-## Messages to Be Deprecated
+Message identifier: `acceptWeb`
 
-  1. The user rejects connection: “rejectWeb”
+Generated when:
 
-  2. The user disconnects from the website: “disconnectWeb”
+1. The user confirms the connection request.
 
-  3. The user accepts connection: “acceptWeb”
+<img src="/images/plugin-wallet_acceptWeb.png" width=50%>
 
-  4. The user requests to connect to the website: “connectWeb”
+Developers can listen for this message:
 
-
-### User rejects connection
-
-<span class="deprecated">DEPRECATED</span>
-
-Message ID: `rejectWeb` 
-
-This message is generated when:
-
-  1. The DApp requests a connection and the user rejects the connection in the pop-up window. 
-  
-  ![image](../../images/tronlink-wallet-extension_receive-messages-from-tronlink_messages-to-be-deprecated_user-rejects-connection_img_0.jpg)
-
-
-Developers can get the connection rejection message by listening to it:
-
-```shell
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "rejectWeb") {
-        // handler logic
-        console.log('got rejectWeb event', e.data)
-      }
-    })
+```typescript
+window.addEventListener('message', function (e) {
+  if (e.data.message && e.data.message.action == "acceptWeb") {
+      // handler logic
+      console.log('got acceptWeb event', e.data)
+  }
+})
 ```
 
+### User Proactively Connected Website Message
 
-### User disconnects from the website
+Message identifier: `connectWeb`
 
-<span class="deprecated">DEPRECATED</span>
+Generated when:
 
-Message ID: `disconnectWeb` 
+1. The user proactively connects to the website.
 
-This message is generated when:
+<img src="/images/plugin-wallet_connectWeb.png" width=50%>
 
-  1. User actively disconnect from the website. 
-  
-  ![image](../../images/tronlink-wallet-extension_receive-messages-from-tronlink_messages-to-be-deprecated_user-disconnects-from-the-website_img_0.jpg)
+Developers can listen for this message:
 
-
-
-
-Developers can get the disconnection message by listening to it:
-
-```shell
-    
-    
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "disconnectWeb") {
-        // handler logic
-        console.log('got disconnectWeb event', e.data)
-      }
-    })
-```
-
-
-### User accepts connection
-
-<span class="deprecated">DEPRECATED</span>
-
-Message ID: `acceptWeb` 
-
-This message is generated when:
-
-  1. The user accepts connection. 
-  
-  ![image](../../images/tronlink-wallet-extension_receive-messages-from-tronlink_messages-to-be-deprecated_user-accepts-connection_img_0.jpg)
-
-
-
-
-Developers can get the connection acceptance message by listening to it:
-
-```shell 
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "acceptWeb") {
-        // handler logic
-        console.log('got acceptWeb event', e.data)
-      }
-    })
-```
-
-
-### User requests to connect to the website
-
-<span class="deprecated">DEPRECATED</span>
-
-Message ID: `connectWeb` 
-
-This message is generated when:
-
-  1. The user requests to connect to the website. 
-  
-  ![image](../../images/tronlink-wallet-extension_receive-messages-from-tronlink_messages-to-be-deprecated_user-requests-to-connect-to-the-website_img_0.jpg)
-
-
-
-
-Developers can get the connection request message by listening to it:
-
-```shell
-    window.addEventListener('message', function (e) {
-      if (e.data.message && e.data.message.action == "connectWeb") {
-        // handler logic
-        console.log('got connectWeb event', e.data)
-      }
-    })
+```typescript
+window.addEventListener('message', function (e) {
+  if (e.data.message && e.data.message.action == "connectWeb") {
+      // handler logic
+      console.log('got connectWeb event', e.data)
+  }
+})
 ```
