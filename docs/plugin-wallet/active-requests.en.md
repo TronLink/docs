@@ -57,6 +57,7 @@ TronLink supports TRX transfers, contract signature, authorization, etc. initiat
 
 After triggering ‘tron_requestAccounts‘, there will be a pop-up window asking for confirmation: 
 
+
 ![image](../../images/tronlink-wallet-extension_request-tronlink-extension_connect-website_img_0.jpg)
 
 
