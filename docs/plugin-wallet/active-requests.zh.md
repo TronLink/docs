@@ -33,11 +33,11 @@ try {
 #### 交互流程
 触发`eth_requestAccounts`之后，如果TronLink处于锁屏状态，会弹出锁屏弹窗：
 
-<img src="/images/plugin-wallet_lock-page.png" width="350" border="1" />
+![image](../images/plugin-wallet_lock-page.png)
 
 解锁后，或者TronLink已经提前解锁，会打开连接确认的弹窗：
 
-<img src="/images/plugin-wallet_request-accounts.png" width="350" border="1" />
+![image](../images/plugin-wallet_request-accounts.png)
 
 
 ### 连接网站（旧版）
@@ -123,7 +123,7 @@ if (window.tronLink.ready) {
 
 当代码执行到`await tronweb.trx.sign(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图
 
-<img src="/images/plugin-wallet_sign_trx.png" width=50%>
+![image](../images/plugin-wallet_sign_trx.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理
 
@@ -194,9 +194,9 @@ Uncaught (in promise) Invalid transaction provided
 #### 交互流程
 
 当代码执行到`await tronweb.trx.sign(message);`时，TronLink钱包会提示弹窗，需要用户进行确认，
-如下图, 其中消息内容会以hex的方式展示<br/>
+如下图, 其中消息内容会以hex的方式展示
 
-<img src="/images/plugin-wallet_sign_message.png" width=50%>
+![image](../images/plugin-wallet_sign_message.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理
 
@@ -268,11 +268,11 @@ if (window.tronLink.ready) {
 
 代码执行时，TronLink会弹出添加窗口，用户点击确定添加TRC10资产，或者取消添加。
 
-<img src="/images/plugin-wallet_add_trc10.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc10.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-<img src="/images/plugin-wallet_add_trc10_success.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc10_success.png)
 
 
 
@@ -296,11 +296,11 @@ if (window.tronLink.ready) {
 
 代码执行时，TronLink会弹出添加窗口，用户点击确定添加TRC20资产，或者取消添加。
 
-<img src="/images/plugin-wallet_add_trc20.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc20.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-<img src="/images/plugin-wallet_add_trc20_success.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc20_success.png)
 
 ##### 添加TRC721资产
 ```typescript
@@ -322,11 +322,11 @@ if (window.tronLink.ready) {
 
 代码执行时，TronLink会弹出添加窗口，用户点击确定添加TRC20资产，或者取消添加。
 
-<img src="/images/plugin-wallet_add_trc721.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc721.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-<img src="/images/plugin-wallet_add_trc721_success.png" width=50% height=50%>
+![image](../images/plugin-wallet_add_trc721_success.png)
 
 
 ### 切换网络
@@ -380,8 +380,8 @@ interface SwitchTronChainParameter {
 #### 交互流程
 触发`wallet_switchEthereumChain`之后，如果TronLink处于锁屏状态，会弹出锁屏弹窗：
 
-<img src="/images/plugin-wallet_lock-page.png" width="350" border="1" />
+![image](../images/plugin-wallet_lock-page.png)
 
 解锁后，或者TronLink已经提前解锁，会打开连接确认的弹窗：
 
-<img src="/images/plugin-wallet_switch-chain.png" width="350" border="1" />
+![image](../images/plugin-wallet_switch-chain.png)

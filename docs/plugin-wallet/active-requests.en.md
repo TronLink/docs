@@ -41,11 +41,11 @@ If it fails, an error code and error message will be returned. See the **Error C
 
 After triggering `eth_requestAccounts`, if TronLink is locked, an unlock popup appears:
 
-![image](../images/plugin-wallet_lock-page.png){ width="350" }
+![image](../images/plugin-wallet_lock-page.png)
 
 After unlocking, or if already unlocked, a connection confirmation popup appears:
 
-![image](../images/plugin-wallet_request-accounts.png){ width="350" }
+![image](../images/plugin-wallet_request-accounts.png)
 
 
 
@@ -145,7 +145,10 @@ if (window.tronLink.ready) {
 }
 ```
 
-When executing `await tronweb.trx.sign(tx);`, TronLink displays a confirmation popup.  
+When executing `await tronweb.trx.sign(tx);`, TronLink displays a confirmation popup. 
+
+![image](../images/plugin-wallet_sign_trx.png)
+
 Reject → exception thrown.  
 Sign → signed transaction returned for broadcasting.
 
@@ -230,6 +233,9 @@ Uncaught (in promise) Invalid transaction provided
 #### Interaction Flow
 
 When executing signing, TronLink shows a confirmation popup with the hex message.  
+
+![image](../images/plugin-wallet_sign_message.png)
+
 Reject → exception.  
 Sign → signed message returned.
 
@@ -294,6 +300,13 @@ tronweb.request({
   },
 });
 ```
+When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC10 asset or cancel the request.
+
+![image](../images/plugin-wallet_add_trc10.png)
+
+Click the “Add” button and the asset will be added to the asset list, as shown below.
+
+![image](../images/plugin-wallet_add_trc10_success.png)
 
 ##### Add TRC20
 
@@ -307,6 +320,14 @@ tronweb.request({
 });
 ```
 
+When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC20 asset or cancel the request.
+
+![image](../images/plugin-wallet_add_trc20.png)
+
+Click the “Add” button and the asset will be added to the asset list, as shown below.
+
+![image](../images/plugin-wallet_add_trc20_success.png)
+
 ##### Add TRC721
 
 ```typescript
@@ -319,7 +340,13 @@ tronweb.request({
 });
 ```
 
-Users confirm in the TronLink popup to add the asset.
+When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC721 asset or cancel the request.
+
+![image](../images/plugin-wallet_add_trc721.png)
+
+Click the “Add” button and the asset will be added to the asset list, as shown below.
+
+![image](../images/plugin-wallet_add_trc721_success.png)
 
 
 
@@ -382,6 +409,6 @@ Supported chain IDs:
 
 Triggering the request shows an unlock popup if TronLink is locked, then a network switch confirmation popup after unlocking.
 
-![image](../images/plugin-wallet_lock-page.png){ width="350" }
+![image](../images/plugin-wallet_lock-page.png)
 
-![image](../images/plugin-wallet_switch-chain.png){ width="350" }
+![image](../images/plugin-wallet_switch-chain.png)
