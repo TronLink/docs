@@ -176,13 +176,13 @@ if (window.tronLink.ready) {
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
   const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress); // 步骤1
   try {
-    const signedTx = await tronweb.trx.signMessageV2(tx); // 步骤2
+    const signedTx = await tronweb.trx.sign(tx); // 步骤2
     await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
   } catch (e) {}
 }
 ```
 
-当代码执行到`await tronweb.trx.signMessageV2(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图
+当代码执行到`await tronweb.trx.sign(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图
 
 ![image](../images/zh_plugin-wallet_sign_trx.png)
 
