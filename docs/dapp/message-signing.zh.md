@@ -25,14 +25,14 @@ DApp 开发者完成【连接网站】请求，用户同意连接。
 
 **参数**
 
-`tronLink.tronWeb.trx.sign`接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容。
+`tronLink.tronWeb.trx.signMessageV2`接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容。
 
 **返回值**
 
 如果用户在弹窗中选择签名, DApp 可以得到签名后的十六进制字符串, 比如：
 
 ```shell 
-    0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
+    0xb0e0b150b9b10dc348f25c7f38fc87f16e18c0d230d23946aac519a5ad9e45937f656012d33c09e9d9dec00b03fbb304e797f8991bb823dce676ac91e03a55991b
 ```
 
 如果报错，则会返回如下信息：
