@@ -2,8 +2,6 @@
 
 ### Connect Website TIP-1102
 
-`Connect Website TIP-1102` is **not supported in 4.0-beta1**, support starts from **4.0-beta2**.
-
 #### Overview
 
 TronLink can be used to manage wallet private keys.  Before performing operations that require signatures, a DApp must connect to TronLink and obtain user signature authorization through TronLink. This protocol explicitly informs users that the DApp is proactively requesting a TronLink connection and requests their authorization consent.
@@ -108,7 +106,71 @@ interface ReqestAccountsResponse {
 | 4000 | Duplicate authorization request pending | Authorization requests are being processed, please do not resubmit |
 | 4001 | User rejected connection | User rejected the request |
 
+### Get TronLink Provider via TIP-6963
 
+#### Introduction
+
+When multiple wallets exist simultaneously, they may compete to occupy the `window.tron` object. To ensure that a DApp can obtain a specific wallet provider, the TIP-6963 specification is implemented.
+
+#### Technical Specification
+
+##### Code Example
+
+```typescript
+interface TIP1193Provider {
+  request: (args: RequestArguments) => Promise<unknown>;
+  on(event: string, listener: (...args: any[]) => void): this;
+  removeListener(event: string, listener: (...args: any[]) => void): this;
+  tronWeb: TronWeb;
+  [key: `is${string}`]: boolean;
+}
+
+/**
+ * Represents the assets needed to display a wallet
+ */
+interface TIP6963ProviderInfo {
+  uuid: string;
+  name: string;
+  icon: string;
+  rdns: string;
+}
+
+interface TIP6963ProviderDetail {
+  info: TIP6963ProviderInfo;
+  provider: TIP1193Provider;
+}
+
+// Announce Event dispatched by a Wallet
+interface TIP6963AnnounceProviderEvent extends CustomEvent {
+  type: "TIP6963:announceProvider";
+  detail: TIP6963ProviderDetail;
+}
+
+// The DApp listens to announced providers
+window.addEventListener(
+  "TIP6963:announceProvider",
+  (event: TIP6963AnnounceProviderEvent) => {
+    
+    // Confirm if it is a Tronlink UUID
+    if (event.detail.info.rdns !== 'org.tronlink.www' || event.detail.info.name !== 'TronLink') {
+      console.error('it is NOT TronLink provider');
+      return;
+    }
+
+    // event.detail.provider === window.tron
+    const tronProvider = event.detail.provider;
+
+    tronProvider.on('accountsChanged', (accountArray) => {
+      console.log('tip-6963 accountsChanged', accountArray);
+    })
+  }
+);
+
+// The DApp dispatches a request event which will be heard by 
+// Wallets' code that had run earlier
+window.dispatchEvent(new Event("TIP6963:requestProvider"));
+```
+After implementing the above code, the DApp can precisely obtain the provider supplied by TronLink.TronLink’s rdns is `org.tronlink.www`, and its name is `TronLink`.
 
 ### Normal Transfer
 
@@ -207,14 +269,14 @@ if (window.tronLink.ready) {
 
   try {
     const message = "0x01EF";
-    const signedString = await tronweb.trx.sign(message);
+    const signedString = await tronweb.trx.signMessageV2(message);
   } catch (e) {}
 }
 ```
 
 ##### Parameter
 
-`tronLink.tronWeb.trx.sign` accepts a hexadecimal string representing the message to sign.
+`tronLink.tronweb.trx.signMessageV2` accepts a hexadecimal string representing the message to sign.
 
 ##### Return Value
 
@@ -350,7 +412,7 @@ Click the “Add” button and the asset will be added to the asset list, as sho
 
 
 
-### Switch Network
+### Switch Network TIP-3326
 
 `Switch Network` is **not supported in 4.0-beta1**, supported starting **4.0-beta2**.
 
