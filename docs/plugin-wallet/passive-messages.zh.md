@@ -125,7 +125,7 @@ tron.on('disconnect', (providerRpcError: ProviderRpcError) => {
 
 1. dapp请求连接，用户在弹窗中拒绝连接后
  
-![image](../images/plugin-wallet_rejectWeb.png)
+![image](../images/zh_plugin-wallet_rejectWeb.png)
 
 
 开发者可以监听此消息来获取用户拒绝连接消息
@@ -145,7 +145,7 @@ window.addEventListener('message', function (e) {
 
 1. 用户主动断接网站
 
-![image](../images/plugin-wallet_disconnectWeb.png)
+![image](../images/zh_plugin-wallet_disconnectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动断连消息
@@ -166,7 +166,7 @@ window.addEventListener('message', function (e) {
 1. 用户确定连接消息
 
 
-![image](../images/plugin-wallet_acceptWeb.png)
+![image](../images/zh_plugin-wallet_acceptWeb.png)
 
 开发者可以监听此消息来获取用户确定连接消息
 ```typescript
@@ -186,7 +186,7 @@ window.addEventListener('message', function (e) {
 1. 用户确定连接消息
 
 
-![image](../images/plugin-wallet_connectWeb.png)
+![image](../images/zh_plugin-wallet_connectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动连接网站消息
