@@ -2,8 +2,6 @@
 
 ### 连接网站 TIP-1102
 
-`连接网站 TIP-1102` 4.0-beta1暂不支持，4.0-beta2开始支持
-
 #### 简介
 TronLink可用于管理钱包私钥，dapp在进行一些需签名的操作前，需要连接TronLink，并通过TronLink获取用户签名授权。此协议在于显式地告知用户dapp主动连接TronLink的行为，并获取用户的授权同意。
 此方法遵循以太坊EIP-1102协议。
@@ -92,6 +90,69 @@ interface ReqestAccountsResponse {
 | 4000  | 当前请求前已经有同一个dapp发起了连接网站请求，并且弹窗仍未关闭 | Authorization requests are being processed, please do not resubmit |
 | 4001  | 用户拒绝连接 | User rejected the request |
 
+### 获取TronLink的provider TIP-6963
+
+#### 简介
+当多个钱包同时存在，会出现对`window.tron`对象的抢占行为。为了保证DApp可以获取到特定钱包的provider，所以实现TIP-6963规范
+#### 技术规范
+##### 代码示例
+```typescript
+interface TIP1193Provider {
+  request: (args: RequestArguments) => Promise<unknown>;
+  on(event: string, listener: (...args: any[]) => void): this;
+  removeListener(event: string, listener: (...args: any[]) => void): this;
+  tronWeb: TronWeb;
+  [key: `is${string}`]: boolean;
+}
+
+/**
+ * Represents the assets needed to display a wallet
+ */
+interface TIP6963ProviderInfo {
+  uuid: string;
+  name: string;
+  icon: string;
+  rdns: string;
+}
+
+interface TIP6963ProviderDetail {
+  info: TIP6963ProviderInfo;
+  provider: TIP1193Provider;
+}
+
+// Announce Event dispatched by a Wallet
+interface TIP6963AnnounceProviderEvent extends CustomEvent {
+  type: "TIP6963:announceProvider";
+  detail: TIP6963ProviderDetail;
+}
+
+// The DApp listens to announced providers
+window.addEventListener(
+  "TIP6963:announceProvider",
+  (event: TIP6963AnnounceProviderEvent) => {
+    
+    // Confirm if it is a Tronlink UUID
+    if (event.detail.info.rdns !== 'org.tronlink.www' || event.detail.info.name !== 'TronLink') {
+      console.error('it is NOT TronLink provider');
+      return;
+    }
+
+    // event.detail.provider === window.tron
+    const tronProvider = event.detail.provider;
+
+    tronProvider.on('accountsChanged', (accountArray) => {
+      console.log('tip-6963 accountsChanged', accountArray);
+    })
+  }
+);
+
+// The DApp dispatches a request event which will be heard by 
+// Wallets' code that had run earlier
+window.dispatchEvent(new Event("TIP6963:requestProvider"));
+```
+DApp按照上述代码实现后，可以精准获取到TronLink提供的provider。
+TronLink 的 rdns 是 `org.tronlink.www`, name 是 `TronLink`
+
 ### 普通转账
 
 #### 简介
@@ -115,13 +176,13 @@ if (window.tronLink.ready) {
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
   const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress); // 步骤1
   try {
-    const signedTx = await tronweb.trx.sign(tx); // 步骤2
+    const signedTx = await tronweb.trx.signMessageV2(tx); // 步骤2
     await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
   } catch (e) {}
 }
 ```
 
-当代码执行到`await tronweb.trx.sign(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图
+当代码执行到`await tronweb.trx.signMessageV2(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图
 
 ![image](../images/zh_plugin-wallet_sign_trx.png)
 
@@ -173,12 +234,12 @@ if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
     const message = "0x01EF"; // any hex string
-    const signedString = await tronweb.trx.sign(message);
+    const signedString = await tronweb.trx.signMessageV2(message);
   } catch (e) {}
 }
 ```
 ##### 参数
-`tronLink.tronWeb.trx.sign`接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容
+`tronLink.tronWeb.trx.signMessageV2`接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容
 
 ##### 返回值
 如果用户在弹窗中选择签名, dapp可以得到签名后的十六进制字符串, 比如：
@@ -193,7 +254,7 @@ Uncaught (in promise) Invalid transaction provided
 
 #### 交互流程
 
-当代码执行到`await tronweb.trx.sign(message);`时，TronLink钱包会提示弹窗，需要用户进行确认，
+当代码执行到`await tronweb.trx.signMessageV2(message);`时，TronLink钱包会提示弹窗，需要用户进行确认，
 如下图, 其中消息内容会以hex的方式展示
 
 ![image](../images/zh_plugin-wallet_sign_message.png)
@@ -329,10 +390,7 @@ if (window.tronLink.ready) {
 ![image](../images/zh_plugin-wallet_add_trc721_success.png)
 
 
-### 切换网络
-
-`切换网络` 4.0-beta1暂不支持，4.0-beta2开始支持
-
+### 切换网络 TIP-3326
 
 #### 简介
 大部分dapp都会在特定的链上提供服务。dapp可以通过调用本协议，告诉TronLink期望使用的链，TronLink会弹出弹窗告知用户即将切换的链，用户可以选择是否同意切换。

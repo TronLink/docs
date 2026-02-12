@@ -58,7 +58,7 @@ window.tron.on('accountsChanged', (accountArray) => {
 ```typescript
 window.tron.on('chainChanged', ({chainId}) => {
   // handler logic
-  console.log('got accountsChanged event', chainId)
+  console.log('got chainChanged event', chainId)
 })
 ```
 
@@ -91,7 +91,7 @@ window.tron.on('chainChanged', ({chainId}) => {
 ```typescript
 window.tron.on('connect', ({chainId}) => {
   // handler logic
-  console.log('got accountsChanged event', chainId)
+  console.log('got connect event', chainId)
 })
 ```
 
