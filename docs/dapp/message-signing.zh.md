@@ -18,7 +18,7 @@ DApp 开发者完成【连接网站】请求，用户同意连接。
       const tronweb = tronLink.tronWeb;
       try {
         const message = "0x01EF"; // any hex string
-        const signedString = await tronweb.trx.sign(message);
+        const signedString = await tronweb.trx.signMessageV2(message);
       } catch (e) {}
     }
 ```
@@ -42,7 +42,7 @@ DApp 开发者完成【连接网站】请求，用户同意连接。
 ```
 **交互流程**
 
-当代码执行到`await tronweb.trx.sign(message);`时，TronLink 钱包会提示弹窗，需要用户进行确认， 如下图, 其中消息内容会以hex的方式展示：
+当代码执行到`await tronweb.trx.signMessageV2(message);`时，TronLink 钱包会提示弹窗，需要用户进行确认， 如下图, 其中消息内容会以hex的方式展示：
 
 ![image](../images/zh_dapp_xiao-xi-qian-ming_img_0.jpg)
 
