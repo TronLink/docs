@@ -79,7 +79,7 @@ This message is generated when:
 ```typescript
 window.tron.on('chainChanged', ({chainId}) => {
   // handler logic
-  console.log('got accountsChanged event', chainId)
+  console.log('got chainChanged event', chainId)
 })
 ```
 

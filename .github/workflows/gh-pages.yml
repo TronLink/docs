@@ -3,8 +3,7 @@ name: Publish Document
 on:
   push:
     branches:
-      - main # 监听所有分支
-      - '**'    
+      - main 
   workflow_dispatch: # 仍保留手动触发的功能
 
 jobs:
