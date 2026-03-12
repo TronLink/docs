@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/mcp-core`, it provides **56+ tools** across two complementary operation modes.
+**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **56+ tools** across two complementary operation modes.
 
 **Key Highlights:**
 - Dual-mode architecture: **Playwright** (browser automation) + **Direct API** (on-chain operations)
@@ -328,7 +328,7 @@ mcp-server-tronlink/
 |---------|---------|---------|
 | `@noble/curves` | ^2.0.1 | secp256k1 ECDSA signing |
 | `@noble/hashes` | ^2.0.1 | Keccak-256, SHA256 |
-| `@tronlink/mcp-core` | local | Core MCP server framework |
+| `@tronlink/tronlink-mcp-core` | local | Core MCP server framework |
 | `playwright` | ^1.49.0 | Browser automation |
 | `ws` | ^8.18.0 | WebSocket (multi-sig monitoring) |
 
@@ -375,14 +375,13 @@ export TL_CHAIN_PRIVATE_KEY="your-64-char-hex-private-key"
 ## "Swap 100 TRX for USDT on SunSwap V3"
 ```
 
-
 ## TronLink MCP Core 
 
 ### Overview
 
 **GitHub**: [https://github.com/TronLink/tronlink-mcp-core](https://github.com/TronLink/tronlink-mcp-core)
 
-**@tronlink/mcp-core** is the foundational framework library for building TronLink MCP (Model Context Protocol) servers. It is not a standalone application — consumers must implement the `ISessionManager` interface and inject capabilities to create a working server.
+**@tronlink/tronlink-mcp-core** is the foundational framework library for building TronLink MCP (Model Context Protocol) servers. It is not a standalone application — consumers must implement the `ISessionManager` interface and inject capabilities to create a working server.
 
 **Key Highlights:**
 - Interface-driven, pluggable architecture with **9 capability interfaces**
@@ -444,7 +443,7 @@ export TL_CHAIN_PRIVATE_KEY="your-64-char-hex-private-key"
 | Role | Defines interfaces, tools, protocol | Concrete implementation |
 | Usage | Import via npm, extend | Direct CLI invocation |
 | Extensibility | 9 pluggable capability interfaces | Pre-configured capabilities |
-| Dependency | None (it IS the dependency) | Depends on @tronlink/mcp-core |
+| Dependency | None (it IS the dependency) | Depends on @tronlink/tronlink-mcp-core |
 
 **mcp-server-tronlink is a consumer of tronlink-mcp-core.** The core defines WHAT tools exist; the server provides HOW they work.
 
@@ -853,7 +852,7 @@ Accessibility references come from `tl_accessibility_snapshot` output — the mo
 
 #### Install
 ```bash
-npm install @tronlink/mcp-core
+npm install @tronlink/tronlink-mcp-core
 ```
 
 #### Basic Setup
@@ -862,7 +861,7 @@ import {
   createMcpServer,
   setSessionManager,
   type ISessionManager,
-} from '@tronlink/mcp-core';
+} from '@tronlink/tronlink-mcp-core';
 
 // 1. Implement ISessionManager
 class MySessionManager implements ISessionManager {
@@ -982,7 +981,6 @@ npm run clean      ## Remove dist/
 5. **Data Redaction** — Knowledge store auto-masks password, mnemonic, private_key, seed fields
 6. **Standardized Responses** — Consistent `{ ok, result/error, meta }` structure across all 56+ tools
 7. **Template System** — Flow recipes use `{{param}}` placeholders for reusable workflows
-
 
 ## TronLink Skills 
 
