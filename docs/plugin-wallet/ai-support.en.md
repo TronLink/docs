@@ -2,6 +2,8 @@
 
 ### Overview
 
+**GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
+
 **mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/mcp-core`, it provides **56+ tools** across two complementary operation modes.
 
 **Key Highlights:**
@@ -377,6 +379,8 @@ export TL_CHAIN_PRIVATE_KEY="your-64-char-hex-private-key"
 ## TronLink MCP Core 
 
 ### Overview
+
+**GitHub**: [https://github.com/TronLink/tronlink-mcp-core](https://github.com/TronLink/tronlink-mcp-core)
 
 **@tronlink/mcp-core** is the foundational framework library for building TronLink MCP (Model Context Protocol) servers. It is not a standalone application — consumers must implement the `ISessionManager` interface and inject capabilities to create a working server.
 
@@ -983,6 +987,8 @@ npm run clean      ## Remove dist/
 ## TronLink Skills 
 
 ### Overview
+
+**GitHub**: [https://github.com/TronLink/tronlink-skills](https://github.com/TronLink/tronlink-skills)
 
 **TronLink Wallet Skills** is an AI Agent skill set that provides complete TRON blockchain wallet and DeFi functionality through natural language. Designed for Claude Code, Cursor, OpenCode, Codex CLI, and other AI agents.
 

@@ -2,6 +2,8 @@
 
 ### 概述
 
+**GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
+
 **mcp-server-tronlink** 是一个生产级的 Model Context Protocol (MCP) 服务器，使 AI 代理（Claude、GPT 等）能够通过自然语言与 TRON 区块链交互。基于 `@tronlink/mcp-core` 构建，提供跨两种互补操作模式的 **56+ 工具**。
 
 **核心亮点：**
@@ -366,6 +368,8 @@ export TL_CHAIN_PRIVATE_KEY="你的64字符十六进制私钥"
 ## TronLink MCP Core 
 
 ### 概述
+
+**GitHub**: [https://github.com/TronLink/tronlink-mcp-core](https://github.com/TronLink/tronlink-mcp-core)
 
 **@tronlink/mcp-core** 是构建 TronLink MCP（Model Context Protocol）服务器的基础框架库。它不是独立应用——使用者必须实现 `ISessionManager` 接口并注入能力模块来创建可运行的服务器。
 
@@ -864,6 +868,8 @@ npm run clean      ## 删除 dist/
 ## TronLink Skills 
 
 ### 概述
+
+**GitHub**: [https://github.com/TronLink/tronlink-skills](https://github.com/TronLink/tronlink-skills)
 
 **TronLink Wallet Skills** 是一套 AI Agent 技能集，通过自然语言提供完整的 TRON 区块链钱包和 DeFi 功能。专为 Claude Code、Cursor、OpenCode、Codex CLI 及其他 AI 代理设计。
 
