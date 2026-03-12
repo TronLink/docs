@@ -65,6 +65,7 @@ plugins:
             - TronLink Wallet Extension:
               - Request TronLink Extension: plugin-wallet/active-requests.en.md
               - Receive messages from TronLink: plugin-wallet/passive-messages.en.md
+              - AI Support: plugin-wallet/ai-support.en.md
             - DApp:
               - Start Developing: dapp/getting-started.en.md
               - Multi-Signature Transfer: dapp/multi-sign-transfer.en.md
@@ -85,6 +86,7 @@ plugins:
             - 插件钱包:
               - 主动请求TronLink插件功能: plugin-wallet/active-requests.zh.md
               - 被动接收TronLink插件的消息: plugin-wallet/passive-messages.zh.md
+              - AI 支持: plugin-wallet/ai-support.zh.md
             - DApp:
               - 开始开发: dapp/getting-started.zh.md
               - 多签转账: dapp/multi-sign-transfer.zh.md
