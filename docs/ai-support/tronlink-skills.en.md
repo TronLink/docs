@@ -1,4 +1,4 @@
-# TronLink Skills 
+# TronLink Skills
 
 ## Overview
 
@@ -7,11 +7,11 @@
 **TronLink Wallet Skills** is an AI Agent skill set that provides complete TRON blockchain wallet and DeFi functionality through natural language. Designed for Claude Code, Cursor, OpenCode, Codex CLI, and other AI agents.
 
 **Key Highlights:**
-- **6 skills, 41 commands** covering wallet, token research, market data, swaps, resources, and staking
-- **Zero npm dependencies** for all read-only operations (uses native Node.js 18+ `fetch` and `crypto`)
+- **6 skills, 34 commands** covering wallet, token research, market data, swaps, resources, and staking
+- **Zero npm dependencies** — uses native Node.js 18+ `fetch` and `crypto`, no `npm install` needed
 - **TRON-specific domain knowledge** — dedicated handling of Energy + Bandwidth resource model
 - **Multi-platform support** — Claude Code, Cursor, OpenCode, Codex CLI, LangChain/CrewAI
-- **Human-in-the-loop** confirmation for all fund-moving operations
+- **Read-only & safe** — all commands are query-only, no private keys or signing involved
 - **MCP server wrapper** for structured AI agent integration
 
 ---
@@ -39,9 +39,8 @@ Natural Language Input
 AI Agent (Claude Code / Cursor / OpenCode / Custom)
          |
          v
-tron_api.mjs (Node.js 18+, native fetch, 1,248 lines)
-    ├── Zero dependencies for read operations
-    ├── Optional: tronweb for signing
+tron_api.mjs (Node.js 18+, native fetch, zero dependencies)
+    ├── Zero npm dependencies
     ├── TronGrid HTTP API (public or with API key)
     └── Tronscan API for token metadata
          |
@@ -53,9 +52,9 @@ Structured JSON → Agent interprets → Natural language response
 
 ## The 6 Skills
 
-### 1. tron-wallet (8 commands)
+### 1. tron-wallet (6 commands)
 
-Wallet management and basic operations.
+Wallet queries and account information.
 
 | Command | Description |
 |---------|-------------|
@@ -65,8 +64,6 @@ Wallet management and basic operations.
 | `tx-history` | Recent transaction history |
 | `account-info` | Full account details |
 | `validate-address` | Address format validation |
-| `send-trx` | Transfer TRX (requires private key) |
-| `send-token` | Transfer TRC-20 tokens (requires private key) |
 
 **Features:** Handles both Base58Check (T...) and hex address formats, supports known token symbols, auto-converts decimals.
 
@@ -103,21 +100,19 @@ Real-time market data and whale monitoring.
 
 **Features:** Multi-DEX aggregation, smart money signal detection, K-line analysis.
 
-### 4. tron-swap (5 commands)
+### 4. tron-swap (3 commands)
 
-DEX trading and swap execution.
+DEX swap quotes and route optimization.
 
 | Command | Description |
 |---------|-------------|
 | `swap-quote` | Expected output, price impact, slippage |
 | `swap-route` | Optimal route across SunSwap V2/V3, Sun.io (multi-hop) |
-| `swap-approve` | ERC20-style approve for token spending |
-| `swap-execute` | Execute swap with user confirmation |
-| `tx-status` | Track swap transaction status |
+| `tx-status` | Track transaction status |
 
-**Features:** Aggregates liquidity from multiple sources, estimates Energy cost, handles multi-hop routes, enforces human-in-the-loop confirmation.
+**Features:** Aggregates liquidity from multiple sources, estimates Energy cost, handles multi-hop routes.
 
-### 5. tron-resource (7 commands)
+### 5. tron-resource (6 commands)
 
 Energy & Bandwidth management — TRON-specific.
 
@@ -127,51 +122,45 @@ Energy & Bandwidth management — TRON-specific.
 | `estimate-energy` | Energy cost for smart contract calls |
 | `estimate-bandwidth` | Bandwidth cost (free daily allowance: 600) |
 | `energy-price` | Current SUN cost per Energy unit |
-| `delegate-resource` | Send resources to another address without transferring TRX |
 | `energy-rental` | Query rental marketplace options |
 | `optimize-cost` | Personalized recommendation (freeze vs. rent vs. burn) |
 
 **Features:** Decision tree logic for cost optimization, tracks daily free bandwidth, calculates TRX burn equivalent.
 
-### 6. tron-staking (8 commands)
+### 6. tron-staking (3 commands)
 
-Stake 2.0 and SR voting.
+Stake 2.0 queries and SR information.
 
 | Command | Description |
 |---------|-------------|
-| `stake-freeze` | Freeze TRX for Energy or Bandwidth |
-| `stake-unfreeze` | Start 14-day unfreezing period |
-| `stake-withdraw` | Withdraw unfrozen TRX |
-| `vote` | Vote for Super Representatives (1 frozen TRX = 1 vote) |
-| `claim-rewards` | Claim voting rewards (every 6 hours) |
 | `sr-list` | List SRs with votes, block rate, APY |
 | `staking-info` | Frozen amount, votes, unclaimed rewards, pending unfreezes |
 | `staking-apy` | Calculate estimated annual yield |
 
-**Features:** Full Stake 2.0 support, 14-day unlock management, APY calculation, SR commission tracking.
+**Features:** Stake 2.0 status queries, APY calculation, SR commission tracking.
 
 ---
 
 ## Recommended Skill Workflows
 
-### Check & Transfer
+### Balance & Token Check
 ```
-tron-wallet (check balance) → tron-resource (estimate energy) → tron-wallet (send)
-```
-
-### Research & Buy
-```
-tron-token (search) → tron-market (price/chart) → tron-resource (check energy) → tron-swap (execute)
+tron-wallet (check balance) → tron-wallet (list tokens) → tron-resource (check energy status)
 ```
 
-### Staking Flow
+### Research & Swap Quote
 ```
-tron-wallet (check balance) → tron-staking (freeze) → tron-staking (vote) → tron-staking (claim)
+tron-token (search) → tron-market (price/chart) → tron-resource (check energy) → tron-swap (get quote)
+```
+
+### Staking Analysis
+```
+tron-wallet (check balance) → tron-staking (staking info) → tron-staking (APY estimate) → tron-staking (SR list)
 ```
 
 ### Resource Optimization
 ```
-tron-resource (check status) → tron-resource (estimate cost) → tron-staking (freeze) OR tron-resource (rent)
+tron-resource (check status) → tron-resource (estimate cost) → tron-resource (optimize-cost)
 ```
 
 ---
@@ -265,11 +254,6 @@ export TRONGRID_API_KEY="your-api-key"
 
 # Optional: Switch network (default: mainnet)
 export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
-
-# For signing operations (choose one):
-export TRON_PRIVATE_KEY="your-hex-private-key"
-# or
-export TRON_PRIVATE_KEY_FILE="/path/to/keyfile.txt"
 ```
 
 ### Network Support
@@ -305,7 +289,7 @@ tronlink-skills/
 ├── uninstall.sh                       # Clean uninstall
 │
 ├── scripts/
-│   ├── tron_api.mjs                   # Main CLI (1,248 lines, 41 commands)
+│   ├── tron_api.mjs                   # Main CLI (34 commands, zero dependencies)
 │   └── mcp_server.mjs                 # MCP protocol server wrapper
 │
 ├── skills/                            # Skill definitions (auto-discovered)
@@ -338,8 +322,7 @@ tronlink-skills/
 | Dependency | Required? | Purpose |
 |------------|-----------|---------|
 | Node.js >= 18 | Yes | Runtime (native fetch, crypto) |
-| tronweb ^6.0.0 | Only for signing | send-trx, send-token, staking ops |
-| npm install | Not needed | Read-only operations work without it |
+| npm install | Not needed | All operations work without any npm dependencies |
 
 ---
 
@@ -347,11 +330,8 @@ tronlink-skills/
 
 | Aspect | Implementation |
 |--------|----------------|
-| Private key handling | Environment variables only — never CLI arguments |
-| Key exposure | Never passed as CLI args (visible in `ps`, shell history) |
-| Signing | All signing is local via TronWeb — keys never sent to network |
-| Fund movements | Human-in-the-loop confirmation required |
-| Read operations | Safe — no state changes, no key needed |
+| Read-only design | All commands are queries — no private keys, no signing, no fund movements |
+| No secrets required | Only optional TRONGRID_API_KEY for higher rate limits |
 | Rate limits | Public TronGrid API; use TRONGRID_API_KEY for higher limits |
 
 ---
@@ -369,8 +349,8 @@ Both formats are supported and auto-normalized across all commands:
 
 ## Key Design Decisions
 
-1. **Zero Dependencies by Default** — Read-only operations don't require npm install, making it lightweight and instant for AI agents
-2. **Human-in-the-Loop for Fund Movements** — All transactions that move funds require explicit user confirmation
+1. **Zero Dependencies** — No npm install required, making it lightweight and instant for AI agents
+2. **Read-Only & Safe** — All commands are queries only, no private keys or signing involved
 3. **TRON-Specific Domain Knowledge** — Dedicated skills for Energy/Bandwidth and Stake 2.0, acknowledging TRON's unique architecture
 4. **Multi-Format Address Support** — Handles both Base58Check and hex formats transparently
 5. **Token Symbol Resolution** — Common tokens have built-in shortcuts; unknown contracts work by address

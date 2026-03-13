@@ -1,4 +1,4 @@
-# TronLink Skills 
+# TronLink Skills
 
 ## 概述
 
@@ -7,11 +7,11 @@
 **TronLink Wallet Skills** 是一套 AI Agent 技能集，通过自然语言提供完整的 TRON 区块链钱包和 DeFi 功能。专为 Claude Code、Cursor、OpenCode、Codex CLI 及其他 AI 代理设计。
 
 **核心亮点：**
-- **6 大技能，41 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
-- **零 npm 依赖**：所有只读操作使用原生 Node.js 18+ `fetch` 和 `crypto`
+- **6 大技能，34 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
+- **零 npm 依赖**：使用原生 Node.js 18+ `fetch` 和 `crypto`，无需 `npm install`
 - **TRON 专属领域知识** — 专门处理能量 + 带宽资源模型
 - **多平台支持** — Claude Code、Cursor、OpenCode、Codex CLI、LangChain/CrewAI
-- **人工确认机制**：所有涉及资金移动的操作需用户确认
+- **纯只读安全设计**：所有命令均为查询操作，不涉及私钥或签名
 - **MCP 服务封装**：为结构化 AI 代理集成提供标准接口
 
 ---
@@ -39,9 +39,8 @@ TronLink Skills 以深度 TRON 领域知识填补了这一空白。
 AI 代理 (Claude Code / Cursor / OpenCode / 自定义)
          |
          v
-tron_api.mjs (Node.js 18+, 原生 fetch, 1,248 行)
-    ├── 只读操作零依赖
-    ├── 可选: tronweb 用于签名
+tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
+    ├── 零 npm 依赖
     ├── TronGrid HTTP API（公共或带 API Key）
     └── Tronscan API 用于代币元数据
          |
@@ -53,9 +52,9 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 1,248 行)
 
 ## 6 大技能详解
 
-### 1. tron-wallet（8 个命令）
+### 1. tron-wallet（6 个命令）
 
-钱包管理与基础操作。
+钱包查询与账户信息。
 
 | 命令 | 说明 |
 |------|------|
@@ -65,8 +64,6 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 1,248 行)
 | `tx-history` | 最近交易历史 |
 | `account-info` | 完整账户详情 |
 | `validate-address` | 地址格式验证 |
-| `send-trx` | 转账 TRX（需私钥） |
-| `send-token` | 转账 TRC-20 代币（需私钥） |
 
 **特点：** 同时支持 Base58Check（T...）和 hex 地址格式，内置常用代币符号，自动转换精度。
 
@@ -103,21 +100,19 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 1,248 行)
 
 **特点：** 多 DEX 聚合、智能资金信号检测、K 线分析。
 
-### 4. tron-swap（5 个命令）
+### 4. tron-swap（3 个命令）
 
-DEX 交易与兑换执行。
+DEX 兑换报价与路由优化。
 
 | 命令 | 说明 |
 |------|------|
 | `swap-quote` | 预期产出、价格影响、滑点 |
 | `swap-route` | 跨 SunSwap V2/V3、Sun.io 的最优路径（含多跳） |
-| `swap-approve` | ERC20 风格的代币授权 |
-| `swap-execute` | 执行兑换（需用户确认） |
-| `tx-status` | 追踪兑换交易状态 |
+| `tx-status` | 追踪交易状态 |
 
-**特点：** 聚合多源流动性、估算能量成本、处理多跳路由、强制人工确认。
+**特点：** 聚合多源流动性、估算能量成本、处理多跳路由。
 
-### 5. tron-resource（7 个命令）
+### 5. tron-resource（6 个命令）
 
 能量与带宽管理 — TRON 专属。
 
@@ -127,51 +122,45 @@ DEX 交易与兑换执行。
 | `estimate-energy` | 智能合约调用的能量成本 |
 | `estimate-bandwidth` | 带宽成本（每日免费额度：600） |
 | `energy-price` | 当前每单位能量的 SUN 成本 |
-| `delegate-resource` | 不转账 TRX 即可发送资源给他人 |
 | `energy-rental` | 查询租赁市场选项 |
 | `optimize-cost` | 个性化建议（冻结 vs. 租赁 vs. 燃烧） |
 
 **特点：** 成本优化决策树逻辑、追踪每日免费带宽、计算 TRX 燃烧等值。
 
-### 6. tron-staking（8 个命令）
+### 6. tron-staking（3 个命令）
 
-Stake 2.0 和 SR 投票。
+Stake 2.0 查询与 SR 信息。
 
 | 命令 | 说明 |
 |------|------|
-| `stake-freeze` | 冻结 TRX 获取能量或带宽 |
-| `stake-unfreeze` | 开始 14 天解冻等待期 |
-| `stake-withdraw` | 提取已解冻的 TRX |
-| `vote` | 投票给超级代表（1 冻结 TRX = 1 票） |
-| `claim-rewards` | 领取投票奖励（每 6 小时可领一次） |
 | `sr-list` | SR 列表，含投票数、出块率、APY |
 | `staking-info` | 冻结金额、投票、未领奖励、待解冻 |
 | `staking-apy` | 计算预估年化收益率 |
 
-**特点：** 完整 Stake 2.0 支持、14 天解锁管理、APY 计算、SR 佣金追踪。
+**特点：** Stake 2.0 状态查询、APY 计算、SR 佣金追踪。
 
 ---
 
 ## 推荐技能组合工作流
 
-### 查余额 & 转账
+### 余额与代币查询
 ```
-tron-wallet（查余额）→ tron-resource（估算能量）→ tron-wallet（发送）
-```
-
-### 研究 & 买入
-```
-tron-token（搜索）→ tron-market（价格/K线）→ tron-resource（检查能量）→ tron-swap（执行）
+tron-wallet（查余额）→ tron-wallet（列出代币）→ tron-resource（检查能量状态）
 ```
 
-### 质押流程
+### 研究与兑换报价
 ```
-tron-wallet（查余额）→ tron-staking（冻结）→ tron-staking（投票）→ tron-staking（领奖）
+tron-token（搜索）→ tron-market（价格/K线）→ tron-resource（检查能量）→ tron-swap（获取报价）
+```
+
+### 质押分析
+```
+tron-wallet（查余额）→ tron-staking（质押信息）→ tron-staking（APY 估算）→ tron-staking（SR 列表）
 ```
 
 ### 资源优化
 ```
-tron-resource（检查状态）→ tron-resource（估算成本）→ tron-staking（冻结）或 tron-resource（租赁）
+tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resource（optimize-cost）
 ```
 
 ---
@@ -265,11 +254,6 @@ export TRONGRID_API_KEY="your-api-key"
 
 # 可选：切换网络（默认：mainnet）
 export TRON_NETWORK="mainnet"    # 或 "shasta" / "nile"
-
-# 签名操作（二选一）：
-export TRON_PRIVATE_KEY="你的十六进制私钥"
-# 或
-export TRON_PRIVATE_KEY_FILE="/path/to/keyfile.txt"
 ```
 
 ### 网络支持
@@ -305,7 +289,7 @@ tronlink-skills/
 ├── uninstall.sh                       # 清洁卸载脚本
 │
 ├── scripts/
-│   ├── tron_api.mjs                   # 主 CLI（1,248 行，41 个命令）
+│   ├── tron_api.mjs                   # 主 CLI（34 个命令，零依赖）
 │   └── mcp_server.mjs                 # MCP 协议服务封装
 │
 ├── skills/                            # 技能定义（自动发现）
@@ -338,8 +322,7 @@ tronlink-skills/
 | 依赖 | 是否必需？ | 用途 |
 |------|-----------|------|
 | Node.js >= 18 | 是 | 运行时（原生 fetch、crypto） |
-| tronweb ^6.0.0 | 仅签名操作需要 | send-trx、send-token、质押操作 |
-| npm install | 不需要 | 只读操作无需安装任何依赖 |
+| npm install | 不需要 | 所有操作均无需安装任何 npm 依赖 |
 
 ---
 
@@ -347,11 +330,8 @@ tronlink-skills/
 
 | 方面 | 实现方式 |
 |------|----------|
-| 私钥处理 | 仅通过环境变量传递——绝不作为 CLI 参数 |
-| 密钥暴露 | 不作为 CLI 参数传递（`ps`、shell 历史可见） |
-| 签名方式 | 所有签名通过 TronWeb 在本地完成——密钥不会发送到网络 |
-| 资金操作 | 需人工确认后才执行 |
-| 只读操作 | 安全——无状态变更，无需密钥 |
+| 纯只读设计 | 所有命令均为查询操作——不涉及私钥、签名或资金移动 |
+| 无需密钥 | 仅可选 TRONGRID_API_KEY 用于提高请求频率 |
 | 频率限制 | 公共 TronGrid API；使用 TRONGRID_API_KEY 获取更高限额 |
 
 ---
@@ -369,8 +349,8 @@ tronlink-skills/
 
 ## 关键设计决策
 
-1. **默认零依赖** — 只读操作无需 npm install，对 AI Agent 而言轻量且即时
-2. **资金操作人工确认** — 所有移动资金的交易需要明确的用户确认
+1. **零依赖** — 无需 npm install，对 AI Agent 而言轻量且即时
+2. **纯只读安全设计** — 所有命令均为查询操作，不涉及私钥或签名
 3. **TRON 专属领域知识** — 为能量/带宽和 Stake 2.0 提供专门技能，尊重 TRON 独特架构
 4. **多格式地址支持** — 透明处理 Base58Check 和 hex 两种格式
 5. **代币符号解析** — 常用代币有内置快捷方式；未知合约可直接使用地址
