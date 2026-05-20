@@ -6,7 +6,9 @@
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见[开始开发](getting-started.md)）。
 
-## 代码示例
+## 技术规范
+
+### 代码示例
 
 ```javascript
 const tronweb = window.tron.tronWeb;

@@ -6,7 +6,9 @@ For this section, you may refer to [General Transfer](transfer.en.md)
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
-## Example
+## Specification
+
+### Example
 
 ```javascript
 const tronweb = window.tron.tronWeb;

@@ -16,7 +16,9 @@ It takes 3 steps to initiate a transfer on the TRON network:
 
 In this process, Step 2 requires TronLink while both Step 1 and 3 happen on tronWeb.
 
-## Example
+## Specification
+
+### Example
 
 ```javascript
 const tronweb = window.tron.tronWeb;

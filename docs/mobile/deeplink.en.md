@@ -4,6 +4,12 @@ DApps and H5 pages can launch the TronLink App to open the wallet, log in, make 
 
 ![TronLink App DeepLink overview](../images/tronlink-app_deeplink_img_0.jpg)
 
+<style>
+img {
+  max-width: 100%!important;
+}
+</style>
+
 For every action below, the `param` value of `tronlinkoutside://pull.activity?param={}` is the protocol data in JSON format. Note: the JSON string must be URL-encoded before being placed in the link.
 
 ## Open Wallet

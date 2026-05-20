@@ -6,7 +6,9 @@ DApp requires users to sign a hex message. The signed message will be forwarded 
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
-## Example
+## Specification
+
+### Example
 
 ```javascript
 const tronweb = window.tron.tronWeb;
@@ -15,11 +17,11 @@ try {
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
-## Parameters
+### Parameters
 
 `window.tron.tronWeb.trx.signMessageV2` accepts a hexadecimal string as the parameter. The string represents the content to be signed.
 
-## Returns
+### Returns
 
 If the user chooses to sign in the pop-up window, the DApp will get the signed hexadecimal string. For example:
 

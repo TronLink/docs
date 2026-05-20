@@ -10,6 +10,12 @@ The "__resource" field corresponds to the values "BANDWIDTH" and "ENERGY".
 
 ![image](../images/dapp_stake2.0_img_0.jpg)
 
+<style>
+img {
+  max-width: 100%!important;
+}
+</style>
+
 For example:
 
 ```javascript
