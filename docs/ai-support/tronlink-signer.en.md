@@ -193,6 +193,21 @@ try {
 }
 ```
 
+## Safety & Side Effects
+
+| Side effect | Methods |
+| --- | --- |
+| **Read** (no approval, no state change) | `getBalance`, `waitForTransaction`, `getConfig` |
+| **Sign-only** (produces a signature, no on-chain effect) | `signMessage`, `signTypedData`, `signTransaction` with `broadcast: false` |
+| **Remote Write** (signs + broadcasts on-chain) | `sendTrx`, `sendTrc20`, `signTransaction` with `broadcast: true` |
+| **Connection** (local session) | `connectWallet`, `start`, `stop` |
+
+- **Human-in-the-loop:** `connectWallet` and every signing/Remote Write call require the user to approve on the TronLink approval page — the SDK throws on rejection. Private keys never leave TronLink.
+- **Retry policy:**
+    - Read and Sign-only calls are safe to retry (idempotent, no chain effect).
+    - Remote Write calls must **not** be blindly retried. The SDK throws only when broadcast never happened (signature error, user rejection, network unreachable) — those are safe to retry. But a returned `status: "pending"` means the broadcast may have landed; resending risks a double-spend. Reconcile with `waitForTransaction(txId)` before any retry.
+- **Failure ≠ throw:** an on-chain failure (`OUT_OF_ENERGY`, revert) is reported as `status: "failed"` on the `BroadcastResult`, not thrown — branch on `status`, not on try/catch. See [Broadcast Result](#broadcast-result).
+
 ## How It Works
 
 1. Your code calls a signing method (e.g., `signMessage`)

@@ -193,6 +193,21 @@ try {
 }
 ```
 
+## 安全与副作用
+
+| 副作用 | 方法 |
+| --- | --- |
+| **读取**（无需审批，不改状态） | `getBalance`、`waitForTransaction`、`getConfig` |
+| **仅签名**（产出签名，无链上影响） | `signMessage`、`signTypedData`、`broadcast: false` 的 `signTransaction` |
+| **远程写**（签名 + 链上广播） | `sendTrx`、`sendTrc20`、`broadcast: true` 的 `signTransaction` |
+| **连接**（本地会话） | `connectWallet`、`start`、`stop` |
+
+- **人工确认（HITL）：** `connectWallet` 及每个签名/远程写调用都需要用户在 TronLink 审批页确认——被拒绝时 SDK 会抛错。私钥永不离开 TronLink。
+- **重试策略：**
+    - 读取与仅签名调用可安全重试（幂等，无链上影响）。
+    - 远程写调用**不得**盲目重试。SDK 仅在广播从未发生时抛错（签名错误、用户拒绝、网络不可达）——这些可安全重试。但返回 `status: "pending"` 意味着广播可能已上链,重发有双花风险。重试前请先用 `waitForTransaction(txId)` 对账。
+- **失败 ≠ 抛错：** 链上失败（`OUT_OF_ENERGY`、revert）以 `BroadcastResult` 的 `status: "failed"` 报告,不会抛出——请基于 `status` 分支,而非 try/catch。参见 [Broadcast Result](#broadcast-result)。
+
 ## 工作原理
 
 1. 你的代码调用签名方法（如 `signMessage`）

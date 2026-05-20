@@ -331,8 +331,10 @@ tronlink-skills/
 | Aspect | Implementation |
 |--------|----------------|
 | Read-only design | All commands are queries — no private keys, no signing, no fund movements |
+| Side effects | Every command is **Network Read**: it calls public APIs but changes no state. All commands are safe to retry; no human-in-the-loop confirmation is needed |
 | No secrets required | Only optional TRONGRID_API_KEY for higher rate limits |
 | Rate limits | Public TronGrid API; use TRONGRID_API_KEY for higher limits |
+| Error handling | Failures are query errors: rate limit (retryable, back off), network errors (retryable), invalid address/parameters (not retryable — fix the input). To execute a transaction (transfer, swap, stake), use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md) — these skills never sign or broadcast |
 
 ---
 

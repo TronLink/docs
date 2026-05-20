@@ -331,8 +331,10 @@ tronlink-skills/
 | 方面 | 实现方式 |
 |------|----------|
 | 纯只读设计 | 所有命令均为查询操作——不涉及私钥、签名或资金移动 |
+| 副作用 | 每个命令都是 **Network Read**：调用公共 API,但不改变任何状态。所有命令均可安全重试,无需人工确认（HITL） |
 | 无需密钥 | 仅可选 TRONGRID_API_KEY 用于提高请求频率 |
 | 频率限制 | 公共 TronGrid API；使用 TRONGRID_API_KEY 获取更高限额 |
+| 错误处理 | 失败均为查询类错误：限流（可重试,需退避）、网络错误（可重试）、地址/参数非法（不可重试——修正输入）。如需执行交易（转账、兑换、质押）,请使用 [signer SDK](tronlink-signer.md) 或 [MCP Server TronLink](mcp-server-tronlink.md)——这些技能本身从不签名或广播 |
 
 ---
 
