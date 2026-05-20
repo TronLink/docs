@@ -6,7 +6,7 @@ This document will guide you to connect your DApp with the TronLink application 
 
   2. If the user has not been connected to this DApp before, a request can be invoked to establish the connection before getting tronLink.tronWeb.
 
-```shell  
+```javascript
     async function getTronWeb() {
       let tronWeb;
       if (window.tronLink.ready) {
