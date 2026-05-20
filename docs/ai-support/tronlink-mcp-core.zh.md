@@ -11,7 +11,7 @@
 - **52 预定义工具处理器**，使用 Zod 验证 Schema
 - 内置 Knowledge Store，支持跨会话学习和步骤回放
 - Flow Recipe 系统，将多步骤工作流程模板化
-- 标准化响应格式，25+ 错误码
+- 标准化响应格式 + 结构化错误码表（`code` / `retryable` / `hint`）
 - 双模支持：Playwright（UI 自动化）+ Direct API（链上操作）
 
 ---
@@ -310,13 +310,50 @@ getContextInfo(): ContextInfo
 {
   ok: false,
   error: {
-    code: "TL_CLICK_FAILED",       // 25+ 错误码之一
+    code: "TL_CLICK_FAILED",       // 稳定错误码 — 见下表
     message: "Element not found",
+    retryable: false,              // 给 agent 的显式提示
+    hint: "重新生成可达性快照并用新的 a11yRef 重试。",
     details: { /* 可选 */ }
   },
-  meta: { timestamp, sessionId, durationMs }
+  meta: { timestamp, sessionId, durationMs, schemaVersion: "1.0" }
 }
 ```
+
+### 错误码
+
+这是本框架所有工具返回错误码的**唯一数据源**（SSOT）。下游 server（`mcp-server-tronlink`、`mcp-tronlink-signer`）继承这些错误码并可扩展自有错误码。`retryable` 反映框架层面的安全性，agent 仍**必须**叠加调用工具的副作用分级——无论 `retryable` 为何，**结果未确认的 Remote Write 绝不能自动重试**。
+
+| 错误码 | Retryable | Hint | 典型触发 |
+|---|:---:|---|---|
+| `TL_BUILD_FAILED` | false | 检查 build 日志，修正源码/配置后再试。 | 启用 `BuildCapability` 时的 `tl_launch` |
+| `TL_SESSION_ALREADY_RUNNING` | false | 先调用 `tl_cleanup` 再启动新会话。 | 已有 session 时再次 `tl_launch` |
+| `TL_NO_ACTIVE_SESSION` | false | 先调用 `tl_launch`。 | 任何需要 session 的工具，但 session 不存在 |
+| `TL_LAUNCH_FAILED` | true | 浏览器/扩展启动暂时失败；可重试一次。 | `tl_launch` |
+| `TL_INVALID_INPUT` | false | 修正参数后再试，禁止用相同 payload 重发。 | Zod schema 校验失败 |
+| `TL_NAVIGATION_FAILED` | true | 页面可能仍在过渡；等待目标屏出现后重试。 | `tl_navigate`、`tl_switch_to_tab` |
+| `TL_TARGET_NOT_FOUND` | false | 用 `tl_accessibility_snapshot` 刷新 ref 后重试。 | `tl_click`、`tl_type`、`tl_wait_for` |
+| `TL_CLICK_FAILED` | true | 元素可能已重渲染；刷新 ref 后重试一次。 | `tl_click` |
+| `TL_TYPE_FAILED` | true | 同 click——刷新 ref 后重试一次。 | `tl_type` |
+| `TL_WAIT_TIMEOUT` | true | 提高超时或换一个 selector。 | `tl_wait_for`、`tl_wait_for_notification` |
+| `TL_SCREENSHOT_FAILED` | true | 偶发故障；可重试。 | `tl_screenshot`、`tl_describe_screen` |
+| `TL_CAPABILITY_NOT_AVAILABLE` | false | 当前 session 未注入该 capability；重配后重启。 | 依赖可选 capability 的工具 |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid 暂时不可用或限流；退避后重试。 | `tl_chain_get_*` |
+| `TL_CHAIN_SEND_FAILED` | false | **禁止**自动重试。先用 `tl_chain_get_tx` 确认上一笔是否落账。 | `tl_chain_send`、`tl_chain_stake`、`tl_chain_resource` |
+| `TL_CHAIN_SWAP_FAILED` | false | 同上——重试前必须确认前一笔未落账。 | `tl_chain_swap`、`tl_chain_swap_v3` |
+| `TL_GASFREE_QUERY_FAILED` | true | 偶发故障；可重试。 | `tl_gasfree_get_account`、`tl_gasfree_get_transactions` |
+| `TL_GASFREE_SEND_FAILED` | false | **禁止**自动重试；先向 GasFree 查询最新状态。 | `tl_gasfree_send` |
+| `TL_MULTISIG_QUERY_FAILED` | true | 偶发故障；可重试。 | `tl_multisig_query_auth`、`tl_multisig_list_tx` |
+| `TL_MULTISIG_SUBMIT_FAILED` | false | **禁止**自动重试；请求可能已被接受。 | `tl_multisig_submit_tx` |
+| `TL_MULTISIG_WS_FAILED` | true | 重新连接 WebSocket。 | `tl_multisig_connect_ws` |
+| `TL_INTERNAL_ERROR` | true | 框架通用错误；重试一次后带日志上报。 | 任意工具 |
+
+下游 server 扩展自定义错误码必须满足：
+
+- 不复用上表错误码表达不同含义。
+- 每个新错误码必须声明 `retryable`。
+- major 版本内含义稳定。
+- 新错误码在使用方文档说明，禁止悄悄引入。
 
 ---
 

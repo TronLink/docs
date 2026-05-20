@@ -277,28 +277,32 @@ Read commands return the queried data (balances, resources, etc.) under the same
 
 ## Exit Codes
 
-| Exit code | Meaning |
-| --------- | ------- |
-| `0` | Success — query returned, or transaction signed/broadcast |
-| non-zero | Failure — invalid input, user rejection, signing timeout, or broadcast/on-chain failure |
+The CLI exits with one of these stable codes so an automation script can branch on failure class without parsing prose. In `--json` mode the same classification appears in the output as well.
 
-In `--json` mode the failure reason is also included in the output.
+| Exit code | Class | Meaning | Retryable |
+| :---: | --- | --- | :---: |
+| `0` | Success | Query returned, or transaction signed and broadcast | n/a |
+| `1` | Invalid input | Validation failed before any wallet interaction (see [Input Validation](#input-validation)) | No — fix the input |
+| `2` | User rejected | User clicked Reject on the TronLink approval page | No — user declined |
+| `3` | Signing timeout | No approval within `--timeout <ms>` (default 5 min) | Yes — but **not** for a broadcast that may already be in flight |
+| `4` | On-chain failure | Broadcast succeeded but execution failed (`OUT_OF_ENERGY`, `REVERT`, `FAILED`) | No — the tx is final; address the root cause |
+| `5` | Network error | TronGrid / RPC request failed (transient) | Yes — transient; for write commands, confirm the previous tx didn't land first |
+
+> **Retry policy.** Read commands (any `balance` / `resource` / `--constant trigger`) are always safe to retry. For write/signing commands (transfer, stake, delegate, vote, writeable trigger), do **not** auto-retry after a submitted-but-uncertain result — re-issuing re-opens the signing prompt and may double-submit. Re-issue only after confirming the previous tx did not land (via explorer or `balance`).
 
 ## Errors
 
-Errors surface as a human-readable message and, in `--json` mode, in the output. The conditions the CLI reports:
+The error class an agent should branch on is given by the exit code above. The table below maps the conditions the CLI surfaces (in stderr and in `--json` output) to that class:
 
-| Condition | When | Retryable |
-| --- | --- | --- |
-| Invalid input | Validation fails before any wallet interaction (see [Input Validation](#input-validation)) | No — fix the input |
-| User rejected | The user clicks Reject on the TronLink approval page | No — the user declined |
-| Signing timeout | No approval within the timeout (default 5 min; `--timeout <ms>`) | Yes — re-issue the command |
-| `OUT_OF_ENERGY` | The account lacks Energy to execute the contract | No — obtain Energy first, then retry |
-| `REVERT` | The contract call reverted on-chain | No — the call itself failed |
-| `FAILED` | The transaction failed on-chain for another reason | Depends — inspect the reason |
-| Network error | A TronGrid / RPC request failed | Yes — transient |
-
-> **Retry policy:** read commands are always safe to retry. Write/signing commands must **not** be retried automatically after a submitted-but-uncertain result — re-issuing re-opens a signing prompt and may double-submit. Retry only after confirming the previous transaction did not land.
+| Condition | Exit code |
+| --- | :---: |
+| Argument parse / type / range failure | `1` |
+| User clicks Reject in TronLink | `2` |
+| `--timeout` elapsed without an approval | `3` |
+| `OUT_OF_ENERGY` returned by the node | `4` |
+| `REVERT` (Solidity revert) | `4` |
+| `FAILED` (other on-chain failure) | `4` |
+| TronGrid / RPC unreachable, 5xx, timeout | `5` |
 
 ## Safety & Side Effects
 

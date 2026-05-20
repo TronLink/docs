@@ -11,7 +11,7 @@
 - **52 pre-defined tool handlers** with Zod-validated schemas
 - Built-in Knowledge Store for cross-session learning and step replay
 - Flow Recipe system for codifying multi-step workflows
-- Standardized response format with 25+ error codes
+- Standardized response format with a documented error-code table (`code` / `retryable` / `hint`)
 - Dual-mode support: Playwright (UI automation) + Direct API (on-chain)
 
 ---
@@ -383,15 +383,50 @@ All tools return a consistent structure:
 {
   ok: false,
   error: {
-    code: "TL_CLICK_FAILED",       // One of 25+ error codes
+    code: "TL_CLICK_FAILED",       // stable code — see table below
     message: "Element not found",
+    retryable: false,              // explicit hint for agents
+    hint: "Re-snapshot the page and retry with a fresh a11yRef.",
     details: { /* optional */ }
   },
-  meta: { timestamp, sessionId, durationMs }
+  meta: { timestamp, sessionId, durationMs, schemaVersion: "1.0" }
 }
 ```
 
-**25+ Error Codes:** `TL_BUILD_FAILED`, `TL_SESSION_ALREADY_RUNNING`, `TL_NO_ACTIVE_SESSION`, `TL_LAUNCH_FAILED`, `TL_INVALID_INPUT`, `TL_NAVIGATION_FAILED`, `TL_TARGET_NOT_FOUND`, `TL_CLICK_FAILED`, `TL_TYPE_FAILED`, `TL_WAIT_TIMEOUT`, `TL_SCREENSHOT_FAILED`, `TL_CAPABILITY_NOT_AVAILABLE`, `TL_CHAIN_QUERY_FAILED`, `TL_CHAIN_SEND_FAILED`, `TL_CHAIN_SWAP_FAILED`, `TL_GASFREE_QUERY_FAILED`, `TL_GASFREE_SEND_FAILED`, `TL_MULTISIG_QUERY_FAILED`, `TL_MULTISIG_SUBMIT_FAILED`, `TL_MULTISIG_WS_FAILED`, `TL_INTERNAL_ERROR`, etc.
+### Error Codes
+
+This is the single source of truth (SSOT) for error codes returned by every tool in this framework. Downstream servers (`mcp-server-tronlink`, `mcp-tronlink-signer`) inherit these codes and may extend them. `retryable` reflects framework-level safety; an agent **must** still apply the side-effect classification of the calling tool — never auto-retry a Remote Write whose outcome is unknown, regardless of `retryable`.
+
+| Code | Retryable | Hint | Typical trigger |
+|------|:---:|------|-----------------|
+| `TL_BUILD_FAILED` | false | Inspect build logs; fix source/config before retrying. | `tl_launch` with `BuildCapability` enabled |
+| `TL_SESSION_ALREADY_RUNNING` | false | Call `tl_cleanup` before launching a new session. | `tl_launch` while a session is active |
+| `TL_NO_ACTIVE_SESSION` | false | Call `tl_launch` first. | Any session-bound tool without a session |
+| `TL_LAUNCH_FAILED` | true | Transient browser/extension boot failure; retry once. | `tl_launch` |
+| `TL_INVALID_INPUT` | false | Fix the arguments; do not retry with the same payload. | Zod schema validation |
+| `TL_NAVIGATION_FAILED` | true | Page may still be transitioning; wait for the target screen and retry. | `tl_navigate`, `tl_switch_to_tab` |
+| `TL_TARGET_NOT_FOUND` | false | Refresh refs via `tl_accessibility_snapshot` and retry with a fresh ref. | `tl_click`, `tl_type`, `tl_wait_for` |
+| `TL_CLICK_FAILED` | true | Element may have re-rendered; refresh refs and retry once. | `tl_click` |
+| `TL_TYPE_FAILED` | true | Same as click — refresh refs and retry once. | `tl_type` |
+| `TL_WAIT_TIMEOUT` | true | Increase the timeout or wait on a different selector. | `tl_wait_for`, `tl_wait_for_notification` |
+| `TL_SCREENSHOT_FAILED` | true | Transient; retry. | `tl_screenshot`, `tl_describe_screen` |
+| `TL_CAPABILITY_NOT_AVAILABLE` | false | The session was launched without this capability; reconfigure and relaunch. | Any tool that requires an optional capability |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid transient or rate-limited; back off and retry. | `tl_chain_get_*` |
+| `TL_CHAIN_SEND_FAILED` | false | Do **not** auto-retry. Verify on-chain state with `tl_chain_get_tx` before re-issuing. | `tl_chain_send`, `tl_chain_stake`, `tl_chain_resource` |
+| `TL_CHAIN_SWAP_FAILED` | false | Same as send — confirm the previous tx did not land before retrying. | `tl_chain_swap`, `tl_chain_swap_v3` |
+| `TL_GASFREE_QUERY_FAILED` | true | Transient; retry. | `tl_gasfree_get_account`, `tl_gasfree_get_transactions` |
+| `TL_GASFREE_SEND_FAILED` | false | Do **not** auto-retry; query the GasFree service for the latest status. | `tl_gasfree_send` |
+| `TL_MULTISIG_QUERY_FAILED` | true | Transient; retry. | `tl_multisig_query_auth`, `tl_multisig_list_tx` |
+| `TL_MULTISIG_SUBMIT_FAILED` | false | Do **not** auto-retry; the request may already have been accepted. | `tl_multisig_submit_tx` |
+| `TL_MULTISIG_WS_FAILED` | true | Reconnect the WebSocket. | `tl_multisig_connect_ws` |
+| `TL_INTERNAL_ERROR` | true | Generic framework failure; retry once and escalate with logs. | Any tool |
+
+Custom codes added by downstream servers must follow these rules:
+
+- Never reuse a code listed above with a different meaning.
+- `retryable` is required for every new code.
+- Meaning is stable within a major version.
+- New codes are documented in the consuming server's docs, not silently introduced.
 
 ---
 
