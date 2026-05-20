@@ -4,26 +4,22 @@
 
 DApp requires users to sign a hex message. The signed message will be forwarded to the back-end to verify whether a user's login is legitimate.
 
-**Prerequisite**
-
-The DApp sends a request asking the user to connect the wallet to the website, and the user approves to the connection.
+> **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
 **Specification**
 
 **Example**
-```shell
-    
-    if (window.tronLink.ready) {
-      const tronweb = tronLink.tronWeb;
-      try {
-        const message = "0x1e"; // any hex string
-        const signedString = await tronweb.trx.signMessageV2(message);
-      } catch (e) {}
-    }
+
+```javascript
+const tronweb = window.tron.tronWeb;
+try {
+  const message = "0x1e"; // any hex string
+  const signedString = await tronweb.trx.signMessageV2(message);
+} catch (e) {}
 ```
 **Parameters**
 
-“tronLink.tronWeb.trx.signMessageV2” accepts a hexadecimal string as the parameter. The string represents the content to be signed.
+`window.tron.tronWeb.trx.signMessageV2` accepts a hexadecimal string as the parameter. The string represents the content to be signed.
 
 **Returns**
 
@@ -44,7 +40,7 @@ If an error occurs, the following information will be returned:
 
 When “tronweb.trx.signMessageV2(message);” is executed, a pop-up window will show in the TronLink wallet asking the user to confirm, as shown below. The message content will be in hex: 
 
-![image](../images/dapp_message-signature_img_0.jpg)
+![image](../images/plugin-wallet_sign_message.jpg)
 
 If the user chooses “Reject” in the pop-up window, an exception will be thrown, which the developer can catch for further processing.
 
