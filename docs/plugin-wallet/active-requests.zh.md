@@ -1,26 +1,26 @@
 # 主动请求TronLink插件功能
 
-### 连接网站 TIP-1102
+## 连接网站 TIP-1102
 
-#### 简介
+### 简介
 TronLink 可用于管理钱包私钥，DApp 在进行一些需签名的操作前，需要连接 TronLink，并通过 TronLink 获取用户签名授权。此协议在于显式地告知用户 DApp 主动连接 TronLink 的行为，并获取用户的授权同意。
 此方法遵循以太坊 EIP-1102 协议。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```javascript
 try {
   await window.tron.request({method: 'eth_requestAccounts'});
 } catch (e) {}
 ```
-##### 返回值
+#### 返回值
 
 如果成功，返回一个数组，数组只有一个元素，为同意连接的当前 TronLink 账户。如：
 `['TMVQGm1qAQYVdetCeGRRkTWYYrLXuHK2HC']`。
 
 如果失败，则会返回错误码及报错信息。详见“错误码”部分。
 
-##### 错误码
+#### 错误码
 |  错误码   | 名称  | 描述 |
 |  ----  | ----  | ---- |
 | 4001  | 用户拒绝请求 | 用户通过点击“拒绝”按钮，或关闭弹窗，都会触发该错误码 |
@@ -28,7 +28,7 @@ try {
 | -32602  | 参数不合规 | 传入的参数不合规，或者传入了额外的参数 |
 | 4200  | 不支持此方法 | 不支持此方法 |
 
-#### 交互流程
+### 交互流程
 触发 `eth_requestAccounts` 之后，如果 TronLink 处于锁屏状态，会弹出锁屏弹窗：
 
 ![image](../images/zh_plugin-wallet_lock-page.png)
@@ -40,12 +40,12 @@ try {
 > **旧版用法（不推荐）：** [兼容用法：tron_requestAccounts](#tron_requestaccounts)
 
 
-### 获取TronLink的provider TIP-6963
+## 获取TronLink的provider TIP-6963
 
-#### 简介
+### 简介
 当多个钱包同时存在，会出现对 `window.tron` 对象的抢占行为。为了保证 DApp 可以获取到特定钱包的 provider，所以实现 TIP-6963 规范。
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 interface TIP1193Provider {
   request: (args: RequestArguments) => Promise<unknown>;
@@ -103,11 +103,11 @@ window.dispatchEvent(new Event("TIP6963:requestProvider"));
 DApp 按照上述代码实现后，可以精准获取到 TronLink 提供的 provider。
 TronLink 的 rdns 是 `org.tronlink.www`，name 是 `TronLink`。
 
-### 普通转账 sendTrx
+## 普通转账 sendTrx
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见上方 [连接网站 TIP-1102](#tip-1102)）。
 
-#### 简介
+### 简介
 DApp 需要用户发起一笔 TRX 转账。
 
 波场网络上发起转账需要 3 个步骤：
@@ -117,8 +117,8 @@ DApp 需要用户发起一笔 TRX 转账。
 3. 对签名后的交易进行广播
 
 在这里，TronLink 介入的是第 2 步签名的部分，1、3 两步需要开发者使用 tronWeb 完成。
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 const tronweb = window.tron.tronWeb;
 const fromAddress = tronweb.defaultAddress.base58;
@@ -141,15 +141,15 @@ try {
 > **旧版用法（不推荐）：** [兼容用法：sendTrx（window.tronLink）](#sendtrxwindowtronlink)
 
 
-### 多签转账 multiSign
+## 多签转账 multiSign
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见上方 [连接网站 TIP-1102](#tip-1102)）。
 
-#### 简介
+### 简介
 此处可参考 [普通转账 sendTrx](#sendtrx)。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
@@ -171,15 +171,15 @@ try {
 > **旧版用法（不推荐）：** [兼容用法：multiSign（window.tronLink）](#multisignwindowtronlink)
 
 
-### 消息签名 signMessageV2
+## 消息签名 signMessageV2
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见上方 [连接网站 TIP-1102](#tip-1102)）。
 
-#### 简介
+### 简介
 DApp 需要用户对一个 hex 消息签名，签名后消息转发给后端进行验签，以此判断用户合法登录。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 const tronweb = window.tron.tronWeb;
 try {
@@ -187,10 +187,10 @@ try {
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
-##### 参数
+#### 参数
 `window.tron.tronWeb.trx.signMessageV2` 接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容。
 
-##### 返回值
+#### 返回值
 如果用户在弹窗中选择签名，DApp 可以得到签名后的十六进制字符串，比如：
 ```
 0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
@@ -201,7 +201,7 @@ Uncaught (in promise) Invalid transaction provided
 ```
 
 
-#### 交互流程
+### 交互流程
 
 当代码执行到 `await tronweb.trx.signMessageV2(message);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图，其中消息内容会以 hex 的方式展示：
 
@@ -212,16 +212,16 @@ Uncaught (in promise) Invalid transaction provided
 > **旧版用法（不推荐）：** [兼容用法：signMessageV2（window.tronLink）](#signmessagev2windowtronlink)
 
 
-### 添加资产 wallet_watchAsset
+## 添加资产 wallet_watchAsset
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见上方 [连接网站 TIP-1102](#tip-1102)）。
 
-#### 简介
+### 简介
 DApp 提供按钮给用户，直接将指定的 Token 添加到用户插件的资产展示列表中。
 
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 const res = await window.tron.request({
   method: 'wallet_watchAsset',
@@ -234,7 +234,7 @@ const res = await window.tron.request({
 });
 ```
 
-##### 参数
+#### 参数
 ```typescript
 interface WatchAssetParams {
   type: 'trc10' | 'trc20' | 'trc721';
@@ -256,11 +256,11 @@ interface WatchAssetParams {
     * image: 占位（目前未使用），可选
 
 
-##### 返回值
+#### 返回值
 此方法没有返回值。
 
-#### 交互流程
-##### 添加 TRC10 资产
+### 交互流程
+#### 添加 TRC10 资产
 ```typescript
 await window.tron.request({
   method: 'wallet_watchAsset',
@@ -283,7 +283,7 @@ await window.tron.request({
 
 
 
-##### 添加 TRC20 资产
+#### 添加 TRC20 资产
 ```typescript
 await window.tron.request({
   method: 'wallet_watchAsset',
@@ -304,7 +304,7 @@ await window.tron.request({
 
 ![image](../images/zh_plugin-wallet_add_trc20_success.png)
 
-##### 添加 TRC721 资产
+#### 添加 TRC721 资产
 ```typescript
 await window.tron.request({
   method: 'wallet_watchAsset',
@@ -328,15 +328,15 @@ await window.tron.request({
 > **旧版用法（不推荐）：** [兼容用法：wallet_watchAsset（window.tronLink）](#wallet_watchassetwindowtronlink)
 
 
-### 切换网络 TIP-3326
+## 切换网络 TIP-3326
 
-#### 简介
+### 简介
 大部分 DApp 都会在特定的链上提供服务。DApp 可以通过调用本协议，告诉 TronLink 期望使用的链，TronLink 会弹出弹窗告知用户即将切换的链，用户可以选择是否同意切换。
 在用户同意切换后，DApp 可以基于目标链，提供正常的 DApp 服务。
 本协议遵循以太坊 EIP-3326 协议。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```javascript
 try {
   await window.tron.request({
@@ -345,7 +345,7 @@ try {
   });
 } catch (e) {}
 ```
-##### 参数
+#### 参数
 params 接受一个只有单一元素的数组，单一元素为 `SwitchTronChainParameter` 类型：
 ```typescript
 interface SwitchTronChainParameter {
@@ -359,11 +359,11 @@ interface SwitchTronChainParameter {
 - chainId 的值大小写敏感。
 
 
-##### 返回值
+#### 返回值
 如果成功，返回 null。
 如果失败，则会返回错误码及报错信息。详见“错误码”部分。
 
-##### 错误码
+#### 错误码
 |  错误码   | 名称  | 描述 |
 |  ----  | ----  | ---- |
 | 4001  | 用户拒绝请求 | 用户通过点击“拒绝”按钮，或关闭弹窗，都会触发该错误码 |
@@ -373,7 +373,7 @@ interface SwitchTronChainParameter {
 | 4200  | 不支持此方法 | 不支持此方法 |
 
 
-#### 交互流程
+### 交互流程
 触发 `wallet_switchEthereumChain` 之后，如果 TronLink 处于锁屏状态，会弹出锁屏弹窗：
 
 ![image](../images/zh_plugin-wallet_lock-page.png)
@@ -391,14 +391,14 @@ interface SwitchTronChainParameter {
 
 下列接口作为兼容别名保留，新接入请使用上方推荐用法。`window.tronLink` 与 `window.tron` 在功能上等价，但前者将逐步不再维护。
 
-### 兼容用法：tron_requestAccounts
+## 兼容用法：tron_requestAccounts
 
-#### 简介
+### 简介
 TronLink 提供外部发起 TRX 转账、合约签名、授权等功能。基于安全的考虑，需要用户在关键操作前先对发起请求的 DApp 进行【连接网站】授权，在授权成功后才允许操作。
 所以 DApp 要先进行【连接网站】操作，等待用户允许后，方能发起需要授权的请求。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 const res = await tronWeb.request(
   {
@@ -411,7 +411,7 @@ const res = await tronWeb.request(
 );
 ```
 
-##### 参数
+#### 参数
 ```typescript
 interface RequestAccountsParams {
   websiteIcon?: string;
@@ -424,7 +424,7 @@ interface RequestAccountsParams {
     * websiteName: DApp 网站名称
 
 
-##### 返回值
+#### 返回值
 类型说明：
 ```typescript
 interface ReqestAccountsResponse {
@@ -442,7 +442,7 @@ interface ReqestAccountsResponse {
 | 4001  | 用户拒绝连接 | User rejected the request |
 
 
-### 兼容用法：sendTrx（window.tronLink）
+## 兼容用法：sendTrx（window.tronLink）
 
 ```typescript
 if (window.tronLink.ready) {
@@ -458,7 +458,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### 兼容用法：multiSign（window.tronLink）
+## 兼容用法：multiSign（window.tronLink）
 
 ```typescript
 if (window.tronLink.ready) {
@@ -477,7 +477,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### 兼容用法：signMessageV2（window.tronLink）
+## 兼容用法：signMessageV2（window.tronLink）
 
 ```typescript
 if (window.tronLink.ready) {
@@ -490,7 +490,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### 兼容用法：wallet_watchAsset（window.tronLink）
+## 兼容用法：wallet_watchAsset（window.tronLink）
 
 ```typescript
 // 添加 TRC10
@@ -537,7 +537,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### 兼容用法：wallet_switchEthereumChain（tronLink.request）
+## 兼容用法：wallet_switchEthereumChain（tronLink.request）
 
 ```javascript
 try {

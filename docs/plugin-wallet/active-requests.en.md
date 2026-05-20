@@ -1,16 +1,16 @@
 # Proactively Request TronLink Plugin Features
 
-### Connect Website TIP-1102
+## Connect Website TIP-1102
 
-#### Overview
+### Overview
 
 TronLink can be used to manage wallet private keys.  Before performing operations that require signatures, a DApp must connect to TronLink and obtain user signature authorization through TronLink. This protocol explicitly informs users that the DApp is proactively requesting a TronLink connection and requests their authorization consent.
 
 This method follows the Ethereum **EIP-1102** protocol.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```javascript
 try {
@@ -18,7 +18,7 @@ try {
 } catch (e) {}
 ```
 
-##### Return Value
+#### Return Value
 
 If successful, an array is returned with a single element — the currently approved TronLink account. Example:
 
@@ -26,7 +26,7 @@ If successful, an array is returned with a single element — the currently appr
 
 If it fails, an error code and error message will be returned. See the **Error Codes** section below.
 
-##### Error Codes
+#### Error Codes
 
 | Error Code | Name | Description |
 | - | - | - |
@@ -35,7 +35,7 @@ If it fails, an error code and error message will be returned. See the **Error C
 | -32602 | Invalid parameters | Invalid or extra parameters were provided |
 | 4200 | Method not supported | This method is not supported |
 
-#### Interaction Flow
+### Interaction Flow
 
 After triggering `eth_requestAccounts`, if TronLink is locked, an unlock popup appears:
 
@@ -48,15 +48,15 @@ After unlocking, or if already unlocked, a connection confirmation popup appears
 > **Legacy (not recommended):** [Legacy: tron_requestAccounts](#legacy-tron_requestaccounts)
 
 
-### Get TronLink Provider via TIP-6963
+## Get TronLink Provider via TIP-6963
 
-#### Introduction
+### Introduction
 
 When multiple wallets exist simultaneously, they may compete to occupy the `window.tron` object. To ensure that a DApp can obtain a specific wallet provider, the TIP-6963 specification is implemented.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 interface TIP1193Provider {
@@ -114,11 +114,11 @@ window.dispatchEvent(new Event("TIP6963:requestProvider"));
 ```
 After implementing the above code, the DApp can precisely obtain the provider supplied by TronLink. TronLink’s rdns is `org.tronlink.www`, and its name is `TronLink`.
 
-### Normal Transfer
+## Normal Transfer
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Connect Website TIP-1102](#connect-website-tip-1102) above).
 
-#### Overview
+### Overview
 
 A DApp needs the user to initiate a TRX transfer.
 
@@ -130,9 +130,9 @@ A transfer on the TRON network requires three steps:
 
 TronLink handles **step 2 (signing)**, while steps 1 and 3 must be completed using TronWeb.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 const tronweb = window.tron.tronWeb;
@@ -156,17 +156,17 @@ Sign → signed transaction returned for broadcasting.
 > **Legacy (not recommended):** [Legacy: sendTrx via window.tronLink](#legacy-sendtrx-via-windowtronlink)
 
 
-### Multi-Signature Transfer
+## Multi-Signature Transfer
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Connect Website TIP-1102](#connect-website-tip-1102) above).
 
-#### Overview
+### Overview
 
 Refer to **Normal Transfer** above.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 const tronweb = window.tron.tronWeb;
@@ -189,18 +189,18 @@ Rejecting triggers an exception; signing returns the signed transaction for broa
 > **Legacy (not recommended):** [Legacy: multiSign via window.tronLink](#legacy-multisign-via-windowtronlink)
 
 
-### Message Signing
+## Message Signing
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Connect Website TIP-1102](#connect-website-tip-1102) above).
 
-#### Overview
+### Overview
 
 A DApp may require users to sign a hex message.
 The signed message is then sent to the backend for verification to authenticate user login.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 const tronweb = window.tron.tronWeb;
@@ -211,11 +211,11 @@ try {
 } catch (e) {}
 ```
 
-##### Parameter
+#### Parameter
 
 `window.tron.tronWeb.trx.signMessageV2` accepts a hexadecimal string representing the message to sign.
 
-##### Return Value
+#### Return Value
 
 If signed successfully:
 
@@ -229,7 +229,7 @@ If an error occurs:
 Uncaught (in promise) Invalid transaction provided
 ```
 
-#### Interaction Flow
+### Interaction Flow
 
 When executing signing, TronLink shows a confirmation popup with the hex message.
 
@@ -241,17 +241,17 @@ Sign → signed message returned.
 > **Legacy (not recommended):** [Legacy: signMessageV2 via window.tronLink](#legacy-signmessagev2-via-windowtronlink)
 
 
-### Add Asset
+## Add Asset
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Connect Website TIP-1102](#connect-website-tip-1102) above).
 
-#### Overview
+### Overview
 
 A DApp can provide a button allowing users to directly add a token to their TronLink asset list.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 const res = await window.tron.request({
@@ -265,7 +265,7 @@ const res = await window.tron.request({
 });
 ```
 
-##### Parameters
+#### Parameters
 
 ```typescript
 interface WatchAssetParams {
@@ -283,13 +283,13 @@ interface WatchAssetParams {
 - **type:** `trc10`, `trc20`, `trc721`
 - **address:** token contract address or token ID (required)
 
-##### Return Value
+#### Return Value
 
 No return value.
 
-#### Interaction Flow
+### Interaction Flow
 
-##### Add TRC10
+#### Add TRC10
 
 ```typescript
 await window.tron.request({
@@ -308,7 +308,7 @@ Click the “Add” button and the asset will be added to the asset list, as sho
 
 ![image](../images/plugin-wallet_add_trc10_success.jpg)
 
-##### Add TRC20
+#### Add TRC20
 
 ```typescript
 await window.tron.request({
@@ -328,7 +328,7 @@ Click the “Add” button and the asset will be added to the asset list, as sho
 
 ![image](../images/plugin-wallet_add_trc20_success.jpg)
 
-##### Add TRC721
+#### Add TRC721
 
 ```typescript
 await window.tron.request({
@@ -351,9 +351,9 @@ Click the “Add” button and the asset will be added to the asset list, as sho
 > **Legacy (not recommended):** [Legacy: wallet_watchAsset via window.tronLink](#legacy-wallet_watchasset-via-windowtronlink)
 
 
-### Switch Network TIP-3326
+## Switch Network TIP-3326
 
-#### Overview
+### Overview
 
 Most DApps operate on specific chains.
 This protocol allows a DApp to request TronLink to switch chains, with user confirmation.
@@ -362,9 +362,9 @@ After approval, the DApp can operate normally on that chain.
 
 This protocol follows **EIP-3326**.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```javascript
 try {
@@ -375,7 +375,7 @@ try {
 } catch (e) {}
 ```
 
-##### Parameters
+#### Parameters
 
 ```typescript
 interface SwitchTronChainParameter {
@@ -389,12 +389,12 @@ Supported chain IDs:
 - Shasta Testnet: `0x94a9059e`
 - Nile Testnet: `0xcd8690dc`
 
-##### Return Value
+#### Return Value
 
 - Success → `null`
 - Failure → error code + message
 
-##### Error Codes
+#### Error Codes
 
 | Error Code | Name | Description |
 | - | - | - |
@@ -404,7 +404,7 @@ Supported chain IDs:
 | -32602 | Invalid parameters |
 | 4200 | Method not supported |
 
-#### Interaction Flow
+### Interaction Flow
 
 Triggering the request shows an unlock popup if TronLink is locked, then a network switch confirmation popup after unlocking.
 
@@ -421,18 +421,18 @@ Triggering the request shows an unlock popup if TronLink is locked, then a netwo
 
 The following interfaces are retained as compatibility aliases. New integrations should use the recommended usage above. `window.tronLink` and `window.tron` are functionally equivalent, but the former is being phased out and is no longer actively maintained.
 
-### Legacy: tron_requestAccounts
+## Legacy: tron_requestAccounts
 
-#### Overview
+### Overview
 
 TronLink provides external TRX transfer, contract signing, authorization, and other functions.
 For security reasons, users must first authorize the requesting DApp via **Connect Website** before critical operations are allowed.
 
 Therefore, the DApp must perform the **Connect Website** request first and wait for user approval before initiating operations requiring authorization.
 
-#### Technical Specification
+### Technical Specification
 
-##### Code Example
+#### Code Example
 
 ```typescript
 const res = await tronWeb.request(
@@ -446,7 +446,7 @@ const res = await tronWeb.request(
 );
 ```
 
-##### Parameters
+#### Parameters
 
 ```typescript
 interface RequestAccountsParams {
@@ -460,7 +460,7 @@ interface RequestAccountsParams {
   - `websiteIcon`: DApp website icon URI (displayed in connected site list)
   - `websiteName`: DApp website name
 
-##### Return Value
+#### Return Value
 
 ```typescript
 interface ReqestAccountsResponse {
@@ -478,7 +478,7 @@ interface ReqestAccountsResponse {
 | 4001 | User rejected connection | User rejected the request |
 
 
-### Legacy: sendTrx via window.tronLink
+## Legacy: sendTrx via window.tronLink
 
 ```typescript
 if (window.tronLink.ready) {
@@ -495,7 +495,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### Legacy: multiSign via window.tronLink
+## Legacy: multiSign via window.tronLink
 
 ```typescript
 if (window.tronLink.ready) {
@@ -516,7 +516,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### Legacy: signMessageV2 via window.tronLink
+## Legacy: signMessageV2 via window.tronLink
 
 ```typescript
 if (window.tronLink.ready) {
@@ -530,7 +530,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### Legacy: wallet_watchAsset via window.tronLink
+## Legacy: wallet_watchAsset via window.tronLink
 
 ```typescript
 // Add TRC10
@@ -577,7 +577,7 @@ if (window.tronLink.ready) {
 ```
 
 
-### Legacy: wallet_switchEthereumChain via tronLink.request
+## Legacy: wallet_switchEthereumChain via tronLink.request
 
 ```javascript
 try {

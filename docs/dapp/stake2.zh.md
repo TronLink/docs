@@ -9,15 +9,9 @@ __options 内部有两个值 `estimatedBandwidth，estimatedEnergy` ，分别对
 resource 对应 `'BANDWIDTH'，'ENERGY'`。
 
 ![image](../images/dapp_stake2.0_img_0.jpg)
-<style>
-img {
-  max-width: 100%!important;
-}
-</style>
-
 代码示例：
 
-```shell 
+```javascript
     const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'BANDWIDTH', 'ownerAddress', false);
     transaction.raw_data.contract[0].parameter.value.resource = "BANDWIDTH"
     transaction.__options = {"estimatedBandwidth": 1}

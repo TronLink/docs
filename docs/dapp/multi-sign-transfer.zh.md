@@ -1,14 +1,12 @@
 # 多签转账
 
-**简介**
+## 简介
 
 此处可参考[普通转账](transfer.zh.md)
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见[开始开发](getting-started.md)）。
 
-**技术规范**
-
-**代码示例**
+## 代码示例
 
 ```javascript
 const tronweb = window.tron.tronWeb;

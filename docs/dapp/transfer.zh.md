@@ -1,6 +1,6 @@
 # 普通转账
 
-**简介**
+## 简介
 
 DApp 需要用户发起一笔 TRX 转账。
 
@@ -16,9 +16,7 @@ DApp 需要用户发起一笔 TRX 转账。
 
 在这里，TronLink 介入的是第2步签名的部分，1, 3 两步需要开发者使用 tronWeb 完成
 
-**技术规范**
-
-**代码示例**
+## 代码示例
 
 ```javascript
 const tronweb = window.tron.tronWeb;

@@ -1,6 +1,6 @@
 # General Transfer
 
-**Overview**
+## Overview
 
 DApp requires users to initiate a TRX transfer.
 
@@ -14,14 +14,9 @@ It takes 3 steps to initiate a transfer on the TRON network:
 
   3. Broadcast the signed transaction
 
-
-
-
 In this process, Step 2 requires TronLink while both Step 1 and 3 happen on tronWeb.
 
-**Specification**
-
-**Example**
+## Example
 
 ```javascript
 const tronweb = window.tron.tronWeb;
