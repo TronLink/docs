@@ -6,8 +6,8 @@ TronLink ships first-class tooling for AI agents and LLM-based applications: MCP
 
 For LLMs and AI agents that ingest documentation directly:
 
-- [llms.txt](../../llms.txt) — a curated index of this documentation, following the [llmstxt.org](https://llmstxt.org/) standard
-- [llms-full.txt](../../llms-full.txt) — the full text of every English page, bundled for single-fetch ingestion
+- [llms.txt](/docs/llms.txt) — a curated index of this documentation, following the [llmstxt.org](https://llmstxt.org/) standard
+- [llms-full.txt](/docs/llms-full.txt) — the full text of every English page, bundled for single-fetch ingestion
 
 ## Tooling
 

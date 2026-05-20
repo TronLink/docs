@@ -6,8 +6,8 @@ TronLink 为 AI 智能体与基于 LLM 的应用提供了完整的工具链：MC
 
 供直接读取文档的 LLM / AI 智能体使用：
 
-- [llms.txt](../../llms.txt) —— 本文档的精选索引，遵循 [llmstxt.org](https://llmstxt.org/) 规范
-- [llms-full.txt](../../llms-full.txt) —— 所有英文页面的全文聚合，便于单次抓取
+- [llms.txt](/docs/llms.txt) —— 本文档的精选索引，遵循 [llmstxt.org](https://llmstxt.org/) 规范
+- [llms-full.txt](/docs/llms-full.txt) —— 所有英文页面的全文聚合，便于单次抓取
 
 ## 工具
 
