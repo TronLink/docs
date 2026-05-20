@@ -67,6 +67,8 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
 
 **特点：** 同时支持 Base58Check（T...）和 hex 地址格式，内置常用代币符号，自动转换精度。
 
+**何时不要用：** 发送 TRX / 代币——这些命令是只读的，请走 [signer SDK](tronlink-signer.md) 或 [MCP Server TronLink](mcp-server-tronlink.md)。代币层面的深度分析（rug-pull / 流动性锁定）请用 `tron-token`。
+
 ### 2. tron-token（7 个命令）
 
 代币研究与安全分析。
@@ -82,6 +84,8 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
 | `token-security` | 安全审计（蜜罐、代理、所有者权限） |
 
 **特点：** 检测 Rug Pull、分析持有者集中度、检查流动性锁定。
+
+**何时不要用：** 单账户余额或交易历史——那是 `tron-wallet` 的活；实时价格/成交量——那是 `tron-market` 的活。
 
 ### 3. tron-market（8 个命令）
 
@@ -100,6 +104,8 @@ tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
 
 **特点：** 多 DEX 聚合、智能资金信号检测、K 线分析。
 
+**何时不要用：** 立刻执行 swap 报价或路径——那是 `tron-swap`（会算上滑点）；静态代币元数据——`tron-token`。
+
 ### 4. tron-swap（3 个命令）
 
 DEX 兑换报价与路由优化。
@@ -111,6 +117,8 @@ DEX 兑换报价与路由优化。
 | `tx-status` | 追踪交易状态 |
 
 **特点：** 聚合多源流动性、估算能量成本、处理多跳路由。
+
+**何时不要用：** 真正执行 swap——报价是只读的，实际兑换走 [MCP Server TronLink](mcp-server-tronlink.md)（`tl_chain_swap_v3`）或 signer SDK；历史成交数据——`tron-market`。
 
 ### 5. tron-resource（6 个命令）
 
@@ -127,6 +135,8 @@ DEX 兑换报价与路由优化。
 
 **特点：** 成本优化决策树逻辑、追踪每日免费带宽、计算 TRX 燃烧等值。
 
+**何时不要用：** 真正冻结 TRX 获取能量/带宽——那是 Remote Write，请走 signer SDK / MCP Server；冻结后的 SR 投票策略——见 `tron-staking`。
+
 ### 6. tron-staking（3 个命令）
 
 Stake 2.0 查询与 SR 信息。
@@ -138,6 +148,8 @@ Stake 2.0 查询与 SR 信息。
 | `staking-apy` | 计算预估年化收益率 |
 
 **特点：** Stake 2.0 状态查询、APY 计算、SR 佣金追踪。
+
+**何时不要用：** 执行 freeze / 投票 / 解冻动作——这些是 Remote Write，请走 signer SDK / MCP Server；单次操作能量成本——`tron-resource`。
 
 ---
 
@@ -176,6 +188,8 @@ tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resou
 
 ### 成本示例
 
+> **数据截至 2026-05。** 能量数字会随合约升级（尤其是 USDT TRC-20）和网络参数变化；TRX 燃烧列用到的带宽/能量单价也会变。**仅作量级参考**，不是契约值。数据来源：TronGrid / Tronscan 交易采样与 TRON 网络参数。需要实时数值请用 `tron-resource` 的 `estimate-energy` / `estimate-bandwidth` 命令。
+
 | 操作 | 带宽 | 能量 | TRX 燃烧量（无资源时） |
 |------|------|------|------------------------|
 | TRX 转账 | ~267 | 0 | 0（在免费额度内） |
@@ -187,7 +201,7 @@ tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resou
 - 冻结 TRX → 获取能量或带宽 → 投票给 SR → 赚取奖励
 - 解冻需 **14 天等待期** 才能提取
 - 解冻后投票重置；重新冻结后需重新投票
-- 1 冻结 TRX ≈ 每天 4.5 能量
+- 1 冻结 TRX ≈ 每天 4.5 能量——**动态值**：取决于全网总质押量；实时数请用 `tron-resource estimate-energy`。数据截至 2026-05。
 - 投票奖励每 6 小时可领取一次
 
 ---

@@ -67,6 +67,8 @@ Wallet queries and account information.
 
 **Features:** Handles both Base58Check (T...) and hex address formats, supports known token symbols, auto-converts decimals.
 
+**When NOT to use:** Sending TRX/tokens — these are read-only; use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md). For deep token-level analytics (rug-pull / liquidity locks), prefer `tron-token`.
+
 ### 2. tron-token (7 commands)
 
 Token research and security analysis.
@@ -82,6 +84,8 @@ Token research and security analysis.
 | `token-security` | Security audit (honeypot, proxy, owner permissions) |
 
 **Features:** Detects rug pulls, analyzes holder concentration, checks liquidity locks.
+
+**When NOT to use:** Per-account balances or transaction history — that's `tron-wallet`. Real-time price/volume — that's `tron-market`.
 
 ### 3. tron-market (8 commands)
 
@@ -100,6 +104,8 @@ Real-time market data and whale monitoring.
 
 **Features:** Multi-DEX aggregation, smart money signal detection, K-line analysis.
 
+**When NOT to use:** Quotes or routes for swapping right now — that's `tron-swap` (which factors in slippage). Static token metadata — `tron-token`.
+
 ### 4. tron-swap (3 commands)
 
 DEX swap quotes and route optimization.
@@ -111,6 +117,8 @@ DEX swap quotes and route optimization.
 | `tx-status` | Track transaction status |
 
 **Features:** Aggregates liquidity from multiple sources, estimates Energy cost, handles multi-hop routes.
+
+**When NOT to use:** Executing the swap — quotes are read-only; the swap itself goes through [MCP Server TronLink](mcp-server-tronlink.md) (`tl_chain_swap_v3`) or the signer SDK. Historical trade data — `tron-market`.
 
 ### 5. tron-resource (6 commands)
 
@@ -127,6 +135,8 @@ Energy & Bandwidth management — TRON-specific.
 
 **Features:** Decision tree logic for cost optimization, tracks daily free bandwidth, calculates TRX burn equivalent.
 
+**When NOT to use:** Actually freezing TRX to acquire Energy/Bandwidth — that's a Remote Write; use the signer SDK / MCP Server. SR voting strategy after freezing — see `tron-staking`.
+
 ### 6. tron-staking (3 commands)
 
 Stake 2.0 queries and SR information.
@@ -138,6 +148,8 @@ Stake 2.0 queries and SR information.
 | `staking-apy` | Calculate estimated annual yield |
 
 **Features:** Stake 2.0 status queries, APY calculation, SR commission tracking.
+
+**When NOT to use:** Performing the freeze/vote/unfreeze actions — those are Remote Writes; route through the signer SDK / MCP Server. Calculating Energy cost per operation — `tron-resource`.
 
 ---
 
@@ -176,6 +188,8 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 
 ### Cost Examples
 
+> **Effective as of 2026-05.** Energy figures shift with contract upgrades (notably USDT TRC-20) and network parameters; the bandwidth/energy unit prices used to derive the TRX-burned column also change. Treat these as **order-of-magnitude reference**, not contractual values. Source: TronGrid / Tronscan transaction samples and TRON network parameters. For runtime accuracy, call the `tron-resource` skill's `estimate-energy` / `estimate-bandwidth` commands.
+
 | Operation | Bandwidth | Energy | TRX Burned (no resources) |
 |-----------|-----------|--------|---------------------------|
 | TRX transfer | ~267 | 0 | 0 (within free limit) |
@@ -187,7 +201,7 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 - Freeze TRX → Get Energy or Bandwidth → Vote for SR → Earn rewards
 - Unfreezing has **14-day wait** before withdrawal
 - Votes reset if you unfreeze; must re-vote after re-freezing
-- 1 frozen TRX ≈ 4.5 Energy/day
+- 1 frozen TRX ≈ 4.5 Energy/day — **dynamic**: depends on total network stake; use `tron-resource estimate-energy` for the live value. Effective figure as of 2026-05.
 - Voting rewards claimable every 6 hours
 
 ---

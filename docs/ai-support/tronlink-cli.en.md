@@ -12,6 +12,13 @@ All transactions are built locally and signed through the TronLink browser exten
 - TronLink browser extension installed
 - Browser running (write operations open TronLink for signing)
 
+**Bundled runtime (pinned by `@tronlink/tronlink-cli@1.0.1`):**
+
+- `tronweb` `6.2.2` — used by `transactionBuilder`, the ABI v2 trigger path, `TronWeb.isAddress()`, and local broadcast. TronWeb 6.x exposes the ethers-backed ABI v2 encoder that powers tuple / nested-array / arrays-of-tuples in `trigger`; earlier TronWeb majors do not. If you ever bump this dep, re-test every `trigger` example.
+- `tronlink-signer` `0.1.4` — the local signing bridge to the browser extension. Same SDK documented in [tronlink-signer](tronlink-signer.md).
+
+Effective as of 2026-05; source: each package's `package.json`.
+
 ## Installation
 
 ```bash
@@ -236,6 +243,10 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 # CLI broadcasts locally
 tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --amount 100 --local-broadcast
 ```
+
+**The two paths are mutually exclusive, not redundant.** Setting `--local-broadcast` tells the signer to return the signed transaction **without** broadcasting; the CLI then sends it once via its own TronWeb. The same signed payload is never submitted twice from this CLI in a single command.
+
+If a network race causes the CLI's local broadcast and a stale signer broadcast to both reach the network (e.g. flapping connectivity, two CLI invocations against the same nonce), the second submission is rejected by the node — TRON nodes deduplicate by transaction id, so you will see one block-inclusion plus one `DUP_TRANSACTION_ERROR`-class failure, not two on-chain effects. Treat any such error after a confirmed first inclusion as benign; treat it before confirmation as you would any `5` exit (network) — reconcile with an explorer before retrying.
 
 ## Input Validation
 

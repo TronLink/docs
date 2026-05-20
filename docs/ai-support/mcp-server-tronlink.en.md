@@ -231,9 +231,9 @@ Pre-configured multi-step workflows with dependency checks and parameter templat
 |----------|-------------|
 | `TL_TRONGRID_URL` | Full-node API URL |
 | `TL_TRONGRID_API_KEY` | API key (required for Mainnet) |
-| `TL_SUNSWAP_ROUTER` | SunSwap V2 router address |
-| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address |
-| `TL_WTRX_ADDRESS` | WTRX contract address |
+| `TL_SUNSWAP_ROUTER` | SunSwap V2 router address. **No built-in default** — pin to the current router; the value in the example below is **effective as of 2026-05** (Mainnet). Source: [docs.sun.io](https://docs.sun.io). When SunSwap publishes a new router, set this env var rather than waiting on a docs/code change. |
+| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address. Same rules as V2. |
+| `TL_WTRX_ADDRESS` | WTRX contract address. Mainnet WTRX is `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`. Effective as of 2026-05. |
 
 **Wallet (`agent-wallet`):**
 
@@ -403,13 +403,15 @@ mcp-server-tronlink/
 
 ## Dependencies
 
+Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bumping major versions of the wallet, MCP, or crypto libraries.
+
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `@noble/curves` | ^2.0.1 | secp256k1 ECDSA signing |
 | `@noble/hashes` | ^2.0.1 | Keccak-256, SHA256 |
-| `@tronlink/tronlink-mcp-core` | local | Core MCP server framework |
+| `@tronlink/tronlink-mcp-core` | ^0.1.0 | Core MCP server framework |
 | `playwright` | ^1.49.0 | Browser automation |
-| `@bankofai/agent-wallet` | latest | Encrypted local wallet management (`local_secure`) |
+| `@bankofai/agent-wallet` | ^2.3.0 | Encrypted local wallet management (`local_secure`) — pinned, not `latest`, to keep wallet behavior reproducible |
 | `ws` | ^8.18.0 | WebSocket (multi-sig monitoring) |
 
 ---
@@ -456,6 +458,40 @@ mcp-server-tronlink/
 | **Confused deputy** | Tools operate under the local `agent-wallet` identity, not the calling user's identity. There is no per-call authorization scope. | One MCP session = one wallet identity; do not multiplex multiple end users through the same server. |
 | **Transport** | stdio transport; the server does not bind a network listener. | Do not wrap this server behind a public HTTP transport without re-introducing auth and rate limiting. |
 
+#### Disabling `tl_evaluate`
+
+If your workflow does not require running arbitrary JS in the controlled browser, take it off the tool surface explicitly. The exact key depends on the host:
+
+```jsonc
+// Claude Code — .claude/settings.json (project) or ~/.claude/settings.json (user)
+{
+  "permissions": {
+    "deny": ["mcp__tronlink__tl_evaluate"]
+  }
+}
+```
+
+```jsonc
+// Claude Desktop — claude_desktop_config.json
+{
+  "mcpServers": {
+    "tronlink": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "disabledTools": ["tl_evaluate"]
+    }
+  }
+}
+```
+
+```jsonc
+// Generic MCP client: prefer client-side filtering via list_tools.
+// Filter the server's announced tools before exposing them to the model;
+// drop any tool whose name is "tl_evaluate".
+```
+
+Verify after restart with `list_tools` — `tl_evaluate` should not appear. The same pattern works for `tl_seed_contract` / `tl_seed_contracts` (e2e-only contract deployment).
+
 ### Wallet Secret Storage
 
 The Direct-API path signs with a local encrypted wallet managed by `@bankofai/agent-wallet`. Two paths exist for unlocking it; pick deliberately.
@@ -482,6 +518,36 @@ The Direct-API path signs with a local encrypted wallet managed by `@bankofai/ag
 - Prefer Path A. Source `AGENT_WALLET_PASSWORD` from the host's secret manager (Claude Desktop env, vault, etc.).
 - If you must use Path B (e.g., ephemeral CI), set `AGENT_WALLET_DIR` to a tmpfs path that is destroyed at job end.
 - For any tool that moves real funds, prefer `mcp-tronlink-signer` (browser approval, no on-disk password) over Direct-API.
+
+**How to enforce Path A (doc-side, today).**
+
+1. Provision the wallet **before** the server boots. From a separate shell:
+
+    ```bash
+    agent-wallet start local_secure --generate --wallet-id main
+    # take note of the password you supply here — it is the only copy
+    ```
+
+2. Inject the password via the MCP host's secret manager so it lands in the server's `env` at launch:
+
+    ```jsonc
+    // .mcp.json — secret comes from host env, not from this file
+    {
+      "mcpServers": {
+        "tronlink": {
+          "command": "node",
+          "args": ["dist/index.js"],
+          "env": { "AGENT_WALLET_PASSWORD": "${AGENT_WALLET_PASSWORD}" }
+        }
+      }
+    }
+    ```
+
+3. **Do not let the agent call `tl_wallet_create`.** Disable it the same way as `tl_evaluate` above (Claude Code `permissions.deny`, Claude Desktop `disabledTools`, or client-side `list_tools` filtering on the name `tl_wallet_create`).
+
+4. Verify on first launch: `list_tools` should not include `tl_wallet_create`, and the absence of `~/.agent-wallet/runtime_secrets.json` confirms Path B did not run.
+
+**Tracking issue (code-side).** A `--no-auto-create` / `AGENT_WALLET_DISABLE_AUTOCREATE=1` flag that makes the server fail-loud at startup when no wallet exists is the proper long-term fix; until that ships upstream, the doc-side enforcement above is the defense in depth.
 
 ---
 

@@ -12,6 +12,13 @@
 - 已安装 TronLink 浏览器扩展
 - 浏览器处于运行状态（写操作会打开 TronLink 进行签名）
 
+**捆绑运行时（由 `@tronlink/tronlink-cli@1.0.1` 钉版）：**
+
+- `tronweb` `6.2.2` —— 用于 `transactionBuilder`、ABI v2 的 `trigger` 路径、`TronWeb.isAddress()` 与本地广播。TronWeb 6.x 引入了 ethers 驱动的 ABI v2 编码器，是 `trigger` 支持 tuple / 嵌套数组 / 数组 tuple 的前提，更早的 major 版本不支持。**升级此依赖前请重测所有 `trigger` 示例**。
+- `tronlink-signer` `0.1.4` —— 本地签名桥接浏览器扩展，与 [tronlink-signer](tronlink-signer.md) 是同一个 SDK。
+
+数据截至 2026-05；来源：各包 `package.json`。
+
 ## 安装
 
 ```bash
@@ -235,7 +242,9 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --amount 100 --local-broadcast
 ```
 
-## 输入校验
+**两条路径是互斥的，而不是冗余。** 加 `--local-broadcast` 后，签名器只返回已签名交易**不再广播**；CLI 用自己的 TronWeb 提交一次。同一条已签名 payload 不会被本次命令重复提交。
+
+若网络抖动导致 CLI 本地广播与签名器残留的广播都打到节点（例如断线重连、同一 nonce 的两次 CLI 调用），第二次提交会被节点拒绝——TRON 节点按交易 ID 去重，结果只会是一次入块 + 一次 `DUP_TRANSACTION_ERROR` 类失败，绝不会出现两次链上效果。已确认入块后再看到此类错误视为良性；尚未确认前出现则按退出码 `5`（网络）处理，先用区块浏览器核对再决定是否重试。
 
 所有输入在连接 TronLink 前会进行校验：
 
