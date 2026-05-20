@@ -245,7 +245,7 @@ window.tron.on('disconnect', (providerRpcError) => {
 
 1. dapp请求连接，用户在弹窗中拒绝连接后
  
-![image](../images/zh_plugin-wallet_rejectWeb.png)
+![TronLink 连接弹窗，用户点击"拒绝"触发 rejectWeb 事件](../images/zh_plugin-wallet_rejectWeb.png)
 
 
 开发者可以监听此消息来获取用户拒绝连接消息
@@ -265,7 +265,7 @@ window.addEventListener('message', function (e) {
 
 1. 用户主动断开连接
 
-![image](../images/zh_plugin-wallet_disconnectWeb.png)
+![TronLink 已连接站点列表，用户对某 DApp 点击"断开"触发 disconnectWeb 事件](../images/zh_plugin-wallet_disconnectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动断连消息
@@ -286,7 +286,7 @@ window.addEventListener('message', function (e) {
 1. 用户确定连接消息
 
 
-![image](../images/zh_plugin-wallet_acceptWeb.png)
+![TronLink 连接弹窗，用户点击"接受"触发 acceptWeb 事件](../images/zh_plugin-wallet_acceptWeb.png)
 
 开发者可以监听此消息来获取用户确定连接消息
 ```typescript
@@ -306,7 +306,7 @@ window.addEventListener('message', function (e) {
 1. 用户主动连接网站时
 
 
-![image](../images/zh_plugin-wallet_connectWeb.png)
+![TronLink 已连接站点列表，用户主动对某授权 DApp 点击"连接"触发 connectWeb 事件](../images/zh_plugin-wallet_connectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动连接网站消息

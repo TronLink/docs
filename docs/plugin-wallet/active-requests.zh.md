@@ -31,11 +31,11 @@ try {
 ### 交互流程
 触发 `eth_requestAccounts` 之后，如果 TronLink 处于锁屏状态，会弹出锁屏弹窗：
 
-![image](../images/zh_plugin-wallet_lock-page.png)
+![TronLink 解锁弹窗，输入钱包密码](../images/zh_plugin-wallet_lock-page.png)
 
 解锁后，或者 TronLink 已经提前解锁，会打开连接确认的弹窗：
 
-![image](../images/zh_plugin-wallet_request-accounts.png)
+![TronLink 连接授权弹窗，显示请求方域名以及"确认"/"拒绝"按钮](../images/zh_plugin-wallet_request-accounts.png)
 
 > **旧版用法（不推荐）：** [兼容用法：tron_requestAccounts](#tron_requestaccounts)
 
@@ -132,7 +132,7 @@ try {
 
 当代码执行到 `await tronweb.trx.sign(tx);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图：
 
-![image](../images/zh_plugin-wallet_sign_trx.png)
+![TronLink 交易审批弹窗，显示收款地址、TRX 金额以及"拒绝"/"签名"按钮](../images/zh_plugin-wallet_sign_trx.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
 
@@ -205,7 +205,7 @@ Uncaught (in promise) Invalid transaction provided
 
 当代码执行到 `await tronweb.trx.signMessageV2(message);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图，其中消息内容会以 hex 的方式展示：
 
-![image](../images/zh_plugin-wallet_sign_message.png)
+![TronLink 消息签名审批弹窗，以 hex 形式展示待签消息以及"拒绝"/"签名"按钮](../images/zh_plugin-wallet_sign_message.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
 
@@ -275,11 +275,11 @@ await window.tron.request({
 
 代码执行时，TronLink 会弹出添加窗口，用户点击确定添加 TRC10 资产，或者取消添加。
 
-![image](../images/zh_plugin-wallet_add_trc10.png)
+![TronLink 添加 TRC10 资产弹窗，显示代币 ID、名称及"添加"/"取消"按钮](../images/zh_plugin-wallet_add_trc10.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-![image](../images/zh_plugin-wallet_add_trc10_success.png)
+![资产列表添加 TRC10 后界面，新代币显示在列表顶部](../images/zh_plugin-wallet_add_trc10_success.png)
 
 
 
@@ -298,11 +298,11 @@ await window.tron.request({
 
 代码执行时，TronLink 会弹出添加窗口，用户点击确定添加 TRC20 资产，或者取消添加。
 
-![image](../images/zh_plugin-wallet_add_trc20.png)
+![TronLink 添加 TRC20 资产弹窗，显示合约地址、符号及"添加"/"取消"按钮](../images/zh_plugin-wallet_add_trc20.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-![image](../images/zh_plugin-wallet_add_trc20_success.png)
+![资产列表添加 TRC20 后界面，新代币显示在列表顶部](../images/zh_plugin-wallet_add_trc20_success.png)
 
 #### 添加 TRC721 资产
 ```typescript
@@ -319,11 +319,11 @@ await window.tron.request({
 
 代码执行时，TronLink 会弹出添加窗口，用户点击确定添加 TRC721 资产，或者取消添加。
 
-![image](../images/zh_plugin-wallet_add_trc721.png)
+![TronLink 添加 TRC721 资产弹窗，显示 NFT 合约地址及"添加"/"取消"按钮](../images/zh_plugin-wallet_add_trc721.png)
 
 点击”添加”按钮，资产被添加到资产列表，如下图所示。
 
-![image](../images/zh_plugin-wallet_add_trc721_success.png)
+![资产列表添加 TRC721 后界面，新藏品集合显示在列表顶部](../images/zh_plugin-wallet_add_trc721_success.png)
 
 > **旧版用法（不推荐）：** [兼容用法：wallet_watchAsset（window.tronLink）](#wallet_watchassetwindowtronlink)
 
@@ -376,11 +376,11 @@ interface SwitchTronChainParameter {
 ### 交互流程
 触发 `wallet_switchEthereumChain` 之后，如果 TronLink 处于锁屏状态，会弹出锁屏弹窗：
 
-![image](../images/zh_plugin-wallet_lock-page.png)
+![TronLink 解锁弹窗，输入钱包密码](../images/zh_plugin-wallet_lock-page.png)
 
 解锁后，或者 TronLink 已经提前解锁，会打开连接确认的弹窗：
 
-![image](../images/zh_plugin-wallet_switch-chain.png)
+![TronLink 网络切换确认弹窗，显示目标网络名称、chainId 与"确认"/"拒绝"按钮](../images/zh_plugin-wallet_switch-chain.png)
 
 > **旧版用法（不推荐）：** [兼容用法：wallet_switchEthereumChain（tronLink.request）](#wallet_switchethereumchaintronlinkrequest)
 

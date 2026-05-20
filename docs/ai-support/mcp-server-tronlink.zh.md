@@ -230,7 +230,7 @@ hexToAddress()             0x41... → T 地址
 | 变量 | 说明 |
 |------|------|
 | `TL_TRONGRID_URL` | 全节点 API 地址 |
-| `TL_TRONGRID_API_KEY` | API 密钥（主网必需） |
+| `TL_TRONGRID_API_KEY` | API 密钥（主网必需）。免费档约 100k 请求/日 + ~5 QPS；付费档提高 QPS、日配额并按用量计费。具体配额与响应 header 会变——请查 [TronGrid Pricing](https://www.trongrid.io/pricing) 与控制台当前值，并在运行时读 `X-Ratelimit-*` header。触发限流返回 HTTP 429（映射到 `TL_CHAIN_QUERY_FAILED`，可重试）。长期跑批的 agent 请在 50% / 80% / 95% 设置消费告警。 |
 | `TL_SUNSWAP_ROUTER` | SunSwap V2 路由地址。**没有内置默认**——请钉到当前 router；下方示例中的值**截至 2026-05** 适用于主网。来源：[docs.sun.io](https://docs.sun.io)。SunSwap 升级新 router 时，请直接在此 env 改值，不要等文档/代码同步。 |
 | `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 智能路由地址。规则同 V2。 |
 | `TL_WTRX_ADDRESS` | WTRX 合约地址。主网 WTRX 为 `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`。数据截至 2026-05。 |

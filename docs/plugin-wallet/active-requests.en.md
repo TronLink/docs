@@ -39,11 +39,11 @@ If it fails, an error code and error message will be returned. See the **Error C
 
 After triggering `eth_requestAccounts`, if TronLink is locked, an unlock popup appears:
 
-![image](../images/plugin-wallet_lock-page.jpg)
+![TronLink unlock popup prompting for the wallet password](../images/plugin-wallet_lock-page.jpg)
 
 After unlocking, or if already unlocked, a connection confirmation popup appears:
 
-![image](../images/plugin-wallet_request-accounts.jpg)
+![TronLink connection authorization popup showing the requesting site origin with Confirm and Reject buttons](../images/plugin-wallet_request-accounts.jpg)
 
 > **Legacy (not recommended):** [Legacy: tron_requestAccounts](#legacy-tron_requestaccounts)
 
@@ -148,7 +148,7 @@ try {
 
 When executing `await tronweb.trx.sign(tx);`, TronLink displays a confirmation popup.
 
-![image](../images/plugin-wallet_sign_trx.jpg)
+![TronLink transaction approval popup showing the recipient address, TRX amount in human-readable form, and Reject / Sign buttons](../images/plugin-wallet_sign_trx.jpg)
 
 Reject → exception thrown.
 Sign → signed transaction returned for broadcasting.
@@ -233,7 +233,7 @@ Uncaught (in promise) Invalid transaction provided
 
 When executing signing, TronLink shows a confirmation popup with the hex message.
 
-![image](../images/plugin-wallet_sign_message.jpg)
+![TronLink message-signing approval popup showing the hex payload to be signed and Reject / Sign buttons](../images/plugin-wallet_sign_message.jpg)
 
 Reject → exception.
 Sign → signed message returned.
@@ -302,11 +302,11 @@ await window.tron.request({
 ```
 When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC10 asset or cancel the request.
 
-![image](../images/plugin-wallet_add_trc10.jpg)
+![TronLink add-asset prompt showing the TRC10 token id, name, and Add / Cancel buttons](../images/plugin-wallet_add_trc10.jpg)
 
 Click the “Add” button and the asset will be added to the asset list, as shown below.
 
-![image](../images/plugin-wallet_add_trc10_success.jpg)
+![TronLink asset list after the TRC10 token has been added, with the new token visible at the top](../images/plugin-wallet_add_trc10_success.jpg)
 
 #### Add TRC20
 
@@ -322,11 +322,11 @@ await window.tron.request({
 
 When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC20 asset or cancel the request.
 
-![image](../images/plugin-wallet_add_trc20.jpg)
+![TronLink add-asset prompt showing the TRC20 contract address, token symbol, and Add / Cancel buttons](../images/plugin-wallet_add_trc20.jpg)
 
 Click the “Add” button and the asset will be added to the asset list, as shown below.
 
-![image](../images/plugin-wallet_add_trc20_success.jpg)
+![TronLink asset list after the TRC20 token has been added, with the new token visible at the top](../images/plugin-wallet_add_trc20_success.jpg)
 
 #### Add TRC721
 
@@ -342,11 +342,11 @@ await window.tron.request({
 
 When the code executes, TronLink will display an add-asset popup where the user can confirm adding the TRC721 asset or cancel the request.
 
-![image](../images/plugin-wallet_add_trc721.jpg)
+![TronLink add-asset prompt showing the TRC721 NFT contract address and Add / Cancel buttons](../images/plugin-wallet_add_trc721.jpg)
 
 Click the “Add” button and the asset will be added to the asset list, as shown below.
 
-![image](../images/plugin-wallet_add_trc721_success.jpg)
+![TronLink asset list after the TRC721 collection has been added, with the new collection visible at the top](../images/plugin-wallet_add_trc721_success.jpg)
 
 > **Legacy (not recommended):** [Legacy: wallet_watchAsset via window.tronLink](#legacy-wallet_watchasset-via-windowtronlink)
 
@@ -408,9 +408,9 @@ Supported chain IDs:
 
 Triggering the request shows an unlock popup if TronLink is locked, then a network switch confirmation popup after unlocking.
 
-![image](../images/plugin-wallet_lock-page.jpg)
+![TronLink unlock popup prompting for the wallet password](../images/plugin-wallet_lock-page.jpg)
 
-![image](../images/plugin-wallet_switch-chain.jpg)
+![TronLink network-switch confirmation popup showing the target network name and chainId with Confirm / Reject buttons](../images/plugin-wallet_switch-chain.jpg)
 
 > **Legacy (not recommended):** [Legacy: wallet_switchEthereumChain via tronLink.request](#legacy-wallet_switchethereumchain-via-tronlinkrequest)
 

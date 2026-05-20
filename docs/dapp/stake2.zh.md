@@ -8,7 +8,7 @@ __options 内部有两个值 `estimatedBandwidth，estimatedEnergy` ，分别对
 
 resource 对应 `'BANDWIDTH'，'ENERGY'`。
 
-![image](../images/dapp_stake2.0_img_0.jpg)
+![Stake 2.0 委托/取消委托签名界面示意，标注了 __resource（"BANDWIDTH" 或 "ENERGY"）与 __options.estimatedBandwidth / estimatedEnergy 字段——TronLink 据此在签名页渲染资源类型](../images/dapp_stake2.0_img_0.jpg)
 <style>
 img {
   max-width: 100%!important;
@@ -22,4 +22,4 @@ img {
     transaction.__options = {"estimatedBandwidth": 1}
 ```
 
-estimatedEnergy estimatedBandwidth 的具体计算逻辑见![image](../images/dapp_skake2.0_img_1.png)[<a class="tooltip" href="https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb" data-tooltip="https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb">Stake 2.0 Adaptation FAQ</a>](https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb) 最后一个章节：How to convert resource share to amount?
+estimatedEnergy estimatedBandwidth 的具体计算逻辑见![Stake 2.0 资源份额到具体数额换算公式示意图](../images/dapp_skake2.0_img_1.png)[<a class="tooltip" href="https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb" data-tooltip="https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb">Stake 2.0 Adaptation FAQ</a>](https://www.google.com/url?q=https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606&sa=D&source=editors&ust=1684151119972747&usg=AOvVaw0msvWulJZhW6xn5QU461cb) 最后一个章节：How to convert resource share to amount?

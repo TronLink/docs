@@ -246,6 +246,62 @@ node scripts/tron_api.mjs swap-quote --from TRX --to USDT --amount 100
 | **OpenCode** | 注册插件，软链接技能 |
 | **LangChain / CrewAI** | 将 `tron_api.mjs` 封装为 Tool |
 
+#### Cursor（Windsurf 配置同构）
+
+`~/.cursor/mcp.json`:
+
+```jsonc
+{
+  "mcpServers": {
+    "tronlink-skills": {
+      "command": "node",
+      "args": ["/absolute/path/to/tronlink-skills/scripts/mcp_server.mjs"]
+    }
+  }
+}
+```
+
+#### Codex CLI
+
+```bash
+# 将 skills 目录软链到 agent 发现路径
+ln -s "$(pwd)/tronlink-skills" ~/.agents/skills/tronlink-skills
+# 验证识别
+codex skills list | grep tron
+```
+
+#### OpenCode
+
+`~/.config/opencode/config.json`:
+
+```jsonc
+{
+  "plugins": {
+    "tronlink-skills": { "path": "/absolute/path/to/tronlink-skills" }
+  }
+}
+```
+
+#### LangChain / CrewAI（Python）
+
+```python
+from langchain_core.tools import Tool
+import subprocess, json
+
+def tron_call(cmd: str) -> dict:
+    out = subprocess.check_output(
+        ["node", "scripts/tron_api.mjs", *cmd.split()],
+        cwd="/absolute/path/to/tronlink-skills",
+    )
+    return json.loads(out)
+
+tron_wallet_balance = Tool.from_function(
+    func=lambda addr: tron_call(f"wallet-balance --address {addr}"),
+    name="tron_wallet_balance",
+    description="TRX 余额与冻结量，地址为 TRON Base58（T...）字符串。",
+)
+```
+
 ### 快速安装脚本
 
 ```bash

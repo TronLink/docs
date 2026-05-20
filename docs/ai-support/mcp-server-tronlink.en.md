@@ -230,7 +230,7 @@ Pre-configured multi-step workflows with dependency checks and parameter templat
 | Variable | Description |
 |----------|-------------|
 | `TL_TRONGRID_URL` | Full-node API URL |
-| `TL_TRONGRID_API_KEY` | API key (required for Mainnet) |
+| `TL_TRONGRID_API_KEY` | API key (required for Mainnet). Free tier ≈ 100k requests/day at ~5 QPS; paid tiers raise QPS, daily quota, and add billing. Quotas and headers change over time — see [TronGrid Pricing](https://www.trongrid.io/pricing) and the dashboard for current values, and inspect `X-Ratelimit-*` response headers in your own runtime. Hitting the limit returns HTTP 429 (mapped to `TL_CHAIN_QUERY_FAILED`, retryable). For long-running agents, set up billing alerts at 50% / 80% / 95% of your plan. |
 | `TL_SUNSWAP_ROUTER` | SunSwap V2 router address. **No built-in default** — pin to the current router; the value in the example below is **effective as of 2026-05** (Mainnet). Source: [docs.sun.io](https://docs.sun.io). When SunSwap publishes a new router, set this env var rather than waiting on a docs/code change. |
 | `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address. Same rules as V2. |
 | `TL_WTRX_ADDRESS` | WTRX contract address. Mainnet WTRX is `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`. Effective as of 2026-05. |

@@ -246,6 +246,62 @@ node scripts/tron_api.mjs swap-quote --from TRX --to USDT --amount 100
 | **OpenCode** | Register plugin, symlink skills |
 | **LangChain / CrewAI** | Wrap `tron_api.mjs` as a Tool |
 
+#### Cursor (or Windsurf, same schema)
+
+`~/.cursor/mcp.json`:
+
+```jsonc
+{
+  "mcpServers": {
+    "tronlink-skills": {
+      "command": "node",
+      "args": ["/absolute/path/to/tronlink-skills/scripts/mcp_server.mjs"]
+    }
+  }
+}
+```
+
+#### Codex CLI
+
+```bash
+# Symlink the skills bundle into the agent's discovery path
+ln -s "$(pwd)/tronlink-skills" ~/.agents/skills/tronlink-skills
+# Verify discovery
+codex skills list | grep tron
+```
+
+#### OpenCode
+
+`~/.config/opencode/config.json`:
+
+```jsonc
+{
+  "plugins": {
+    "tronlink-skills": { "path": "/absolute/path/to/tronlink-skills" }
+  }
+}
+```
+
+#### LangChain / CrewAI (Python)
+
+```python
+from langchain_core.tools import Tool
+import subprocess, json
+
+def tron_call(cmd: str) -> dict:
+    out = subprocess.check_output(
+        ["node", "scripts/tron_api.mjs", *cmd.split()],
+        cwd="/absolute/path/to/tronlink-skills",
+    )
+    return json.loads(out)
+
+tron_wallet_balance = Tool.from_function(
+    func=lambda addr: tron_call(f"wallet-balance --address {addr}"),
+    name="tron_wallet_balance",
+    description="TRX balance and frozen amounts. Address is a TRON Base58 (T...) string.",
+)
+```
+
 ### Quick Setup Script
 
 ```bash

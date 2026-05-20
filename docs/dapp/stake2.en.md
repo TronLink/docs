@@ -8,7 +8,7 @@ When generating stake 2.0 transactions using a non-tronlink extension injected t
 
 The "__resource" field corresponds to the values "BANDWIDTH" and "ENERGY".
 
-![image](../images/dapp_stake2.0_img_0.jpg)
+![Stake 2.0 delegate / undelegate signing UI annotated with the __resource ("BANDWIDTH" or "ENERGY") and __options.estimatedBandwidth / estimatedEnergy fields that TronLink reads to render the resource type at signing time](../images/dapp_stake2.0_img_0.jpg)
 
 <style>
 img {
