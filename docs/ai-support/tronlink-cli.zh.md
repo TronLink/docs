@@ -259,7 +259,55 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 
 **表格（默认）**：人类可读的表格输出。
 
-**JSON（`--json`）**：面向脚本和 AI 智能体的机器可读输出。
+**JSON（`--json`）**：面向脚本和 AI 智能体的机器可读输出。自动化场景请始终带上 `--json`。
+
+写操作成功时返回：
+
+```json
+{
+  "Status": "Success",
+  "TxID": "0abc...",
+  "Explorer": "https://tronscan.org/#/transaction/0abc..."
+}
+```
+
+读操作在同一顶层对象下返回查询数据（余额、资源等）。字段名在同一大版本内保持稳定。
+
+## 退出码
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 成功——查询返回，或交易已签名/广播 |
+| 非零 | 失败——输入非法、用户拒绝、签名超时，或广播/链上失败 |
+
+在 `--json` 模式下，失败原因也会包含在输出中。
+
+## 错误
+
+错误会以人类可读消息呈现，并在 `--json` 模式下出现在输出里。CLI 报告的情况：
+
+| 情况 | 触发时机 | 可重试 |
+| --- | --- | --- |
+| 输入非法 | 在任何钱包交互前校验失败（见「输入校验」一节） | 否——修正输入 |
+| 用户拒绝 | 用户在 TronLink 审批页点击拒绝 | 否——用户已拒绝 |
+| 签名超时 | 超时内未审批（默认 5 分钟；`--timeout <ms>`） | 是——重新发起命令 |
+| `OUT_OF_ENERGY` | 账户能量不足以执行合约 | 否——先获取能量再重试 |
+| `REVERT` | 合约调用在链上回滚 | 否——调用本身失败 |
+| `FAILED` | 交易因其他原因在链上失败 | 视情况——查看原因 |
+| 网络错误 | TronGrid / RPC 请求失败 | 是——瞬时错误 |
+
+> **重试策略：** 读命令始终可安全重试。写/签名命令在「已提交但结果未知」时**不得**自动重试——重新发起会再次弹出签名，可能重复提交。仅在确认上一笔未上链后再重试。
+
+## 安全与副作用
+
+| 副作用 | 命令 |
+| --- | --- |
+| **只读**（Network Read，不签名） | `balance`、`resource`、常量 `trigger`（`--constant`） |
+| **远程写**（签名 + 广播） | `transfer`、`stake`、`unstake`、`withdraw`、`delegate`、`reclaim`、`vote`、`reward`、可写 `trigger` |
+
+- **人工确认（HITL）：** 每个写命令都会本地构建交易、展示「交易预览」，并要求在 TronLink 浏览器页面显式审批后才签名。私钥永不离开 TronLink。
+- **写操作不自动重试：** 见上方重试策略。
+- **默认低风险：** 优先用测试网（`--network nile` / `shasta`）；只有动用真实资金时才用 `--network mainnet`。
 
 ## 支持的网络
 
@@ -396,3 +444,9 @@ tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network
 - 取消 CLI 命令（Ctrl+C）只会取消该笔交易 — 其他排队中的交易将继续执行
 - 使用 `--timeout <ms>` 可调整签名超时时间
 - 金额内部使用基于字符串的运算 — 不存在浮点精度问题
+
+## 版本与许可证
+
+- **包：** `@tronlink/tronlink-cli` v1.0.1
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases)

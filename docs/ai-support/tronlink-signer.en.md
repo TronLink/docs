@@ -283,3 +283,8 @@ export type {
 } from "./types.js";
 ```
 
+## Version & License
+
+- **Package:** `tronlink-signer` v0.1.4
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)

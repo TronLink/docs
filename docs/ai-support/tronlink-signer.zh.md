@@ -282,3 +282,9 @@ export type {
   BroadcastStatus, BroadcastResult,
 } from "./types.js";
 ```
+
+## 版本与许可证
+
+- **包：** `tronlink-signer` v0.1.4
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)

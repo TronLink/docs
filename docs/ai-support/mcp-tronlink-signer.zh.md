@@ -95,3 +95,9 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 | `TRON_NETWORK` | 默认网络（mainnet / nile / shasta） | `mainnet` |
 | `TRON_HTTP_PORT` | 本地 HTTP 服务端口 | `3386` |
 | `TRON_API_KEY` | TronGrid API Key（可选） | - |
+
+## 版本与许可证
+
+- **包：** `mcp-tronlink-signer` v0.1.4
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)

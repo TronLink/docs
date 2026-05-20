@@ -7,7 +7,7 @@
 **TronLink Wallet Skills** 是一套 AI Agent 技能集，通过自然语言提供完整的 TRON 区块链钱包和 DeFi 功能。专为 Claude Code、Cursor、OpenCode、Codex CLI 及其他 AI 代理设计。
 
 **核心亮点：**
-- **6 大技能，34 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
+- **6 大技能，33 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
 - **零 npm 依赖**：使用原生 Node.js 18+ `fetch` 和 `crypto`，无需 `npm install`
 - **TRON 专属领域知识** — 专门处理能量 + 带宽资源模型
 - **多平台支持** — Claude Code、Cursor、OpenCode、Codex CLI、LangChain/CrewAI
@@ -289,7 +289,7 @@ tronlink-skills/
 ├── uninstall.sh                       # 清洁卸载脚本
 │
 ├── scripts/
-│   ├── tron_api.mjs                   # 主 CLI（34 个命令，零依赖）
+│   ├── tron_api.mjs                   # 主 CLI（33 个命令，零依赖）
 │   └── mcp_server.mjs                 # MCP 协议服务封装
 │
 ├── skills/                            # 技能定义（自动发现）
@@ -378,3 +378,9 @@ node scripts/tron_api.mjs wallet-balance --address T地址...
 node scripts/tron_api.mjs token-price --token USDT
 node scripts/tron_api.mjs optimize-cost --address T地址...
 ```
+
+## 版本与许可证
+
+- **包：** `tronlink-skills` v1.0.1
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases)

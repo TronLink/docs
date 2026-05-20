@@ -261,7 +261,55 @@ Invalid inputs are rejected immediately with a clear error before any wallet int
 
 **Table (default):** Human-readable table output.
 
-**JSON (`--json`):** Machine-readable output for scripts and AI agents.
+**JSON (`--json`):** Machine-readable output for scripts and AI agents. Always pass `--json` for automation.
+
+A successful write command returns:
+
+```json
+{
+  "Status": "Success",
+  "TxID": "0abc...",
+  "Explorer": "https://tronscan.org/#/transaction/0abc..."
+}
+```
+
+Read commands return the queried data (balances, resources, etc.) under the same top-level object. Field names are stable within a major version.
+
+## Exit Codes
+
+| Exit code | Meaning |
+| --------- | ------- |
+| `0` | Success — query returned, or transaction signed/broadcast |
+| non-zero | Failure — invalid input, user rejection, signing timeout, or broadcast/on-chain failure |
+
+In `--json` mode the failure reason is also included in the output.
+
+## Errors
+
+Errors surface as a human-readable message and, in `--json` mode, in the output. The conditions the CLI reports:
+
+| Condition | When | Retryable |
+| --- | --- | --- |
+| Invalid input | Validation fails before any wallet interaction (see [Input Validation](#input-validation)) | No — fix the input |
+| User rejected | The user clicks Reject on the TronLink approval page | No — the user declined |
+| Signing timeout | No approval within the timeout (default 5 min; `--timeout <ms>`) | Yes — re-issue the command |
+| `OUT_OF_ENERGY` | The account lacks Energy to execute the contract | No — obtain Energy first, then retry |
+| `REVERT` | The contract call reverted on-chain | No — the call itself failed |
+| `FAILED` | The transaction failed on-chain for another reason | Depends — inspect the reason |
+| Network error | A TronGrid / RPC request failed | Yes — transient |
+
+> **Retry policy:** read commands are always safe to retry. Write/signing commands must **not** be retried automatically after a submitted-but-uncertain result — re-issuing re-opens a signing prompt and may double-submit. Retry only after confirming the previous transaction did not land.
+
+## Safety & Side Effects
+
+| Side effect | Commands |
+| --- | --- |
+| **Read-only** (Network Read, no signing) | `balance`, `resource`, constant `trigger` (`--constant`) |
+| **Remote Write** (signs + broadcasts) | `transfer`, `stake`, `unstake`, `withdraw`, `delegate`, `reclaim`, `vote`, `reward`, writeable `trigger` |
+
+- **Human-in-the-loop:** every write command builds the transaction locally, shows a [Transaction Preview](#transaction-preview), and requires explicit approval on the TronLink browser page before signing. Private keys never leave TronLink.
+- **No auto-retry on writes:** see the retry policy above.
+- **Low-risk by default:** prefer testnets (`--network nile` / `shasta`); pass `--network mainnet` only for real funds.
 
 ## Supported Networks
 
@@ -399,3 +447,8 @@ tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network
 - Use `--timeout <ms>` to adjust the signing timeout
 - Amounts use string-based math internally — no floating point precision issues
 
+## Version & License
+
+- **Package:** `@tronlink/tronlink-cli` v1.0.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases)

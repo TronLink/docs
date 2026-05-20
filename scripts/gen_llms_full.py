@@ -18,7 +18,7 @@ from pathlib import Path
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
 OUT = DOCS / "llms-full.txt"
-SITE = "https://docs.tronlink.org"
+SITE = "https://docs.tronlink.org/docs"
 
 # English source pages, in nav order (see mkdocs.yml).
 PAGES = [

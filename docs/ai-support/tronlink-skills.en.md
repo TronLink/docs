@@ -7,7 +7,7 @@
 **TronLink Wallet Skills** is an AI Agent skill set that provides complete TRON blockchain wallet and DeFi functionality through natural language. Designed for Claude Code, Cursor, OpenCode, Codex CLI, and other AI agents.
 
 **Key Highlights:**
-- **6 skills, 34 commands** covering wallet, token research, market data, swaps, resources, and staking
+- **6 skills, 33 commands** covering wallet, token research, market data, swaps, resources, and staking
 - **Zero npm dependencies** — uses native Node.js 18+ `fetch` and `crypto`, no `npm install` needed
 - **TRON-specific domain knowledge** — dedicated handling of Energy + Bandwidth resource model
 - **Multi-platform support** — Claude Code, Cursor, OpenCode, Codex CLI, LangChain/CrewAI
@@ -289,7 +289,7 @@ tronlink-skills/
 ├── uninstall.sh                       # Clean uninstall
 │
 ├── scripts/
-│   ├── tron_api.mjs                   # Main CLI (34 commands, zero dependencies)
+│   ├── tron_api.mjs                   # Main CLI (33 commands, zero dependencies)
 │   └── mcp_server.mjs                 # MCP protocol server wrapper
 │
 ├── skills/                            # Skill definitions (auto-discovered)
@@ -378,3 +378,9 @@ node scripts/tron_api.mjs wallet-balance --address TAddress...
 node scripts/tron_api.mjs token-price --token USDT
 node scripts/tron_api.mjs optimize-cost --address TAddress...
 ```
+
+## Version & License
+
+- **Package:** `tronlink-skills` v1.0.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases)

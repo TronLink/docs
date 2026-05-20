@@ -8,7 +8,7 @@
 
 **Key Highlights:**
 - Interface-driven, pluggable architecture with **9 capability interfaces**
-- **56+ pre-defined tool handlers** with Zod-validated schemas
+- **52 pre-defined tool handlers** with Zod-validated schemas
 - Built-in Knowledge Store for cross-session learning and step replay
 - Flow Recipe system for codifying multi-step workflows
 - Standardized response format with 25+ error codes
@@ -24,7 +24,7 @@
 ├─ MCP Protocol (stdio / JSON-RPC 2.0)
 │
 ├─ MCP Server Instance (createMcpServer)
-│  ├─ 56+ tl_* tool handlers
+│  ├─ 52 tl_* tool handlers
 │  ├─ Knowledge Store (cross-session persistence)
 │  ├─ Flow Registry (recipe management)
 │  └─ Discovery utilities
@@ -253,7 +253,7 @@ interface GasFreeCapability {
 
 ---
 
-## 56+ Tool Definitions
+## 52 Tool Definitions
 
 All tools use the `tl_` prefix. Organized into 13 categories:
 
@@ -602,5 +602,11 @@ npm run clean      # Remove dist/
 3. **Interface Segregation** — Each capability has a focused, minimal interface
 4. **Pre-checks** — On-chain tools validate balances, permissions, quotas before sending transactions
 5. **Data Redaction** — Knowledge store auto-masks password, mnemonic, private_key, seed fields
-6. **Standardized Responses** — Consistent `{ ok, result/error, meta }` structure across all 56+ tools
+6. **Standardized Responses** — Consistent `{ ok, result/error, meta }` structure across all 52 tools
 7. **Template System** — Flow recipes use `{{param}}` placeholders for reusable workflows
+
+## Version & License
+
+- **Package:** `@tronlink/tronlink-mcp-core` v0.1.0
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases)

@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **55+ tools** across two complementary operation modes.
+**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **52 tools** across two complementary operation modes.
 
 **Key Highlights:**
 - Dual-mode architecture: **Playwright** (browser automation) + **Direct API** (on-chain operations)
@@ -414,6 +414,23 @@ mcp-server-tronlink/
 
 ---
 
+## Tool Contract & Side Effects
+
+**Input/output schemas and error contract.** Each tool's input/output schema and the structured error envelope are defined by the underlying framework — see [TronLink MCP Core](tronlink-mcp-core.md). Results follow a standardized success/error shape; errors carry a machine-checkable `code` and a `retryable` flag, so an agent can branch on failure instead of parsing prose.
+
+**Side-effect classification.** Classify before calling; never auto-retry a write whose outcome is uncertain.
+
+| Side effect | Examples |
+| --- | --- |
+| **Read-only** (Network Read) | `tl_chain_get_account`, `tl_chain_get_tx`, `tl_gasfree_get_account`, `tl_wallet_list`, screen/state reads |
+| **Remote Write** (signs / changes remote state) | `tl_chain_send`, `tl_chain_stake`, `tl_chain_swap_v3`, `tl_multisig_submit_tx`, transfers, delegation |
+
+- **Pre-checks:** all transaction tools validate (balances, reverts, resource burn) before execution.
+- **Human-in-the-loop:** write tools sign with the encrypted local `agent-wallet`; in browser-mode flows the user approves in the TronLink UI. Treat every Remote Write tool as requiring confirmation in production.
+- **Retry:** read-only tools are safe to retry; Remote Write tools must not be auto-retried unless proven idempotent.
+
+---
+
 ## Security Model
 
 | Aspect | Implementation |
@@ -457,3 +474,9 @@ npm install && npm run build
 # "Send 10 TRX to TAddress..."
 # "Swap 100 TRX for USDT on SunSwap V3"
 ```
+
+## Version & License
+
+- **Package:** `@tronlink/mcp-server-tronlink` v0.1.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases)

@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** 是一个生产级的 Model Context Protocol (MCP) 服务器，使 AI 代理（Claude、GPT 等）能够通过自然语言与 TRON 区块链交互。基于 `@tronlink/tronlink-mcp-core` 构建，提供跨两种互补操作模式的 **55+ 工具**。
+**mcp-server-tronlink** 是一个生产级的 Model Context Protocol (MCP) 服务器，使 AI 代理（Claude、GPT 等）能够通过自然语言与 TRON 区块链交互。基于 `@tronlink/tronlink-mcp-core` 构建，提供跨两种互补操作模式的 **52 工具**。
 
 **核心亮点：**
 - 双模架构：**Playwright**（浏览器自动化）+ **Direct API**（链上操作）
@@ -406,6 +406,23 @@ mcp-server-tronlink/
 
 ---
 
+## 工具契约与副作用
+
+**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md)。结果遵循统一的成功/错误结构；错误带有可机器判断的 `code` 与 `retryable` 标志，使 Agent 能基于失败分支处理，而不必解析自然语言。
+
+**副作用分级。** 调用前先分类；对结果未知的写操作绝不自动重试。
+
+| 副作用 | 示例 |
+| --- | --- |
+| **只读**（Network Read） | `tl_chain_get_account`、`tl_chain_get_tx`、`tl_gasfree_get_account`、`tl_wallet_list`、屏幕/状态读取 |
+| **远程写**（签名 / 改变远程状态） | `tl_chain_send`、`tl_chain_stake`、`tl_chain_swap_v3`、`tl_multisig_submit_tx`、转账、资源代理 |
+
+- **预检查：** 所有交易类工具在执行前会校验（余额、回滚、资源消耗）。
+- **人工确认（HITL）：** 写操作工具使用加密的本地 `agent-wallet` 签名；浏览器模式下由用户在 TronLink UI 审批。生产环境应将每个「远程写」工具视为需要确认。
+- **重试：** 只读工具可安全重试；「远程写」工具除非证明幂等，否则不得自动重试。
+
+---
+
 ## 安全模型
 
 | 方面 | 实现方式 |
@@ -451,3 +468,9 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 # "给 TAddress... 转 10 个 TRX"
 # "在 SunSwap V3 上用 100 TRX 兑换 USDT"
 ```
+
+## 版本与许可证
+
+- **包：** `@tronlink/mcp-server-tronlink` v0.1.1
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases)

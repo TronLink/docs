@@ -8,7 +8,7 @@
 
 **核心亮点：**
 - 接口驱动的可插拔架构，提供 **9 个能力接口**
-- **56+ 预定义工具处理器**，使用 Zod 验证 Schema
+- **52 预定义工具处理器**，使用 Zod 验证 Schema
 - 内置 Knowledge Store，支持跨会话学习和步骤回放
 - Flow Recipe 系统，将多步骤工作流程模板化
 - 标准化响应格式，25+ 错误码
@@ -24,7 +24,7 @@
 ├─ MCP 协议 (stdio / JSON-RPC 2.0)
 │
 ├─ MCP 服务器实例 (createMcpServer)
-│  ├─ 56+ tl_* 工具处理器
+│  ├─ 52 tl_* 工具处理器
 │  ├─ Knowledge Store（跨会话持久化）
 │  ├─ Flow Registry（流程管理）
 │  └─ Discovery 工具
@@ -180,7 +180,7 @@ getContextInfo(): ContextInfo
 
 ---
 
-## 56+ 工具定义
+## 52 工具定义
 
 所有工具使用 `tl_` 前缀，分为 13 个类别：
 
@@ -437,7 +437,7 @@ tronlink-mcp-core/
 │   │   ├── discovery.ts                   # 页面检查工具
 │   │   ├── schemas.ts                     # Zod 验证 Schema
 │   │   ├── constants.ts                   # 超时、限制、URL、界面常量
-│   │   ├── tools/                         # 56+ 工具处理器
+│   │   ├── tools/                         # 52 工具处理器
 │   │   ├── types/                         # 类型定义
 │   │   └── utils/                         # 工具函数
 │   ├── capabilities/
@@ -494,5 +494,11 @@ npm run clean      # 删除 dist/
 3. **接口隔离** — 每个能力都有专注的最小接口
 4. **预检查** — 链上工具在发送交易前验证余额、权限、配额
 5. **数据脱敏** — Knowledge Store 自动屏蔽 password、mnemonic、private_key、seed 字段
-6. **标准化响应** — 所有 56+ 工具使用一致的 `{ ok, result/error, meta }` 结构
+6. **标准化响应** — 所有 52 工具使用一致的 `{ ok, result/error, meta }` 结构
 7. **模板系统** — Flow Recipes 使用 `{{param}}` 占位符实现可复用工作流
+
+## 版本与许可证
+
+- **包：** `@tronlink/tronlink-mcp-core` v0.1.0
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases)

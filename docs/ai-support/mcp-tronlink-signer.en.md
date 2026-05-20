@@ -96,3 +96,8 @@ When `sign_transaction` is called with `broadcast: true`, the server automatical
 | `TRON_HTTP_PORT` | Local HTTP server port | `3386` |
 | `TRON_API_KEY` | TronGrid API key (optional) | - |
 
+## Version & License
+
+- **Package:** `mcp-tronlink-signer` v0.1.4
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
