@@ -4,25 +4,27 @@ TronLink's developer documentation is published in machine-readable form so AI a
 
 ## Available endpoints
 
-| Endpoint | Description |
-| --- | --- |
-| [/docs/llms.txt](/docs/llms.txt) | Curated English index of key pages with one-line descriptions ([llmstxt.org](https://llmstxt.org/) format) |
-| [/docs/llms.zh.txt](/docs/llms.zh.txt) | Curated Chinese index — same layout, links into `/docs/zh/` pages |
-| [/docs/llms-full.en.txt](/docs/llms-full.en.txt) | Every English page concatenated for single-fetch ingestion |
-| [/docs/llms-full.zh.txt](/docs/llms-full.zh.txt) | Every Chinese page concatenated for single-fetch ingestion |
-| [/docs/llms-full.txt](/docs/llms-full.txt) | Alias of `llms-full.en.txt` (kept for back-compat) |
+> **URL ≠ source filename.** Source files carry `.en` / `.zh` suffixes (`llms.zh.txt`, `llms-full.en.txt`, `llms-full.zh.txt`) so the mkdocs i18n plugin can route them. **In the deployed site the suffix is stripped** — Chinese variants live under `/docs/zh/`. Use the deployed URLs below; the source-name URLs (e.g. `/docs/llms-full.en.txt`) return 404.
 
-Production URLs: `https://docs.tronlink.org/docs/llms.txt`, `https://docs.tronlink.org/docs/llms.zh.txt`, and the matching `llms-full.*.txt` bundles.
+| Endpoint (deployed URL) | Description |
+| --- | --- |
+| [/docs/llms.txt](/docs/llms.txt) | Curated English index of key pages ([llmstxt.org](https://llmstxt.org/) format) |
+| [/docs/zh/llms.txt](/docs/zh/llms.txt) | Curated Chinese index — same layout, links into `/docs/zh/` pages |
+| [/docs/llms-full.txt](/docs/llms-full.txt) | Every English page concatenated for single-fetch ingestion (built from `docs/llms-full.en.txt`) |
+| [/docs/zh/llms-full.txt](/docs/zh/llms-full.txt) | Every Chinese page concatenated for single-fetch ingestion (built from `docs/llms-full.zh.txt`) |
+
+Production URLs: `https://docs.tronlink.org/docs/llms.txt`, `https://docs.tronlink.org/docs/zh/llms.txt`, and the matching `llms-full.txt` bundles under each locale root.
 
 ## Which file should I use?
 
-| Use case | File |
+| Use case | URL |
 | --- | --- |
-| Navigate / find the right English page | `llms.txt` — short, link-only map |
-| Navigate / find the right Chinese page | `llms.zh.txt` — same layout, Chinese descriptions |
-| Ingest the whole documentation in one request | `llms-full.en.txt` / `llms-full.zh.txt` — full text per language |
+| Navigate / find the right English page | `/docs/llms.txt` — short, link-only map |
+| Navigate / find the right Chinese page | `/docs/zh/llms.txt` — same layout, Chinese descriptions |
+| Ingest the whole English documentation in one request | `/docs/llms-full.txt` |
+| Ingest the whole Chinese documentation in one request | `/docs/zh/llms-full.txt` |
 
-Start with the index for your language and follow its links; fetch a `llms-full.*` bundle when you need everything at once. The Chinese index points at `/docs/zh/` slugs; the English index points at `/docs/` slugs.
+Start with the index for your language and follow its links; fetch a full bundle when you need everything at once. The Chinese index points at `/docs/zh/` slugs; the English index points at `/docs/` slugs.
 
 ## Add to your AI tool
 

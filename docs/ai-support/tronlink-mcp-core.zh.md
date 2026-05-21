@@ -140,33 +140,106 @@ getContextInfo(): ContextInfo
 
 ### 1. BuildCapability
 从源码构建 TronLink 扩展。
+```typescript
+interface BuildCapability {
+  build(options?: BuildOptions): Promise<BuildResult>
+}
+```
 
 ### 2. FixtureCapability
 管理钱包状态 JSON（default、onboarding、自定义预设）。
+```typescript
+interface FixtureCapability {
+  applyPreset(preset: string): Promise<void>
+  getAvailablePresets(): string[]
+  exportState(): Promise<WalletState>
+  importState(state: WalletState): Promise<void>
+}
+```
 
 ### 3. ChainCapability
 控制本地 TRON 节点（tron-quickstart 等）。
+```typescript
+interface ChainCapability {
+  startNode(): Promise<void>
+  stopNode(): Promise<void>
+  getNodeStatus(): Promise<NodeStatus>
+  fundAccount(address: string, amount: number): Promise<string>
+}
+```
 
 ### 4. ContractSeedingCapability
 部署智能合约（TRC20/721/1155/10/multisig/staking/energy_rental）。
+```typescript
+interface ContractSeedingCapability {
+  seedContract(type: string, options?: any): Promise<ContractInfo>
+  seedContracts(specs: ContractSpec[]): Promise<ContractInfo[]>
+  getContractAddress(name: string): string | undefined
+  listContracts(): ContractInfo[]
+}
+```
 
 ### 5. StateSnapshotCapability
 从 UI 提取钱包状态（界面、地址、余额、能量、带宽）。
+```typescript
+interface StateSnapshotCapability {
+  getSnapshot(): Promise<StateSnapshot>  // 界面、地址、余额、能量、带宽
+}
+```
 
 ### 6. MockServerCapability
 用于隔离测试的 Mock API 服务器。
+```typescript
+interface MockServerCapability {
+  start(config?: MockConfig): Promise<void>
+  stop(): Promise<void>
+  addRoute(route: MockRoute): void
+  getRequests(): MockRequest[]
+}
+```
 
 ### 7. OnChainCapability
-通过 TronGrid REST API 的直接链上操作（14 个方法）：
-- 查询：`getAddress`、`getAccount`、`getTokens`、`getTransaction`、`getHistory`、`getStakingInfo`
-- 交易：`send`、`stake`、`resource`、`swap`、`swapV3`
-- 多签：`setupMultisig`、`createMultisigTx`、`signMultisigTx`
+通过 TronGrid REST API 的直接链上操作。
+```typescript
+interface OnChainCapability {
+  getAddress(): Promise<AddressResult>
+  getAccount(address?: string): Promise<AccountResult>
+  getTokens(address?: string): Promise<TokensResult>
+  send(params: SendParams): Promise<SendResult>
+  getTransaction(txId: string): Promise<TxResult>
+  getHistory(params?: HistoryParams): Promise<HistoryResult>
+  stake(params: StakeParams): Promise<StakeResult>
+  getStakingInfo(address?: string): Promise<StakingResult>
+  resource(params: ResourceParams): Promise<ResourceResult>
+  swap(params: SwapParams): Promise<SwapResult>
+  swapV3(params: SwapV3Params): Promise<SwapResult>
+  setupMultisig(params: MultisigSetupParams): Promise<MultisigResult>
+  createMultisigTx(params: MultisigTxParams): Promise<MultisigTxResult>
+  signMultisigTx(params: SignMultisigParams): Promise<SignResult>
+}
+```
 
 ### 8. MultiSigCapability
-多签服务集成（REST + WebSocket，5 个方法）。
+多签服务集成（REST + WebSocket）。
+```typescript
+interface MultiSigCapability {
+  queryAuth(address: string): Promise<AuthResult>
+  submitTransaction(params: SubmitParams): Promise<SubmitResult>
+  queryTransactionList(params: ListParams): Promise<TxListResult>
+  connectWebSocket(params: WsParams): Promise<void>
+  disconnectWebSocket(): Promise<void>
+}
+```
 
 ### 9. GasFreeCapability
-零 Gas TRC20 转账服务（3 个方法）。
+零 Gas TRC20 转账服务。
+```typescript
+interface GasFreeCapability {
+  getAccount(address: string): Promise<GasFreeAccountResult>
+  getTransactions(params: GasFreeTxParams): Promise<GasFreeTxResult>
+  send(params: GasFreeSendParams): Promise<GasFreeSendResult>
+}
+```
 
 ---
 

@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **52 tools** across two complementary operation modes.
+**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **55 tools** in `list_tools` — **52 core tools** registered by [`tronlink-mcp-core`](tronlink-mcp-core.md) + **3 wallet management tools** registered locally by this server's [`src/wallet-tools.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/wallet-tools.ts) — across two complementary operation modes.
 
 **Key Highlights:**
 - Dual-mode architecture: **Playwright** (browser automation) + **Direct API** (on-chain operations)
@@ -65,18 +65,23 @@ Controls the TronLink Chrome extension via Playwright Chromium. Ideal for **E2E 
 
 **27 Playwright tools include:** `tl_launch`, `tl_cleanup`, `tl_navigate`, `tl_click`, `tl_type`, `tl_screenshot`, `tl_accessibility_snapshot`, `tl_describe_screen`, etc.
 
-### Mode 2: Direct API (On-Chain)
+> The "27" is **`52 core − 22 chain/multisig/gasfree − 3 mode-agnostic (run_steps, list_flows, set_context) = 27`**. `tl_clipboard`, `tl_keyboard`, `tl_scroll`, etc. are Playwright-mode UI tools and counted in the 27.
 
-Operates directly against TronGrid REST API — no browser required. Ideal for **account queries, transfers, swaps, staking, and multi-sig management**.
+### Mode 2: Direct API + Wallet Management
 
-**25 API tools grouped into:**
+Operates directly against TronGrid / multi-sig / GasFree REST APIs — no browser required. Ideal for **account queries, transfers, swaps, staking, multi-sig management, and runtime wallet hot-swap**.
 
-| Group | Tools | Description |
-|-------|-------|-------------|
-| On-Chain | 14 | Transfer, stake, swap, query, multisig setup |
-| Multi-Signature | 5 | Permission query, tx submit, WebSocket monitoring |
-| GasFree | 3 | Zero-gas TRC20 transfers |
-| Wallet Management | 3 | List wallets, auto-create a wallet, switch the active wallet |
+**28 tools** = 22 mode-2 API tools (from core) + 3 mode-agnostic core tools + 3 wallet management tools (from this server). Grouping:
+
+| Group | Tools | Source | Description |
+|-------|-------|--------|-------------|
+| On-Chain | 14 | core | Transfer, stake, swap, query, multisig setup |
+| Multi-Signature | 5 | core | Permission query, tx submit, WebSocket monitoring |
+| GasFree | 3 | core | Zero-gas TRC20 transfers |
+| Wallet Management | 3 | **this server** (`src/wallet-tools.ts`) | List wallets, auto-create a wallet, switch the active wallet |
+| Mode-agnostic | 3 | core | `tl_run_steps`, `tl_list_flows`, `tl_set_context` — invoked from either mode |
+
+> **Why the breakdown differs from the architecture diagram.** The architecture node only enumerates capability classes (`OnChainCapability`, `MultiSigCapability`, `GasFreeCapability`). Wallet management lives outside the capability interface — it's registered by `src/wallet-tools.ts` and hot-swaps wallets into running capabilities via the `onWalletSwap` callback in [`src/index.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/index.ts).
 
 ---
 

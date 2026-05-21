@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** 是一个生产级的 Model Context Protocol (MCP) 服务器，使 AI 代理（Claude、GPT 等）能够通过自然语言与 TRON 区块链交互。基于 `@tronlink/tronlink-mcp-core` 构建，提供跨两种互补操作模式的 **52 工具**。
+**mcp-server-tronlink** 是一个生产级的 Model Context Protocol (MCP) 服务器，使 AI 代理（Claude、GPT 等）能够通过自然语言与 TRON 区块链交互。基于 `@tronlink/tronlink-mcp-core` 构建，`list_tools` 返回 **55 个工具** —— **52 个核心工具**来自 [`tronlink-mcp-core`](tronlink-mcp-core.md)，**3 个钱包管理工具**由本服务器的 [`src/wallet-tools.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/wallet-tools.ts) 注册——跨两种互补操作模式。
 
 **核心亮点：**
 - 双模架构：**Playwright**（浏览器自动化）+ **Direct API**（链上操作）
@@ -65,18 +65,23 @@ flowchart TD
 
 **27 个 Playwright 工具包括：** `tl_launch`、`tl_cleanup`、`tl_navigate`、`tl_click`、`tl_type`、`tl_screenshot`、`tl_accessibility_snapshot`、`tl_describe_screen` 等。
 
-### 模式二：Direct API（链上操作）
+> "27" 的算法是 **`52 个核心工具 − 22 个 chain/multisig/gasfree − 3 个模式无关（run_steps、list_flows、set_context） = 27`**。`tl_clipboard`、`tl_keyboard`、`tl_scroll` 等是 Playwright 模式的 UI 工具，计入 27。
 
-直接调用 TronGrid REST API——无需浏览器。适用于 **账户查询、转账、兑换、质押和多签管理**。
+### 模式二：Direct API + 钱包管理
 
-**25 个 API 工具分组：**
+直接调用 TronGrid / 多签 / GasFree REST API——无需浏览器。适用于 **账户查询、转账、兑换、质押、多签管理以及运行时钱包热切换**。
 
-| 分组 | 工具数 | 说明 |
-|------|--------|------|
-| 钱包管理 | 3 | 列出钱包、自动创建、切换当前钱包 |
-| 链上操作 | 14 | 转账、质押、兑换、查询、多签设置 |
-| 多签管理 | 5 | 权限查询、交易提交、WebSocket 监控 |
-| GasFree | 3 | 零 Gas TRC20 转账 |
+**28 个工具** = 22 个模式二 API 工具（来自 core） + 3 个模式无关核心工具 + 3 个钱包管理工具（来自本服务器）。分组：
+
+| 分组 | 工具数 | 来源 | 说明 |
+|------|--------|------|------|
+| 链上操作 | 14 | core | 转账、质押、兑换、查询、多签设置 |
+| 多签管理 | 5 | core | 权限查询、交易提交、WebSocket 监控 |
+| GasFree | 3 | core | 零 Gas TRC20 转账 |
+| 钱包管理 | 3 | **本服务器**（`src/wallet-tools.ts`） | 列出钱包、自动创建、切换当前钱包 |
+| 模式无关 | 3 | core | `tl_run_steps`、`tl_list_flows`、`tl_set_context`——两种模式皆可调用 |
+
+> **为什么这里的分组与架构图不同。** 架构图节点只列了能力类（`OnChainCapability`、`MultiSigCapability`、`GasFreeCapability`），钱包管理在能力接口之外——它由 `src/wallet-tools.ts` 注册，并通过 [`src/index.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/index.ts) 中的 `onWalletSwap` 回调向运行中的能力实例热切换钱包。
 
 ---
 
