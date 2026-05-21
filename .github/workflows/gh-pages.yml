@@ -38,3 +38,18 @@ jobs:
         branch: gh-pages       # 部署目标分支
         folder: site           # 构建产物目录
         token: ${{ secrets.GITHUB_TOKEN }}  # 使用 GitHub 默认的 Token
+
+    - name: Verify deployed links
+      run: |
+        BASE=https://docs.tronlink.org
+        for i in $(seq 1 30); do
+          if curl -sf -o /dev/null "$BASE/llms.txt"; then
+            echo "Site live, running sample verify"
+            python3 scripts/gen_llms_full.py --verify "$BASE"
+            exit $?
+          fi
+          echo "Waiting for deploy to propagate ($i/30)..."
+          sleep 10
+        done
+        echo "Timeout (5 min) waiting for $BASE/llms.txt to come up"
+        exit 1

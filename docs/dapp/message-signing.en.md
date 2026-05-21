@@ -44,3 +44,13 @@ When “tronweb.trx.signMessageV2(message);” is executed, a pop-up window will
 
 If the user chooses “Reject” in the pop-up window, an exception will be thrown, which the developer can catch for further processing.
 
+## Errors
+
+| Code | Meaning | Where it comes from | Retryable? |
+| :---: | --- | --- | :---: |
+| `4001` | User clicked **Reject** in the signing popup | `tronWeb.trx.signMessageV2(message)` | No — user declined |
+| (thrown) | `Invalid transaction provided` / non-hex input | `signMessageV2(...)` argument validation | No — pass a valid hex string |
+| (thrown) | Provider not injected / wallet not authorized | `window.tron.tronWeb` undefined | No — connect first via `eth_requestAccounts` |
+
+For cross-surface translation (DApp ↔ DeepLink ↔ MCP ↔ CLI) see the [Error Code Map](../reference/error-code-map.md).
+

@@ -8,9 +8,17 @@ whole documentation set in one request.
 We also write `llms-full.txt` as a verbatim copy of the English bundle so
 existing links (e.g. /llms-full.txt) keep working.
 
-Run from the repo root:
+Usage:
 
     python3 scripts/gen_llms_full.py
+        Generate the three bundles in docs/.
+
+    python3 scripts/gen_llms_full.py --verify https://docs.tronlink.org
+        Skip generation; sample-check that the curated indexes' links
+        return 200 on the live deployment. Used as a post-deploy CI gate.
+        If you hit SSL CERTIFICATE_VERIFY_FAILED locally on macOS, run
+        `/Applications/Python\ 3.X/Install\ Certificates.command` once
+        to install the CA bundle (CI on Ubuntu has it by default).
 
 Pages are emitted in navigation order (mirroring the `en` and `zh` navs
 in mkdocs.yml). Re-run this whenever docs change; wire it into CI to keep
@@ -18,9 +26,16 @@ it in sync.
 """
 from __future__ import annotations
 
+import argparse
+import random
+import re
 import subprocess
+import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urljoin
 
 DOCS = Path(__file__).resolve().parent.parent / "docs"
 REPO = DOCS.parent
@@ -170,7 +185,133 @@ def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> t
     return "\n".join(header) + body + "\n", page_count, missing
 
 
-def main() -> None:
+LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+
+# `> Updated: <iso> · Commit: <sha>` is upserted into llms.txt /
+# llms.zh.txt so an agent can self-check staleness without parsing the
+# bundle bodies.
+UPDATED_PREFIX = "> Updated: "
+
+
+def stamp_index_header(path: Path, updated_at: str, sha: str) -> None:
+    """Upsert a `> Updated: <iso> · Commit: <sha>` line into a curated index.
+
+    If a matching line already exists, replace it in place. Otherwise
+    insert it as a fresh blockquote immediately after the primary blurb
+    blockquote. No-op if the file lacks a primary blockquote (we'd
+    rather raise loudly than guess where to put metadata).
+    """
+    new_line = f"{UPDATED_PREFIX}{updated_at} · Commit: {sha}"
+    lines = path.read_text(encoding="utf-8").splitlines()
+
+    for i, line in enumerate(lines):
+        if line.startswith(UPDATED_PREFIX):
+            lines[i] = new_line
+            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    quote_end: int | None = None
+    in_quote = False
+    for i, line in enumerate(lines):
+        if line.startswith("> "):
+            in_quote = True
+        elif in_quote:
+            quote_end = i
+            break
+
+    if quote_end is None:
+        raise SystemExit(f"No primary blockquote in {path}; cannot stamp header")
+
+    new_lines = lines[: quote_end + 1] + [new_line, ""] + lines[quote_end + 1 :]
+    path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
+
+def parse_index_links(path: Path) -> list[str]:
+    """Extract in-site `[label](target)` link targets from a curated index.
+
+    Skips external URLs, mailto, and pure anchors. The returned strings
+    are the raw href values (relative to the index file's own location),
+    suitable for `urljoin` against the index's deployed URL.
+    """
+    targets: list[str] = []
+    for match in LINK_RE.finditer(path.read_text(encoding="utf-8")):
+        href = match.group(1).strip()
+        if href.startswith(("http://", "https://", "mailto:", "#")):
+            continue
+        targets.append(href)
+    return targets
+
+
+def http_status(url: str, timeout: float = 10.0) -> int:
+    """GET `url`; return status code, or 0 on network failure.
+
+    Uses GET (not HEAD) because some CDNs/proxies misroute HEAD requests
+    or strip caching headers; the body is discarded.
+    """
+    req = urllib.request.Request(
+        url,
+        method="GET",
+        headers={"User-Agent": "gen_llms_full/verify"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            resp.read(1)  # touch body to surface mid-stream errors; discard
+            return resp.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+    except (urllib.error.URLError, TimeoutError, OSError):
+        return 0
+
+
+def verify_live(base_url: str, sample_size: int = 5) -> int:
+    """Sample-check curated index links against `base_url`.
+
+    Always probes the four bundle endpoints (`/llms.txt`, `/zh/llms.txt`,
+    `/llms-full.txt`, `/zh/llms-full.txt`); then picks `sample_size`
+    additional random link targets from each curated index and probes
+    those too. Returns 0 if every probe returns 200, 1 otherwise.
+    """
+    base = base_url.rstrip("/") + "/"
+    probes: list[tuple[str, str]] = [
+        ("endpoint", urljoin(base, "llms.txt")),
+        ("endpoint", urljoin(base, "zh/llms.txt")),
+        ("endpoint", urljoin(base, "llms-full.txt")),
+        ("endpoint", urljoin(base, "zh/llms-full.txt")),
+    ]
+    for label, index_path, deploy_url in [
+        ("en-sample", DOCS / "llms.txt", urljoin(base, "llms.txt")),
+        ("zh-sample", DOCS / "llms.zh.txt", urljoin(base, "zh/llms.txt")),
+    ]:
+        if not index_path.exists():
+            print(f"Missing index file: {index_path}", file=sys.stderr)
+            return 1
+        links = parse_index_links(index_path)
+        if not links:
+            print(f"No in-site links found in {index_path}", file=sys.stderr)
+            return 1
+        sample = random.sample(links, min(sample_size, len(links)))
+        for href in sample:
+            probes.append((label, urljoin(deploy_url, href)))
+
+    print(f"Verifying {len(probes)} URLs against {base}")
+    failures: list[tuple[str, int]] = []
+    for label, url in probes:
+        code = http_status(url)
+        flag = "  OK" if code == 200 else f"FAIL {code:>3}"
+        print(f"  [{label:9s}] {flag}  {url}")
+        if code != 200:
+            failures.append((url, code))
+
+    if failures:
+        print(f"\n{len(failures)} of {len(probes)} probes failed:", file=sys.stderr)
+        for url, code in failures:
+            print(f"  {code}  {url}", file=sys.stderr)
+        return 1
+    print(f"\nAll {len(probes)} URLs returned 200")
+    return 0
+
+
+def generate_bundles() -> None:
     sha = git_short_sha()
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -195,9 +336,36 @@ def main() -> None:
         if missing:
             all_missing[lang] = missing
 
+    for index_name in ("llms.txt", "llms.zh.txt"):
+        index_path = DOCS / index_name
+        if index_path.exists():
+            stamp_index_header(index_path, generated_at, sha)
+            print(f"Stamped {index_path.relative_to(REPO)} (commit {sha})")
+
     if all_missing:
         msg = "; ".join(f"{lang}: {', '.join(m)}" for lang, m in all_missing.items())
         raise SystemExit("Missing pages — " + msg)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--verify",
+        metavar="BASE_URL",
+        help="Skip generation; sample-check curated index links against this base URL "
+             "(e.g. https://docs.tronlink.org).",
+    )
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=5,
+        help="Random links per locale to probe in --verify mode (default: 5).",
+    )
+    args = parser.parse_args()
+
+    if args.verify:
+        sys.exit(verify_live(args.verify, sample_size=args.sample_size))
+    generate_bundles()
 
 
 if __name__ == "__main__":
