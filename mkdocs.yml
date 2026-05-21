@@ -1,7 +1,7 @@
 site_name: TronLink 开发者文档
 site_description: TronLink 钱包开发者文档，包含移动端、插件钱包和 DApp 开发指南
 site_author: TronLink Team
-site_url: https://docs.tronlink.org/
+site_url: https://docs.tronlink.org/docs/
 # 仓库信息
 repo_name: tronlink-doc
 repo_url: https://github.com/TronLink/docs.git
@@ -66,7 +66,8 @@ plugins:
               - Request TronLink Extension: plugin-wallet/active-requests.en.md
               - Receive messages from TronLink: plugin-wallet/passive-messages.en.md
               - Compatibility for the v field after Ledger signing: plugin-wallet/ledger-signing-update.en.md
-            - AI Support: 
+            - AI Support:
+              - AI / LLMs: ai-support/ai-llms.en.md
               - MCP Server TronLink : ai-support/mcp-server-tronlink.en.md
               - TronLink MCP Core: ai-support/tronlink-mcp-core.en.md
               - TronLink Skills: ai-support/tronlink-skills.en.md
@@ -79,6 +80,10 @@ plugins:
               - General Transfer: dapp/transfer.en.md
               - Multi-Signature Transfer: dapp/multi-sign-transfer.en.md
               - Stake2.0: dapp/stake2.en.md
+            - Reference:
+              - Networks & Addresses: reference/networks.en.md
+              - Glossary: reference/glossary.en.md
+              - FAQ: reference/faq.en.md
         - locale: zh
           name: 中文
           site_name: TronLink 开发者文档
@@ -94,7 +99,8 @@ plugins:
               - 主动请求TronLink插件功能: plugin-wallet/active-requests.zh.md
               - 被动接收TronLink插件的消息: plugin-wallet/passive-messages.zh.md
               - 对ledger签名后的v字段兼容: plugin-wallet/ledger-signing-update.zh.md
-            - AI 支持: 
+            - AI 支持:
+              - AI / LLMs: ai-support/ai-llms.zh.md
               - MCP Server TronLink : ai-support/mcp-server-tronlink.zh.md
               - TronLink MCP Core: ai-support/tronlink-mcp-core.zh.md
               - TronLink Skills: ai-support/tronlink-skills.zh.md
@@ -107,8 +113,22 @@ plugins:
               - 普通转账: dapp/transfer.zh.md
               - 多签转账: dapp/multi-sign-transfer.zh.md
               - Stake2.0: dapp/stake2.zh.md
+            - 参考:
+              - 网络与地址: reference/networks.zh.md
+              - 术语表: reference/glossary.zh.md
+              - 常见问题: reference/faq.zh.md
       use_directory_urls: true  # 推荐保持为 true     
       suffix_mode: true 
+
+# Markdown 扩展（开启 mermaid 图表渲染）
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 # 版权信息
 copyright: Copyright &copy; 2025 TronLink Team

@@ -8,45 +8,35 @@
 
 **Key Highlights:**
 - Interface-driven, pluggable architecture with **9 capability interfaces**
-- **56+ pre-defined tool handlers** with Zod-validated schemas
+- **52 pre-defined tool handlers** with Zod-validated schemas
 - Built-in Knowledge Store for cross-session learning and step replay
 - Flow Recipe system for codifying multi-step workflows
-- Standardized response format with 25+ error codes
+- Standardized response format with a documented error-code table (`code` / `retryable` / `hint`)
 - Dual-mode support: Playwright (UI automation) + Direct API (on-chain)
 
 ---
 
 ## Architecture
 
-```
-┌─ AI Agent (Claude, GPT, etc.)
-│
-├─ MCP Protocol (stdio / JSON-RPC 2.0)
-│
-├─ MCP Server Instance (createMcpServer)
-│  ├─ 56+ tl_* tool handlers
-│  ├─ Knowledge Store (cross-session persistence)
-│  ├─ Flow Registry (recipe management)
-│  └─ Discovery utilities
-│
-├─ ISessionManager Interface (consumer implements)
-│  ├─ Session lifecycle
-│  ├─ Page/tab management
-│  ├─ Capability injection (9 interfaces)
-│  └─ Environment mode (e2e / prod)
-│
-├─ Capability System (9 pluggable interfaces)
-│  ├─ BuildCapability
-│  ├─ FixtureCapability
-│  ├─ ChainCapability
-│  ├─ ContractSeedingCapability
-│  ├─ StateSnapshotCapability
-│  ├─ MockServerCapability
-│  ├─ OnChainCapability
-│  ├─ MultiSigCapability
-│  └─ GasFreeCapability
-│
-└─ Optional: Playwright (browser automation)
+```mermaid
+flowchart TD
+  Agent["AI Agent (Claude, GPT, etc.)"]
+  Server["MCP Server Instance<br/>createMcpServer()"]
+  Tools["52 tl_* tool handlers"]
+  KS["Knowledge Store<br/>(cross-session persistence)"]
+  FR["Flow Registry<br/>(recipe management)"]
+  Disc["Discovery utilities"]
+  SM["ISessionManager Interface (consumer implements)<br/>session lifecycle · page/tab mgmt · capability injection · e2e/prod"]
+  Caps["Capability System — 9 pluggable interfaces<br/>Build · Fixture · Chain · ContractSeeding · StateSnapshot · MockServer · OnChain · MultiSig · GasFree"]
+  PW["Optional: Playwright<br/>(browser automation)"]
+  Agent -- "MCP Protocol — stdio / JSON-RPC 2.0" --> Server
+  Server --> Tools
+  Server --> KS
+  Server --> FR
+  Server --> Disc
+  Server --> SM
+  SM --> Caps
+  SM -. "when configured" .-> PW
 ```
 
 **Design Principles:**
@@ -253,9 +243,11 @@ interface GasFreeCapability {
 
 ---
 
-## 56+ Tool Definitions
+## 52 Tool Definitions
 
 All tools use the `tl_` prefix. Organized into 13 categories:
+
+> **Schema SSOT.** Every tool's `inputSchema` is generated from the Zod schemas in [`src/mcp-server/schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) and surfaced at runtime via `list_tools`. Tables below list **name + one-line description only**; for parameter types, required fields, enums, and defaults, either call `list_tools` against a running server, or read the Zod source. The downstream [`mcp-server-tronlink` page](mcp-server-tronlink.md#selected-tool-schemas-inline-mirror) mirrors JSON Schema for a curated set of 7 high-impact tools (`tl_chain_send`, `tl_chain_swap_v3`, `tl_chain_stake`, `tl_multisig_submit_tx`, `tl_gasfree_send`, `tl_chain_get_account`, `tl_evaluate`) — useful when writing a call site without an MCP session open. The SSOT is still this package.
 
 ### 1. Session Management (2)
 | Tool | Description |
@@ -383,15 +375,50 @@ All tools return a consistent structure:
 {
   ok: false,
   error: {
-    code: "TL_CLICK_FAILED",       // One of 25+ error codes
+    code: "TL_CLICK_FAILED",       // stable code — see table below
     message: "Element not found",
+    retryable: false,              // explicit hint for agents
+    hint: "Re-snapshot the page and retry with a fresh a11yRef.",
     details: { /* optional */ }
   },
-  meta: { timestamp, sessionId, durationMs }
+  meta: { timestamp, sessionId, durationMs, schemaVersion: "1.0" }
 }
 ```
 
-**25+ Error Codes:** `TL_BUILD_FAILED`, `TL_SESSION_ALREADY_RUNNING`, `TL_NO_ACTIVE_SESSION`, `TL_LAUNCH_FAILED`, `TL_INVALID_INPUT`, `TL_NAVIGATION_FAILED`, `TL_TARGET_NOT_FOUND`, `TL_CLICK_FAILED`, `TL_TYPE_FAILED`, `TL_WAIT_TIMEOUT`, `TL_SCREENSHOT_FAILED`, `TL_CAPABILITY_NOT_AVAILABLE`, `TL_CHAIN_QUERY_FAILED`, `TL_CHAIN_SEND_FAILED`, `TL_CHAIN_SWAP_FAILED`, `TL_GASFREE_QUERY_FAILED`, `TL_GASFREE_SEND_FAILED`, `TL_MULTISIG_QUERY_FAILED`, `TL_MULTISIG_SUBMIT_FAILED`, `TL_MULTISIG_WS_FAILED`, `TL_INTERNAL_ERROR`, etc.
+### Error Codes
+
+This is the single source of truth (SSOT) for error codes returned by every tool in this framework. Downstream servers (`mcp-server-tronlink`, `mcp-tronlink-signer`) inherit these codes and may extend them. `retryable` reflects framework-level safety; an agent **must** still apply the side-effect classification of the calling tool — never auto-retry a Remote Write whose outcome is unknown, regardless of `retryable`.
+
+| Code | Retryable | Hint | Typical trigger |
+|------|:---:|------|-----------------|
+| `TL_BUILD_FAILED` | false | Inspect build logs; fix source/config before retrying. | `tl_launch` with `BuildCapability` enabled |
+| `TL_SESSION_ALREADY_RUNNING` | false | Call `tl_cleanup` before launching a new session. | `tl_launch` while a session is active |
+| `TL_NO_ACTIVE_SESSION` | false | Call `tl_launch` first. | Any session-bound tool without a session |
+| `TL_LAUNCH_FAILED` | true | Transient browser/extension boot failure; retry once. | `tl_launch` |
+| `TL_INVALID_INPUT` | false | Fix the arguments; do not retry with the same payload. | Zod schema validation |
+| `TL_NAVIGATION_FAILED` | true | Page may still be transitioning; wait for the target screen and retry. | `tl_navigate`, `tl_switch_to_tab` |
+| `TL_TARGET_NOT_FOUND` | false | Refresh refs via `tl_accessibility_snapshot` and retry with a fresh ref. | `tl_click`, `tl_type`, `tl_wait_for` |
+| `TL_CLICK_FAILED` | true | Element may have re-rendered; refresh refs and retry once. | `tl_click` |
+| `TL_TYPE_FAILED` | true | Same as click — refresh refs and retry once. | `tl_type` |
+| `TL_WAIT_TIMEOUT` | true | Increase the timeout or wait on a different selector. | `tl_wait_for`, `tl_wait_for_notification` |
+| `TL_SCREENSHOT_FAILED` | true | Transient; retry. | `tl_screenshot`, `tl_describe_screen` |
+| `TL_CAPABILITY_NOT_AVAILABLE` | false | The session was launched without this capability; reconfigure and relaunch. | Any tool that requires an optional capability |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid transient or rate-limited; back off and retry. | `tl_chain_get_*` |
+| `TL_CHAIN_SEND_FAILED` | false | Do **not** auto-retry. Verify on-chain state with `tl_chain_get_tx` before re-issuing. | `tl_chain_send`, `tl_chain_stake`, `tl_chain_resource` |
+| `TL_CHAIN_SWAP_FAILED` | false | Same as send — confirm the previous tx did not land before retrying. | `tl_chain_swap`, `tl_chain_swap_v3` |
+| `TL_GASFREE_QUERY_FAILED` | true | Transient; retry. | `tl_gasfree_get_account`, `tl_gasfree_get_transactions` |
+| `TL_GASFREE_SEND_FAILED` | false | Do **not** auto-retry; query the GasFree service for the latest status. | `tl_gasfree_send` |
+| `TL_MULTISIG_QUERY_FAILED` | true | Transient; retry. | `tl_multisig_query_auth`, `tl_multisig_list_tx` |
+| `TL_MULTISIG_SUBMIT_FAILED` | false | Do **not** auto-retry; the request may already have been accepted. | `tl_multisig_submit_tx` |
+| `TL_MULTISIG_WS_FAILED` | true | Reconnect the WebSocket. | `tl_multisig_connect_ws` |
+| `TL_INTERNAL_ERROR` | true | Generic framework failure; retry once and escalate with logs. | Any tool |
+
+Custom codes added by downstream servers must follow these rules:
+
+- Never reuse a code listed above with a different meaning.
+- `retryable` is required for every new code.
+- Meaning is stable within a major version.
+- New codes are documented in the consuming server's docs, not silently introduced.
 
 ---
 
@@ -400,7 +427,7 @@ All tools return a consistent structure:
 Cross-session learning and step replay system.
 
 ### Storage Structure
-```
+```text
 test-artifacts/llm-knowledge/
 ├── tl-1741504523/
 │   ├── session.json
@@ -507,7 +534,7 @@ await server.start();
 
 ## Project Structure
 
-```
+```text
 tronlink-mcp-core/
 ├── src/
 │   ├── index.ts                           # Public API exports
@@ -602,5 +629,27 @@ npm run clean      # Remove dist/
 3. **Interface Segregation** — Each capability has a focused, minimal interface
 4. **Pre-checks** — On-chain tools validate balances, permissions, quotas before sending transactions
 5. **Data Redaction** — Knowledge store auto-masks password, mnemonic, private_key, seed fields
-6. **Standardized Responses** — Consistent `{ ok, result/error, meta }` structure across all 56+ tools
+6. **Standardized Responses** — Consistent `{ ok, result/error, meta }` structure across all 52 tools
 7. **Template System** — Flow recipes use `{{param}}` placeholders for reusable workflows
+
+## Version & License
+
+- **Package:** `@tronlink/tronlink-mcp-core` v0.1.0
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases) — no GitHub-tagged releases yet; pre-1.0 ships via `package.json` version bumps. Track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+This package is **the SSOT** for tool schemas, error codes, and `meta.schemaVersion` consumed by `mcp-server-tronlink` and any downstream MCP server built on this core. The compatibility surface is therefore wider than a typical library:
+
+- **Semver.** Pre-1.0: a **minor** bump may change the `ISessionManager` interface, capability shapes, or `Tool[]` registration order; a **patch** will not. Post-1.0: standard semver — major-only breaking changes.
+- **Stable contracts** (won't change in a patch):
+    - The `error.code` enum (the SSOT exported as `ERROR_CODES`) — adding a new code is non-breaking; renaming or removing one is breaking.
+    - The `{ ok, result/error, meta }` response envelope and `meta.schemaVersion` major component.
+    - Tool names and the **shape** of each tool's `inputSchema` (adding optional fields is non-breaking; renaming or making a field required is breaking).
+    - The 9 capability interfaces (`OnChainCapability`, `MultiSigCapability`, …) — adding an optional method is non-breaking.
+- **Volatile contracts** (may change at any time):
+    - Internal helper exports under `src/internal/*`, `Knowledge Store` keys, recipe-runner internals.
+    - Pre-check error `details` strings (branch on `code`, not `details.reason`).
+- **Deprecation window.** A deprecated tool / field / capability method stays present for at least one minor cycle alongside its replacement, marked with `meta.deprecated` in `list_tools` output; removal lands no earlier than the cycle after.
+- **Adopting downstream.** Bump the `@tronlink/tronlink-mcp-core` peer / dependency only after re-running your downstream's `list_tools` snapshot test against the new core; assert `meta.schemaVersion` major matches the version your harness was written for.

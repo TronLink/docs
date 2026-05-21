@@ -8,45 +8,35 @@
 
 **核心亮点：**
 - 接口驱动的可插拔架构，提供 **9 个能力接口**
-- **56+ 预定义工具处理器**，使用 Zod 验证 Schema
+- **52 预定义工具处理器**，使用 Zod 验证 Schema
 - 内置 Knowledge Store，支持跨会话学习和步骤回放
 - Flow Recipe 系统，将多步骤工作流程模板化
-- 标准化响应格式，25+ 错误码
+- 标准化响应格式 + 结构化错误码表（`code` / `retryable` / `hint`）
 - 双模支持：Playwright（UI 自动化）+ Direct API（链上操作）
 
 ---
 
 ## 架构设计
 
-```
-┌─ AI 代理 (Claude, GPT 等)
-│
-├─ MCP 协议 (stdio / JSON-RPC 2.0)
-│
-├─ MCP 服务器实例 (createMcpServer)
-│  ├─ 56+ tl_* 工具处理器
-│  ├─ Knowledge Store（跨会话持久化）
-│  ├─ Flow Registry（流程管理）
-│  └─ Discovery 工具
-│
-├─ ISessionManager 接口（使用者实现）
-│  ├─ 会话生命周期
-│  ├─ 页面/标签管理
-│  ├─ 能力注入（9 个接口）
-│  └─ 环境模式 (e2e / prod)
-│
-├─ 能力系统（9 个可插拔接口）
-│  ├─ BuildCapability
-│  ├─ FixtureCapability
-│  ├─ ChainCapability
-│  ├─ ContractSeedingCapability
-│  ├─ StateSnapshotCapability
-│  ├─ MockServerCapability
-│  ├─ OnChainCapability
-│  ├─ MultiSigCapability
-│  └─ GasFreeCapability
-│
-└─ 可选: Playwright（浏览器自动化）
+```mermaid
+flowchart TD
+  Agent["AI 代理 (Claude、GPT 等)"]
+  Server["MCP 服务器实例<br/>createMcpServer()"]
+  Tools["52 个 tl_* 工具处理器"]
+  KS["Knowledge Store<br/>（跨会话持久化）"]
+  FR["Flow Registry<br/>（流程管理）"]
+  Disc["Discovery 工具"]
+  SM["ISessionManager 接口（使用者实现）<br/>会话生命周期 · 页面/标签管理 · 能力注入 · e2e/prod 模式"]
+  Caps["能力系统 — 9 个可插拔接口<br/>Build · Fixture · Chain · ContractSeeding · StateSnapshot · MockServer · OnChain · MultiSig · GasFree"]
+  PW["可选: Playwright<br/>（浏览器自动化）"]
+  Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
+  Server --> Tools
+  Server --> KS
+  Server --> FR
+  Server --> Disc
+  Server --> SM
+  SM --> Caps
+  SM -. "按需配置" .-> PW
 ```
 
 **设计原则：**
@@ -150,39 +140,114 @@ getContextInfo(): ContextInfo
 
 ### 1. BuildCapability
 从源码构建 TronLink 扩展。
+```typescript
+interface BuildCapability {
+  build(options?: BuildOptions): Promise<BuildResult>
+}
+```
 
 ### 2. FixtureCapability
 管理钱包状态 JSON（default、onboarding、自定义预设）。
+```typescript
+interface FixtureCapability {
+  applyPreset(preset: string): Promise<void>
+  getAvailablePresets(): string[]
+  exportState(): Promise<WalletState>
+  importState(state: WalletState): Promise<void>
+}
+```
 
 ### 3. ChainCapability
 控制本地 TRON 节点（tron-quickstart 等）。
+```typescript
+interface ChainCapability {
+  startNode(): Promise<void>
+  stopNode(): Promise<void>
+  getNodeStatus(): Promise<NodeStatus>
+  fundAccount(address: string, amount: number): Promise<string>
+}
+```
 
 ### 4. ContractSeedingCapability
 部署智能合约（TRC20/721/1155/10/multisig/staking/energy_rental）。
+```typescript
+interface ContractSeedingCapability {
+  seedContract(type: string, options?: any): Promise<ContractInfo>
+  seedContracts(specs: ContractSpec[]): Promise<ContractInfo[]>
+  getContractAddress(name: string): string | undefined
+  listContracts(): ContractInfo[]
+}
+```
 
 ### 5. StateSnapshotCapability
 从 UI 提取钱包状态（界面、地址、余额、能量、带宽）。
+```typescript
+interface StateSnapshotCapability {
+  getSnapshot(): Promise<StateSnapshot>  // 界面、地址、余额、能量、带宽
+}
+```
 
 ### 6. MockServerCapability
 用于隔离测试的 Mock API 服务器。
+```typescript
+interface MockServerCapability {
+  start(config?: MockConfig): Promise<void>
+  stop(): Promise<void>
+  addRoute(route: MockRoute): void
+  getRequests(): MockRequest[]
+}
+```
 
 ### 7. OnChainCapability
-通过 TronGrid REST API 的直接链上操作（14 个方法）：
-- 查询：`getAddress`、`getAccount`、`getTokens`、`getTransaction`、`getHistory`、`getStakingInfo`
-- 交易：`send`、`stake`、`resource`、`swap`、`swapV3`
-- 多签：`setupMultisig`、`createMultisigTx`、`signMultisigTx`
+通过 TronGrid REST API 的直接链上操作。
+```typescript
+interface OnChainCapability {
+  getAddress(): Promise<AddressResult>
+  getAccount(address?: string): Promise<AccountResult>
+  getTokens(address?: string): Promise<TokensResult>
+  send(params: SendParams): Promise<SendResult>
+  getTransaction(txId: string): Promise<TxResult>
+  getHistory(params?: HistoryParams): Promise<HistoryResult>
+  stake(params: StakeParams): Promise<StakeResult>
+  getStakingInfo(address?: string): Promise<StakingResult>
+  resource(params: ResourceParams): Promise<ResourceResult>
+  swap(params: SwapParams): Promise<SwapResult>
+  swapV3(params: SwapV3Params): Promise<SwapResult>
+  setupMultisig(params: MultisigSetupParams): Promise<MultisigResult>
+  createMultisigTx(params: MultisigTxParams): Promise<MultisigTxResult>
+  signMultisigTx(params: SignMultisigParams): Promise<SignResult>
+}
+```
 
 ### 8. MultiSigCapability
-多签服务集成（REST + WebSocket，5 个方法）。
+多签服务集成（REST + WebSocket）。
+```typescript
+interface MultiSigCapability {
+  queryAuth(address: string): Promise<AuthResult>
+  submitTransaction(params: SubmitParams): Promise<SubmitResult>
+  queryTransactionList(params: ListParams): Promise<TxListResult>
+  connectWebSocket(params: WsParams): Promise<void>
+  disconnectWebSocket(): Promise<void>
+}
+```
 
 ### 9. GasFreeCapability
-零 Gas TRC20 转账服务（3 个方法）。
+零 Gas TRC20 转账服务。
+```typescript
+interface GasFreeCapability {
+  getAccount(address: string): Promise<GasFreeAccountResult>
+  getTransactions(params: GasFreeTxParams): Promise<GasFreeTxResult>
+  send(params: GasFreeSendParams): Promise<GasFreeSendResult>
+}
+```
 
 ---
 
-## 56+ 工具定义
+## 52 工具定义
 
 所有工具使用 `tl_` 前缀，分为 13 个类别：
+
+> **Schema SSOT。** 每个工具的 `inputSchema` 都由 [`src/mcp-server/schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) 中的 Zod schema 生成，运行时通过 `list_tools` 暴露。下方表格只列**工具名 + 一句话描述**；参数类型、必填字段、枚举值和默认值请对运行中的 server 调用 `list_tools`，或直接读 Zod 源码。下游 [`mcp-server-tronlink` 页面](mcp-server-tronlink.md#精选工具-schema文档侧镜像) 为 7 个高影响工具（`tl_chain_send`、`tl_chain_swap_v3`、`tl_chain_stake`、`tl_multisig_submit_tx`、`tl_gasfree_send`、`tl_chain_get_account`、`tl_evaluate`）镜像了 JSON Schema——便于 agent 在没打开 MCP 会话时写调用站点。SSOT 仍然是本包。
 
 ### 1. 会话管理（2 个）
 | 工具 | 说明 |
@@ -310,13 +375,50 @@ getContextInfo(): ContextInfo
 {
   ok: false,
   error: {
-    code: "TL_CLICK_FAILED",       // 25+ 错误码之一
+    code: "TL_CLICK_FAILED",       // 稳定错误码 — 见下表
     message: "Element not found",
+    retryable: false,              // 给 agent 的显式提示
+    hint: "重新生成可达性快照并用新的 a11yRef 重试。",
     details: { /* 可选 */ }
   },
-  meta: { timestamp, sessionId, durationMs }
+  meta: { timestamp, sessionId, durationMs, schemaVersion: "1.0" }
 }
 ```
+
+### 错误码
+
+这是本框架所有工具返回错误码的**唯一数据源**（SSOT）。下游 server（`mcp-server-tronlink`、`mcp-tronlink-signer`）继承这些错误码并可扩展自有错误码。`retryable` 反映框架层面的安全性，agent 仍**必须**叠加调用工具的副作用分级——无论 `retryable` 为何，**结果未确认的 Remote Write 绝不能自动重试**。
+
+| 错误码 | Retryable | Hint | 典型触发 |
+|---|:---:|---|---|
+| `TL_BUILD_FAILED` | false | 检查 build 日志，修正源码/配置后再试。 | 启用 `BuildCapability` 时的 `tl_launch` |
+| `TL_SESSION_ALREADY_RUNNING` | false | 先调用 `tl_cleanup` 再启动新会话。 | 已有 session 时再次 `tl_launch` |
+| `TL_NO_ACTIVE_SESSION` | false | 先调用 `tl_launch`。 | 任何需要 session 的工具，但 session 不存在 |
+| `TL_LAUNCH_FAILED` | true | 浏览器/扩展启动暂时失败；可重试一次。 | `tl_launch` |
+| `TL_INVALID_INPUT` | false | 修正参数后再试，禁止用相同 payload 重发。 | Zod schema 校验失败 |
+| `TL_NAVIGATION_FAILED` | true | 页面可能仍在过渡；等待目标屏出现后重试。 | `tl_navigate`、`tl_switch_to_tab` |
+| `TL_TARGET_NOT_FOUND` | false | 用 `tl_accessibility_snapshot` 刷新 ref 后重试。 | `tl_click`、`tl_type`、`tl_wait_for` |
+| `TL_CLICK_FAILED` | true | 元素可能已重渲染；刷新 ref 后重试一次。 | `tl_click` |
+| `TL_TYPE_FAILED` | true | 同 click——刷新 ref 后重试一次。 | `tl_type` |
+| `TL_WAIT_TIMEOUT` | true | 提高超时或换一个 selector。 | `tl_wait_for`、`tl_wait_for_notification` |
+| `TL_SCREENSHOT_FAILED` | true | 偶发故障；可重试。 | `tl_screenshot`、`tl_describe_screen` |
+| `TL_CAPABILITY_NOT_AVAILABLE` | false | 当前 session 未注入该 capability；重配后重启。 | 依赖可选 capability 的工具 |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid 暂时不可用或限流；退避后重试。 | `tl_chain_get_*` |
+| `TL_CHAIN_SEND_FAILED` | false | **禁止**自动重试。先用 `tl_chain_get_tx` 确认上一笔是否落账。 | `tl_chain_send`、`tl_chain_stake`、`tl_chain_resource` |
+| `TL_CHAIN_SWAP_FAILED` | false | 同上——重试前必须确认前一笔未落账。 | `tl_chain_swap`、`tl_chain_swap_v3` |
+| `TL_GASFREE_QUERY_FAILED` | true | 偶发故障；可重试。 | `tl_gasfree_get_account`、`tl_gasfree_get_transactions` |
+| `TL_GASFREE_SEND_FAILED` | false | **禁止**自动重试；先向 GasFree 查询最新状态。 | `tl_gasfree_send` |
+| `TL_MULTISIG_QUERY_FAILED` | true | 偶发故障；可重试。 | `tl_multisig_query_auth`、`tl_multisig_list_tx` |
+| `TL_MULTISIG_SUBMIT_FAILED` | false | **禁止**自动重试；请求可能已被接受。 | `tl_multisig_submit_tx` |
+| `TL_MULTISIG_WS_FAILED` | true | 重新连接 WebSocket。 | `tl_multisig_connect_ws` |
+| `TL_INTERNAL_ERROR` | true | 框架通用错误；重试一次后带日志上报。 | 任意工具 |
+
+下游 server 扩展自定义错误码必须满足：
+
+- 不复用上表错误码表达不同含义。
+- 每个新错误码必须声明 `retryable`。
+- major 版本内含义稳定。
+- 新错误码在使用方文档说明，禁止悄悄引入。
 
 ---
 
@@ -325,7 +427,7 @@ getContextInfo(): ContextInfo
 跨会话学习和步骤回放系统。
 
 ### 存储结构
-```
+```text
 test-artifacts/llm-knowledge/
 ├── tl-1741504523/
 │   ├── session.json
@@ -426,7 +528,7 @@ await server.start();
 
 ## 项目结构
 
-```
+```text
 tronlink-mcp-core/
 ├── src/
 │   ├── index.ts                           # 公共 API 导出
@@ -437,7 +539,7 @@ tronlink-mcp-core/
 │   │   ├── discovery.ts                   # 页面检查工具
 │   │   ├── schemas.ts                     # Zod 验证 Schema
 │   │   ├── constants.ts                   # 超时、限制、URL、界面常量
-│   │   ├── tools/                         # 56+ 工具处理器
+│   │   ├── tools/                         # 52 工具处理器
 │   │   ├── types/                         # 类型定义
 │   │   └── utils/                         # 工具函数
 │   ├── capabilities/
@@ -494,5 +596,27 @@ npm run clean      # 删除 dist/
 3. **接口隔离** — 每个能力都有专注的最小接口
 4. **预检查** — 链上工具在发送交易前验证余额、权限、配额
 5. **数据脱敏** — Knowledge Store 自动屏蔽 password、mnemonic、private_key、seed 字段
-6. **标准化响应** — 所有 56+ 工具使用一致的 `{ ok, result/error, meta }` 结构
+6. **标准化响应** — 所有 52 工具使用一致的 `{ ok, result/error, meta }` 结构
 7. **模板系统** — Flow Recipes 使用 `{{param}}` 占位符实现可复用工作流
+
+## 版本与许可证
+
+- **包：** `@tronlink/tronlink-mcp-core` v0.1.0
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases) —— 截至当前尚无 GitHub tag 发布；1.0 之前通过 `package.json` 版本号迭代。打 tag 之前请直接看 commit 历史。
+
+### 兼容性与迁移策略
+
+本包是 `mcp-server-tronlink` 及任何下游 MCP server 在工具 schema、错误码、`meta.schemaVersion` 上的 **SSOT**，兼容面比普通库更宽：
+
+- **语义化版本。** 1.0 之前：**minor** 升级可能改 `ISessionManager` 接口、能力 shape、`Tool[]` 注册顺序；**patch** 不会。1.0 之后：标准 semver，仅 major 允许破坏。
+- **稳定契约**（patch 不会动）：
+    - `error.code` 枚举（导出为 `ERROR_CODES`，SSOT）——新增 code 非破坏；改名或删除是破坏。
+    - `{ ok, result/error, meta }` 响应包络与 `meta.schemaVersion` 的 major 分量。
+    - 工具名与各工具 `inputSchema` 的**结构**——新增可选字段非破坏；改名或将字段改必填是破坏。
+    - 9 个能力接口（`OnChainCapability`、`MultiSigCapability`…）——新增可选方法非破坏。
+- **不稳定契约**（随时可能变化）：
+    - `src/internal/*` 下的内部 helper 导出、Knowledge Store key、recipe-runner 内部。
+    - 预检查错误 `details` 文本（分支用 `code`，别用 `details.reason`）。
+- **废弃窗口。** 废弃的工具 / 字段 / 能力方法在 `list_tools` 中带 `meta.deprecated` 标记，至少保留 **一个 minor 周期** 与替代并存，移除最早发生在再下一周期。
+- **下游升级。** 升级 `@tronlink/tronlink-mcp-core` 之前，先在下游对新 core 跑一遍 `list_tools` 快照测试；断言 `meta.schemaVersion` major 与你的 harness 编写时一致。

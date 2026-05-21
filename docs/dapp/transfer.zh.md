@@ -1,6 +1,6 @@
 # 普通转账
 
-**简介**
+## 简介
 
 DApp 需要用户发起一笔 TRX 转账。
 
@@ -16,9 +16,9 @@ DApp 需要用户发起一笔 TRX 转账。
 
 在这里，TronLink 介入的是第2步签名的部分，1, 3 两步需要开发者使用 tronWeb 完成
 
-**技术规范**
+## 技术规范
 
-**代码示例**
+### 代码示例
 
 ```javascript
 const tronweb = window.tron.tronWeb;
@@ -35,7 +35,7 @@ try {
 
 当代码执行到`await tronweb.trx.sign(tx);`时，TronLink钱包会提示弹窗，需要用户进行确认，如下图：
 
-![image](../images/zh_plugin-wallet_sign_trx.png)
+![TronLink 交易审批弹窗，显示收款地址、TRX 金额与"拒绝"/"签名"按钮](../images/zh_plugin-wallet_sign_trx.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
 

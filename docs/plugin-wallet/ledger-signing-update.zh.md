@@ -7,7 +7,7 @@
 ### 普通交易签名
 
 以下是签名成功的 ledger 交易体：
-```json
+```text
 {
     "txID": "......",
     .....other property,
@@ -17,7 +17,7 @@
 }
 ```
 会变成:
-```json
+```text
 {
     "txID": "......",
     .....other property,
@@ -40,12 +40,12 @@ tron.tronWeb.trx.signMessageV2('.....unsign_string');
 ```
 
 ledger返回的实际签名hash：
-```
+```text
 ......50f400
 ```
 
 经过修改后的hash：
-```
+```text
 ......50f41b
 ```
 
@@ -105,11 +105,11 @@ await tron.tronWeb.trx._signTypedData(domain, types, message);
 ```
 
 ledger返回的实际签名hash：
-```
+```text
 .....7ee700
 ```
 
 经过修改后的hash：
-```
+```text
 ......7ee71b
 ```

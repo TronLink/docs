@@ -11,9 +11,9 @@ TronLink is a browser extension wallet for the TRON network. By integrating Tron
 ```typescript
 interface TronProvider {
   isTronLink: true;
-  request: (args: { method: string; params?: any }) => Promise<any>;     // Invoke wallet features (e.g. eth_requestAccounts)
-  tronWeb: TronWeb | false;                                              // Bound to the user's current account/network after authorization; `false` until then
-  on(event: string, listener: (...args: any[]) => void): this;           // Subscribe to provider events (accountsChanged / chainChanged / connect)
+  request: (args: { method: string; params?: any }) => Promise<any>; // Invoke wallet features (e.g. eth_requestAccounts)
+  tronWeb: TronWeb | false; // Bound to the user's current account/network after authorization; `false` until then
+  on(event: string, listener: (...args: any[]) => void): this; // Subscribe to provider events (accountsChanged / chainChanged / connect)
   removeListener(event: string, listener: (...args: any[]) => void): this;
 }
 ```
@@ -44,7 +44,9 @@ Use `eth_requestAccounts` to ask the user to connect their wallet. On approval t
 
 ```typescript
 try {
-  const accounts: string[] = await tronProvider.request({ method: "eth_requestAccounts" });
+  const accounts: string[] = await tronProvider.request({
+    method: "eth_requestAccounts",
+  });
   console.log("Connected:", accounts[0]);
 } catch (err) {
   // err shape: { code: number, message: string }
@@ -52,11 +54,11 @@ try {
 }
 ```
 
-| code   | Description |
-| ------ | ----------- |
+| code   | Description                                                                                                       |
+| ------ | ----------------------------------------------------------------------------------------------------------------- |
 | 4001   | User rejected the request — clicked **Reject**, closed the popup, or the request did not come from the active tab |
-| -32000 | Same origin issued another `eth_requestAccounts` within 20 seconds while the wallet was locked (rate-limited) |
-| 4200   | Unsupported method |
+| -32000 | Same origin issued another `eth_requestAccounts` within 20 seconds while the wallet was locked (rate-limited)     |
+| 4200   | Unsupported method                                                                                                |
 
 For the full TIP-1102 (`eth_requestAccounts`) specification, see [Proactively Request TronLink Plugin Features](../plugin-wallet/active-requests.md); the legacy `tron_requestAccounts` connection method is documented on the same page.
 
@@ -75,7 +77,7 @@ async function getTronWeb() {
 }
 ```
 
-`tronProvider.tronWeb` is normally usable as soon as `eth_requestAccounts` resolves. For everything that happens *after* the initial authorization — the user switching accounts, locking the wallet, or changing networks — listen for `accountsChanged` / `chainChanged` on the provider. See [Receive Messages from TronLink](../plugin-wallet/passive-messages.md) for the full event set.
+`tronProvider.tronWeb` is normally usable as soon as `eth_requestAccounts` resolves. For everything that happens _after_ the initial authorization — the user switching accounts, locking the wallet, or changing networks — listen for `accountsChanged` / `chainChanged` on the provider. See [Receive Messages from TronLink](../plugin-wallet/passive-messages.md) for the full event set.
 
 After obtaining the `tronWeb` instance you can perform on-chain interactions: TRX/TRC20 transfers, multi-signature transactions, message signing, contract calls, and so on. For full `tronWeb` API usage, see the [TronWeb documentation](https://tronweb.network/docu/docs/intro).
 

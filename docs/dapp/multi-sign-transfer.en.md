@@ -1,14 +1,14 @@
 # Multi-Signature Transfer
 
-**Overview**
+## Overview
 
 For this section, you may refer to [General Transfer](transfer.en.md)
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
-**Specification**
+## Specification
 
-**Example**
+### Example
 
 ```javascript
 const tronweb = window.tron.tronWeb;
@@ -25,5 +25,4 @@ try {
 ```
 
 If the user chooses “Reject” in the pop-up window, an exception will be thrown, which the developer can catch for further processing. If the user chooses “Sign” in the pop-up window, the DApp receives and broadcasts the signed transaction.
-
 

@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""Generate per-language full-text bundles for LLM ingestion.
+
+llms-full.{en,zh}.txt is the single-fetch, full-text variant of llms.txt
+(https://llmstxt.org/). It bundles every page so an LLM can ingest the
+whole documentation set in one request.
+
+We also write `llms-full.txt` as a verbatim copy of the English bundle so
+existing links (e.g. /docs/llms-full.txt) keep working.
+
+Run from the repo root:
+
+    python3 scripts/gen_llms_full.py
+
+Pages are emitted in navigation order (mirroring the `en` and `zh` navs
+in mkdocs.yml). Re-run this whenever docs change; wire it into CI to keep
+it in sync.
+"""
+from __future__ import annotations
+
+import subprocess
+from datetime import datetime, timezone
+from pathlib import Path
+
+DOCS = Path(__file__).resolve().parent.parent / "docs"
+REPO = DOCS.parent
+
+# In-repo links use root-relative /docs/ paths (no hardcoded domain),
+# so they work under any domain (prod, staging, test).
+
+# English source pages, in nav order (see mkdocs.yml `en` nav).
+PAGES_EN = [
+    "introduction.en.md",
+    "hd-wallets.en.md",
+    "dapp/getting-started.en.md",
+    "ai-support/ai-llms.en.md",
+    "mobile/asset-management.en.md",
+    "mobile/deeplink.en.md",
+    "mobile/dapp-support.en.md",
+    "plugin-wallet/active-requests.en.md",
+    "plugin-wallet/passive-messages.en.md",
+    "plugin-wallet/ledger-signing-update.en.md",
+    "ai-support/mcp-server-tronlink.en.md",
+    "ai-support/tronlink-mcp-core.en.md",
+    "ai-support/tronlink-skills.en.md",
+    "ai-support/mcp-tronlink-signer.en.md",
+    "ai-support/tronlink-signer.en.md",
+    "ai-support/tronlink-cli.en.md",
+    "dapp/transfer.en.md",
+    "dapp/multi-sign-transfer.en.md",
+    "dapp/message-signing.en.md",
+    "dapp/stake2.en.md",
+    "reference/networks.en.md",
+    "reference/glossary.en.md",
+    "reference/faq.en.md",
+]
+
+# Chinese source pages, in nav order (see mkdocs.yml `zh` nav).
+PAGES_ZH = [
+    "introduction.zh.md",
+    "hd-wallets.zh.md",
+    "dapp/getting-started.zh.md",
+    "ai-support/ai-llms.zh.md",
+    "mobile/asset-management.zh.md",
+    "mobile/deeplink.zh.md",
+    "mobile/dapp-support.zh.md",
+    "plugin-wallet/active-requests.zh.md",
+    "plugin-wallet/passive-messages.zh.md",
+    "plugin-wallet/ledger-signing-update.zh.md",
+    "ai-support/mcp-server-tronlink.zh.md",
+    "ai-support/tronlink-mcp-core.zh.md",
+    "ai-support/tronlink-skills.zh.md",
+    "ai-support/mcp-tronlink-signer.zh.md",
+    "ai-support/tronlink-signer.zh.md",
+    "ai-support/tronlink-cli.zh.md",
+    "dapp/transfer.zh.md",
+    "dapp/multi-sign-transfer.zh.md",
+    "dapp/message-signing.zh.md",
+    "dapp/stake2.zh.md",
+    "reference/networks.zh.md",
+    "reference/glossary.zh.md",
+    "reference/faq.zh.md",
+]
+
+
+def git_short_sha() -> str:
+    """Return short SHA of the worktree HEAD, or 'unknown' if git fails."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short=12", "HEAD"],
+            cwd=REPO,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return "unknown"
+
+
+def estimate_tokens(char_count: int) -> int:
+    """Rough token estimate (~4 chars per token, OpenAI heuristic).
+
+    Coarse on purpose: we want an order-of-magnitude hint for agents
+    deciding whether to ingest the whole file. Zero-dep by choice.
+    """
+    return char_count // 4
+
+
+def page_url(rel: str, lang: str) -> str:
+    """`introduction.en.md` -> `/docs/introduction/`.
+
+    For `zh`, the i18n plugin serves under `/docs/zh/<slug>/`. We keep
+    the URL marker accurate per locale so an LLM that fetches a single
+    page later can resolve it.
+    """
+    suffix = f".{lang}.md"
+    slug = rel[: -len(suffix)]
+    if lang == "en":
+        return f"/docs/{slug}/"
+    return f"/docs/{lang}/{slug}/"
+
+
+def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> tuple[str, int, list[str]]:
+    """Return (full_text, page_count, missing) for one language."""
+    body_parts: list[str] = []
+    missing: list[str] = []
+    for rel in pages:
+        path = DOCS / rel
+        if not path.exists():
+            missing.append(rel)
+            continue
+        body_parts.append("---")
+        body_parts.append("")
+        body_parts.append(f"<!-- source: docs/{rel} | url: {page_url(rel, lang)} -->")
+        body_parts.append("")
+        body_parts.append(path.read_text(encoding="utf-8").rstrip())
+        body_parts.append("")
+
+    body = "\n".join(body_parts)
+    token_estimate = estimate_tokens(len(body))
+    page_count = len(pages) - len(missing)
+
+    if lang == "en":
+        title = "# TronLink Developer Documentation — Full Text"
+        blurb = (
+            "Concatenation of all English documentation pages for single-fetch "
+            "LLM ingestion. Generated by scripts/gen_llms_full.py. "
+            "See /docs/llms.txt for the curated index."
+        )
+    else:
+        title = "# TronLink 开发者文档 —— 全文"
+        blurb = (
+            "中文文档全文拼接，适合 LLM 一次性 ingest。由 scripts/gen_llms_full.py 生成。"
+            "索引见 /docs/llms.txt 的 Localized 段。"
+        )
+
+    header = [
+        title,
+        "",
+        f"> {blurb}",
+        "",
+        f"- Generated: {generated_at}",
+        f"- Commit: {sha}",
+        f"- Language: {lang}",
+        f"- Pages: {page_count}",
+        f"- Token estimate: ~{token_estimate:,} (chars / 4)",
+        "",
+    ]
+    return "\n".join(header) + body + "\n", page_count, missing
+
+
+def main() -> None:
+    sha = git_short_sha()
+    generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    all_missing: dict[str, list[str]] = {}
+
+    for lang, pages, out_name in [
+        ("en", PAGES_EN, "llms-full.en.txt"),
+        ("zh", PAGES_ZH, "llms-full.zh.txt"),
+    ]:
+        text, count, missing = render_bundle(pages, lang, sha, generated_at)
+        out_path = DOCS / out_name
+        out_path.write_text(text, encoding="utf-8")
+        print(
+            f"Wrote {out_path.relative_to(REPO)} "
+            f"({count} pages, commit {sha}, ~{estimate_tokens(len(text)):,} tokens)"
+        )
+        if lang == "en":
+            # Back-compat: keep llms-full.txt as a copy of the English bundle
+            # so existing links (e.g. /docs/llms-full.txt) keep resolving.
+            (DOCS / "llms-full.txt").write_text(text, encoding="utf-8")
+            print(f"Wrote {(DOCS / 'llms-full.txt').relative_to(REPO)} (alias of {out_name})")
+        if missing:
+            all_missing[lang] = missing
+
+    if all_missing:
+        msg = "; ".join(f"{lang}: {', '.join(m)}" for lang, m in all_missing.items())
+        raise SystemExit("Missing pages — " + msg)
+
+
+if __name__ == "__main__":
+    main()

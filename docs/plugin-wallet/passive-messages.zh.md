@@ -82,19 +82,19 @@ TronLink 支持 TRON 主网及测试网（Shasta、Nile）。开发者可以在 
 
 ---
 
-### 检测 TronLink（TIP-6963）
+## 检测 TronLink（TIP-6963）
 
 事件标识：`TIP6963:announceProvider`
 
-#### 简介
+### 简介
 
 TronLink 通过 TIP-6963 协议对外公告自己的 provider 对象。监听 `TIP6963:announceProvider` 并派发 `TIP6963:requestProvider`，即可安全地发现钱包，无需污染全局命名空间或轮询 `window.tron`。announce 事件返回的 provider 即为 `window.tron`。
 
 完整的 TIP-6963 规范请参考 [主动请求 TronLink 插件功能](./active-requests.md#tronlinkprovider-tip-6963)。
 
-#### 技术规范
+### 技术规范
 
-##### 代码示例
+#### 代码示例
 
 ```javascript
 let tron;
@@ -110,10 +110,10 @@ window.dispatchEvent(new Event('TIP6963:requestProvider'));
 
 如果派发请求后 `tron` 仍为 undefined，则说明用户未安装 TronLink，可提示用户进行安装。
 
-### 账户改变消息
+## 账户改变消息
 
 消息标识： `accountsChanged`
-#### 简介
+### 简介
 以下情况会产生此消息
 
   1. 用户登录
@@ -124,47 +124,47 @@ window.dispatchEvent(new Event('TIP6963:requestProvider'));
 
   4. 钱包超时自动锁定
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 window.tron.on('accountsChanged', (accountArray) => {
   // handler logic
   console.log('got accountsChanged event', accountArray)
 })
 ```
-##### 返回值
+#### 返回值
 ```typescript
 ['your_current_account_address']
 ```
-###### 返回值示例
+##### 返回值示例
 1. 用户登录时，消息体内容为
-```json
+```javascript
 ['TZ5XixnRyraxJJy996Q1sip85PHWuj4793'] // 当前的账号
 ```
 
 2. 用户切换账号时，消息体内容为
-```json
+```javascript
 ['TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq'] // 新选择的账号地址
 ```
 
 3. 用户锁定和钱包超时自动锁定时，消息体内容为
-```json
+```javascript
 []
 ```
 
 > **旧版用法（不推荐）：** [setAccount（3.x）](#setaccount)
 
 
-### 网络改变消息
+## 网络改变消息
 
 消息标识： `chainChanged`
-#### 简介
+### 简介
 开发者可以监听此消息来获取网络的改变
 以下情况会产生此消息
 
 1. 用户改变网络的时候
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 window.tron.on('chainChanged', ({chainId}) => {
   // handler logic
@@ -172,9 +172,9 @@ window.tron.on('chainChanged', ({chainId}) => {
 })
 ```
 
-##### 返回值
+#### 返回值
 
-```json
+```typescript
 {
   chainId: string;
 }
@@ -187,16 +187,16 @@ window.tron.on('chainChanged', ({chainId}) => {
 
 > **旧版用法（不推荐）：** [setNode（3.x）](#setnode) 或 [tabReply（3.x）](#tabreply)
 
-### TronLink可以提供服务的消息
+## TronLink可以提供服务的消息
 
 消息标识： `connect`
-#### 简介
+### 简介
 如果 TronLink 及 `window.tron` 对象可用，此事件会在 provider 初始化完成后被派发一次（包含 `disconnect` 之后重新连接的场景）。
 
 **时序注意**：该事件在插件 init 完成后约 100ms 派发。如果 DApp 的监听器在插件 init 之后才注册（例如页面加载较慢、通过 TIP-6963 `requestProvider` 才拿到 provider），则可能错过 `connect` 事件。此时直接把"provider 存在"视作已连接，并结合 `tron.tronWeb?.ready` 判断当前状态即可。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 window.tron.on('connect', ({chainId}) => {
   // handler logic
@@ -206,15 +206,15 @@ window.tron.on('connect', ({chainId}) => {
 
 > **旧版用法（不推荐）：** [connectWeb（postMessage）](#connectweb) 或 [acceptWeb（postMessage）](#acceptweb)
 
-### 断开连接网站消息
+## 断开连接网站消息
 消息标识： `disconnect`
-#### 简介
+### 简介
 TIP-1193 规范规定：当 provider 与所有链断开连接时，应派发 `disconnect` 事件并携带 `ProviderRpcError` 对象。
 
 **当前 TronLink 行为**：TronLink 目前 **不会** 在 provider 上派发 `disconnect`。当用户断开网站（或钱包被锁定）时，会通过 `accountsChanged` 派发空数组 `[]` 来表示——在 TronLink 实现 `disconnect` 之前，请以此作为断连信号。
 
-#### 技术规范
-##### 代码示例
+### 技术规范
+#### 代码示例
 ```typescript
 // 规范保留事件——注册监听器无害，但当前不会被触发。
 window.tron.on('disconnect', (providerRpcError) => {
@@ -224,7 +224,7 @@ window.tron.on('disconnect', (providerRpcError) => {
 
 > **旧版用法（不推荐）：** [disconnectWeb（postMessage）](#disconnectweb) 或 [rejectWeb（postMessage）](#rejectweb)
 
-### 历史遗留问题
+## 历史遗留问题
 
 以下消息通过 `window.postMessage` 派发，DApp 接收到的内容是一个 `MessageEvent`，事件结构可参考 [MessageEvent 的 MDN 文档](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent)。
 
@@ -238,14 +238,14 @@ window.tron.on('disconnect', (providerRpcError) => {
 
 4. 用户主动连接网站消息`connectWeb`
 
-#### 用户拒绝连接消息 rejectWeb
+### 用户拒绝连接消息 rejectWeb
 消息标识： `rejectWeb`
 
 以下情况会产生此消息
 
 1. dapp请求连接，用户在弹窗中拒绝连接后
  
-![image](../images/zh_plugin-wallet_rejectWeb.png)
+![TronLink 连接弹窗，用户点击"拒绝"触发 rejectWeb 事件](../images/zh_plugin-wallet_rejectWeb.png)
 
 
 开发者可以监听此消息来获取用户拒绝连接消息
@@ -258,14 +258,14 @@ window.addEventListener('message', function (e) {
 })
 ```
 
-#### 用户断连网站消息 disconnectWeb
+### 用户断连网站消息 disconnectWeb
 消息标识： `disconnectWeb`
 
 以下情况会产生此消息
 
 1. 用户主动断开连接
 
-![image](../images/zh_plugin-wallet_disconnectWeb.png)
+![TronLink 已连接站点列表，用户对某 DApp 点击"断开"触发 disconnectWeb 事件](../images/zh_plugin-wallet_disconnectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动断连消息
@@ -278,7 +278,7 @@ window.addEventListener('message', function (e) {
 })
 ```
 
-#### 用户确定连接消息 acceptWeb
+### 用户确定连接消息 acceptWeb
 消息标识： `acceptWeb`
 
 以下情况会产生此消息
@@ -286,7 +286,7 @@ window.addEventListener('message', function (e) {
 1. 用户确定连接消息
 
 
-![image](../images/zh_plugin-wallet_acceptWeb.png)
+![TronLink 连接弹窗，用户点击"接受"触发 acceptWeb 事件](../images/zh_plugin-wallet_acceptWeb.png)
 
 开发者可以监听此消息来获取用户确定连接消息
 ```typescript
@@ -298,7 +298,7 @@ window.addEventListener('message', function (e) {
 })
 ```
 
-#### 用户主动连接网站消息 connectWeb
+### 用户主动连接网站消息 connectWeb
 消息标识： `connectWeb`
 
 以下情况会产生此消息
@@ -306,7 +306,7 @@ window.addEventListener('message', function (e) {
 1. 用户主动连接网站时
 
 
-![image](../images/zh_plugin-wallet_connectWeb.png)
+![TronLink 已连接站点列表，用户主动对某授权 DApp 点击"连接"触发 connectWeb 事件](../images/zh_plugin-wallet_connectWeb.png)
 
 
 开发者可以监听此消息来获取用户主动连接网站消息
@@ -321,11 +321,11 @@ window.addEventListener('message', function (e) {
 
 ---
 
-### 已废弃的 3.x 事件（主链 / 侧链）
+## 已废弃的 3.x 事件（主链 / 侧链）
 
 以下事件是 TronLink 3.x 通过原始 `window.postMessage` 用于检测当前网络与账户的方式。它们已被 `window.tron` 上的 `accountsChanged` / `chainChanged` 取代，仅供存量代码参考 — 新接入请勿使用。
 
-#### 网络初始化（`tabReply`）
+### 网络初始化（`tabReply`）
 
 页面加载后 TronLink 完成初始化时触发一次。检查 `e.data.message.data.data.node.chain`：值为 `'_'` 表示主链，其他值表示对应侧链标识。
 
@@ -341,7 +341,7 @@ window.addEventListener('message', function (e) {
 });
 ```
 
-#### 账户切换（`setAccount`）
+### 账户切换（`setAccount`）
 
 用户切换当前账户时触发。
 
@@ -353,7 +353,7 @@ window.addEventListener('message', function (e) {
 });
 ```
 
-#### 网络切换（`setNode`）
+### 网络切换（`setNode`）
 
 用户切换网络时触发。`chain == '_'` 的判断方式与 `tabReply` 相同。
 

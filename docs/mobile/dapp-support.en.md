@@ -20,7 +20,7 @@ Tron DApp running in the DApp Explorer injects iTron objects automatically to of
 ##### Change screen orientation
 
 
-```shell     
+```java
   // url: DApp page url
   // screenModel: "1" -> vertical;"2" -> horizontal
   void setScreenModel(String url, String screenModel)
