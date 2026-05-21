@@ -17,7 +17,7 @@
 
 ## Architecture
 
-```
+```text
 AI Agent (Claude Desktop / Claude Code)
          | (MCP Protocol — stdio / JSON-RPC 2.0)
          v
@@ -153,7 +153,7 @@ The auto-create path generates a random password, saves it to `~/.agent-wallet/r
 
 Pure cryptographic functions — no external service calls:
 
-```
+```text
 signTransaction()          raw_data_hex → 65-byte signature (via agent-wallet)
 base58CheckEncode()        Payload → base58check address
 base58CheckDecode()        TRON address → 21-byte payload
@@ -370,7 +370,7 @@ Supports stdio transport protocol — compatible with any MCP-compliant client.
 
 ## Project Structure
 
-```
+```text
 mcp-server-tronlink/
 ├── src/
 │   ├── index.ts                    # Server entry, config, capability registration

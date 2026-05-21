@@ -8,7 +8,7 @@ This change ensures that the last two bytes of Ledger account signatures are con
 ### Transaction Signing
 
 The following is a successfully signed Ledger transaction body:
-```json
+```text
 {
     "txID": "......",
     .....other property,
@@ -18,7 +18,7 @@ The following is a successfully signed Ledger transaction body:
 }
 ```
 It will become:
-```json
+```text
 {
     "txID": "......",
     .....other property,
@@ -41,12 +41,12 @@ tron.tronWeb.trx.signMessageV2('.....unsign_string');
 ```
 
 Actual signature hash returned by Ledger:
-```
+```text
 ......50f400
 ```
 
 Modified hash:
-```
+```text
 ......50f41b
 ```
 
@@ -106,11 +106,11 @@ await tron.tronWeb.trx._signTypedData(domain, types, message);
 ```
 
 Actual signature hash returned by Ledger:
-```
+```text
 .....7ee700
 ```
 
 Modified hash:
-```
+```text
 ......7ee71b
 ```

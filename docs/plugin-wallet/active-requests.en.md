@@ -219,7 +219,7 @@ try {
 
 If signed successfully:
 
-```
+```text
 0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
 ```
 

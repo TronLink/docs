@@ -18,7 +18,7 @@
 
 ## Architecture
 
-```
+```text
 ┌─ AI Agent (Claude, GPT, etc.)
 │
 ├─ MCP Protocol (stdio / JSON-RPC 2.0)
@@ -435,7 +435,7 @@ Custom codes added by downstream servers must follow these rules:
 Cross-session learning and step replay system.
 
 ### Storage Structure
-```
+```text
 test-artifacts/llm-knowledge/
 ├── tl-1741504523/
 │   ├── session.json
@@ -542,7 +542,7 @@ await server.start();
 
 ## Project Structure
 
-```
+```text
 tronlink-mcp-core/
 ├── src/
 │   ├── index.ts                           # Public API exports

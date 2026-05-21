@@ -1,7 +1,7 @@
 site_name: TronLink 开发者文档
 site_description: TronLink 钱包开发者文档，包含移动端、插件钱包和 DApp 开发指南
 site_author: TronLink Team
-site_url: https://docs.tronlink.org/
+site_url: https://docs.tronlink.org/docs/
 # 仓库信息
 repo_name: tronlink-doc
 repo_url: https://github.com/TronLink/docs.git
@@ -67,7 +67,7 @@ plugins:
               - Receive messages from TronLink: plugin-wallet/passive-messages.en.md
               - Compatibility for the v field after Ledger signing: plugin-wallet/ledger-signing-update.en.md
             - AI Support:
-              - Overview: ai-support/ai-llms.en.md
+              - AI / LLMs: ai-support/ai-llms.en.md
               - MCP Server TronLink : ai-support/mcp-server-tronlink.en.md
               - TronLink MCP Core: ai-support/tronlink-mcp-core.en.md
               - TronLink Skills: ai-support/tronlink-skills.en.md
@@ -100,7 +100,7 @@ plugins:
               - 被动接收TronLink插件的消息: plugin-wallet/passive-messages.zh.md
               - 对ledger签名后的v字段兼容: plugin-wallet/ledger-signing-update.zh.md
             - AI 支持:
-              - 总览: ai-support/ai-llms.zh.md
+              - AI / LLMs: ai-support/ai-llms.zh.md
               - MCP Server TronLink : ai-support/mcp-server-tronlink.zh.md
               - TronLink MCP Core: ai-support/tronlink-mcp-core.zh.md
               - TronLink Skills: ai-support/tronlink-skills.zh.md

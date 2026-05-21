@@ -18,7 +18,7 @@
 
 ## 架构设计
 
-```
+```text
 ┌─ AI 代理 (Claude, GPT 等)
 │
 ├─ MCP 协议 (stdio / JSON-RPC 2.0)
@@ -362,7 +362,7 @@ getContextInfo(): ContextInfo
 跨会话学习和步骤回放系统。
 
 ### 存储结构
-```
+```text
 test-artifacts/llm-knowledge/
 ├── tl-1741504523/
 │   ├── session.json
@@ -463,7 +463,7 @@ await server.start();
 
 ## 项目结构
 
-```
+```text
 tronlink-mcp-core/
 ├── src/
 │   ├── index.ts                           # 公共 API 导出

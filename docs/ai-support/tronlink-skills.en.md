@@ -32,7 +32,7 @@ TronLink Skills fills this gap with deep TRON-specific domain knowledge.
 
 ## Architecture
 
-```
+```text
 Natural Language Input
          |
          v
@@ -156,22 +156,22 @@ Stake 2.0 queries and SR information.
 ## Recommended Skill Workflows
 
 ### Balance & Token Check
-```
+```text
 tron-wallet (check balance) → tron-wallet (list tokens) → tron-resource (check energy status)
 ```
 
 ### Research & Swap Quote
-```
+```text
 tron-token (search) → tron-market (price/chart) → tron-resource (check energy) → tron-swap (get quote)
 ```
 
 ### Staking Analysis
-```
+```text
 tron-wallet (check balance) → tron-staking (staking info) → tron-staking (APY estimate) → tron-staking (SR list)
 ```
 
 ### Resource Optimization
-```
+```text
 tron-resource (check status) → tron-resource (estimate cost) → tron-resource (optimize-cost)
 ```
 
@@ -351,7 +351,7 @@ export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
 
 ## Project Structure
 
-```
+```text
 tronlink-skills/
 ├── README.md                          # Main documentation
 ├── package.json                       # Node.js manifest

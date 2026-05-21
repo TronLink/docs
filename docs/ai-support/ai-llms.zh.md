@@ -1,26 +1,47 @@
-# AI 支持
+# AI / LLMs
 
-TronLink 为 AI 智能体与基于 LLM 的应用提供了完整的工具链：MCP 服务、智能体技能集、命令行工具，以及独立的签名 SDK。本页是入口——先看这里，再进入你需要的具体工具。
+TronLink 的开发者文档以机器可读形式发布，便于 AI 智能体和基于 LLM 的工具直接发现、读取与集成。
 
-## 机器可读资源
+## 可用端点
 
-供直接读取文档的 LLM / AI 智能体使用：
+| 端点 | 说明 |
+| --- | --- |
+| [/docs/llms.txt](/docs/llms.txt) | 关键页面的精选索引,每条带一句话描述（[llmstxt.org](https://llmstxt.org/) 规范） |
+| [/docs/llms-full.txt](/docs/llms-full.txt) | 所有英文页面的全文聚合,便于单次抓取 |
 
-- [llms.txt](/docs/llms.txt) —— 本文档的精选索引，遵循 [llmstxt.org](https://llmstxt.org/) 规范
-- [llms-full.txt](/docs/llms-full.txt) —— 所有英文页面的全文聚合，便于单次抓取
+生产地址：`https://docs.tronlink.org/docs/llms.txt` 与 `https://docs.tronlink.org/docs/llms-full.txt`。
 
-## 工具
+## 该用哪个文件？
 
-- [MCP Server TronLink](mcp-server-tronlink.md) —— 提供链上、多签、GasFree 工具的 MCP 服务（Playwright + Direct API 两种模式）
-- [TronLink MCP Core](tronlink-mcp-core.md) —— MCP 服务背后的框架库：会话管理、能力接口、工具定义、流程配方（flow recipe）
-- [TronLink Skills](tronlink-skills.md) —— 覆盖钱包、代币、行情、兑换、资源、质押等命令的智能体技能集
-- [MCP TronLink Signer](mcp-tronlink-signer.md) —— 封装签名 SDK、用于签名与广播的轻量 MCP 服务
-- [TronLink Signer](tronlink-signer.md) —— 独立签名 SDK（`connect`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`）
-- [TronLink CLI](tronlink-cli.md) —— 用于查询、转账、质押、代理、投票的命令行工具
+| 场景 | 文件 |
+| --- | --- |
+| 导航 / 找到正确页面 | `llms.txt` —— 简短的纯链接地图 |
+| 单次抓取整份文档 | `llms-full.txt` —— 每页全文 |
 
-## 如何选择
+先用 `llms.txt` 并跟随其链接;需要一次性获取全部内容时再抓 `llms-full.txt`。
 
-- 构建能读写链上的自治智能体 → 从 [MCP Server TronLink](mcp-server-tronlink.md) 或 [Skills](tronlink-skills.md) 入手。
-- 把签名能力嵌入自己的服务 → 用 [Signer SDK](tronlink-signer.md) 或它的 [MCP 封装](mcp-tronlink-signer.md)。
-- 在终端里脚本化执行一次性操作 → 用 [CLI](tronlink-cli.md)。
-- 扩展或自建 MCP 服务 → 基于 [TronLink MCP Core](tronlink-mcp-core.md) 构建。
+## 添加到你的 AI 工具
+
+- **Cursor** —— Settings → Features → Docs → *Add new doc*,粘贴 `https://docs.tronlink.org/docs/llms.txt`。
+- **Claude / 支持 MCP 的智能体** —— TronLink 提供 MCP 服务以实现实时钱包与链上访问,host 配置见 [MCP Server TronLink](mcp-server-tronlink.md) 与 [MCP TronLink Signer](mcp-tronlink-signer.md)。仅作文档上下文时,把工具指向上面的 `llms.txt` 地址即可。
+- **其他工具** —— 任何支持自定义文档 URL 的工具都可使用 `llms.txt` / `llms-full.txt` 端点。
+
+## 覆盖范围
+
+该聚合覆盖完整文档,包括 AI/智能体工具链：
+
+- [MCP Server TronLink](mcp-server-tronlink.md) —— 链上、多签、GasFree 工具（Playwright + Direct API）
+- [TronLink MCP Core](tronlink-mcp-core.md) —— 框架库：schema、工具定义、流程配方
+- [TronLink Skills](tronlink-skills.md) —— 只读智能体技能集（钱包、代币、行情、兑换、资源、质押）
+- [MCP TronLink Signer](mcp-tronlink-signer.md) —— 封装签名 SDK 的 MCP 服务
+- [TronLink Signer](tronlink-signer.md) —— 独立签名 SDK
+- [TronLink CLI](tronlink-cli.md) —— 命令行工具
+
+以及 DApp 集成、移动端（DeepLink）和参考（网络、术语表、FAQ）章节。
+
+## 给智能体的说明
+
+- 从 `llms.txt` 开始——它是权威地图。不要盲目枚举站点文件。
+- 工具调用请基于结构化的 `error.code` / `error.retryable` 分支,**不要**解析人类可读的 `message`。
+- 读操作可安全重试;签名 / 远程写操作需要用户审批（HITL）,且不得自动重试——见各工具的「安全」一节。
+- 实验时默认用测试网（`nile` / `shasta`）;只有动用真实资金时才用 `mainnet`。

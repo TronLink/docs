@@ -32,7 +32,7 @@ TronLink Skills 以深度 TRON 领域知识填补了这一空白。
 
 ## 架构设计
 
-```
+```text
 自然语言输入
          |
          v
@@ -156,22 +156,22 @@ Stake 2.0 查询与 SR 信息。
 ## 推荐技能组合工作流
 
 ### 余额与代币查询
-```
+```text
 tron-wallet（查余额）→ tron-wallet（列出代币）→ tron-resource（检查能量状态）
 ```
 
 ### 研究与兑换报价
-```
+```text
 tron-token（搜索）→ tron-market（价格/K线）→ tron-resource（检查能量）→ tron-swap（获取报价）
 ```
 
 ### 质押分析
-```
+```text
 tron-wallet（查余额）→ tron-staking（质押信息）→ tron-staking（APY 估算）→ tron-staking（SR 列表）
 ```
 
 ### 资源优化
-```
+```text
 tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resource（optimize-cost）
 ```
 
@@ -351,7 +351,7 @@ export TRON_NETWORK="mainnet"    # 或 "shasta" / "nile"
 
 ## 项目结构
 
-```
+```text
 tronlink-skills/
 ├── README.md                          # 主文档
 ├── package.json                       # Node.js 配置文件

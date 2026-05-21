@@ -17,7 +17,7 @@
 
 ## 架构设计
 
-```
+```text
 AI 代理 (Claude Desktop / Claude Code)
          | (MCP 协议 — stdio / JSON-RPC 2.0)
          v
@@ -153,7 +153,7 @@ TRON 多签服务的 REST + WebSocket API：
 
 纯密码学函数——无外部服务调用：
 
-```
+```text
 signTransaction()          raw_data_hex → 65 字节签名（通过 agent-wallet）
 base58CheckEncode()        有效载荷 → base58check 编码地址
 base58CheckDecode()        TRON 地址 → 21 字节有效载荷
@@ -362,7 +362,7 @@ Claude Code 自动检测：
 
 ## 项目结构
 
-```
+```text
 mcp-server-tronlink/
 ├── src/
 │   ├── index.ts                    # 服务入口、配置、能力注册
