@@ -2,6 +2,11 @@
 
 TronLink 的开发者文档以机器可读形式发布，便于 AI 智能体和基于 LLM 的工具直接发现、读取与集成。
 
+!!! info "允许的用途 vs. 爬虫策略"
+    本站为 **retrieval / RAG / inference-time grounding** 整理——下方的 `llms.txt` 与 `llms-full.txt` 全文包是这种用途的规范入口,且明确为 AI 使用而维护。
+
+    **训练时批量抓取**是另一个问题,由本站的 `robots.txt` 加上边缘下发的 `Content-Signal` 指令控制。目前部分仅用于训练的 user-agent 被显式 Disallow;如果你的场景需要不同的策略,请联系我们,而不是通过解析全文包绕开信号。
+
 ## 可用端点
 
 > **URL ≠ 源文件名。** 源文件带 `.en` / `.zh` 后缀（`llms.zh.txt`、`llms-full.en.txt`、`llms-full.zh.txt`），mkdocs 的 i18n 插件靠这个后缀来分流；**部署后后缀会被剥掉**，中文版本搬到 `/zh/` 下。请使用下表中的部署 URL；带语言后缀的源文件名 URL（如 `/llms-full.en.txt`）会 404。

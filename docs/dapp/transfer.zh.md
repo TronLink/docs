@@ -41,3 +41,16 @@ try {
 
 如果用户在弹窗中选择【签名】，DApp 可以拿到签名后的交易，继续进行广播。
 
+## 错误码
+
+DApp provider 把错误以带 `.code` / `.message` 的 JavaScript exception 抛出。此调用上可能出现的码:
+
+| 码 | 含义 | 来源 | 可重试? |
+| :---: | --- | --- | :---: |
+| `4001` | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.sign(tx)` | 否——用户拒绝 |
+| (抛出) | `Invalid address` / `Invalid amount` 等 | `transactionBuilder.sendTrx(...)` 在钱包交互前 | 否——修参数 |
+| `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `sendRawTransaction` 返回或 `tronWeb.trx.getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
+| (network error) | TronGrid / RPC 抖动 | `sendRawTransaction` HTTP 层 | 是——退避后重试 |
+
+跨 surface 的码对照(DApp ↔ DeepLink ↔ MCP ↔ CLI)见[错误码对照表](../reference/error-code-map.md)。
+
