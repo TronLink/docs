@@ -1,0 +1,42 @@
+name: Check doc/schema parity
+
+on:
+  push:
+    branches:
+      - main
+      - feature/ai-readability-p0
+    paths:
+      - "docs/ai-support/mcp-server-tronlink.*.md"
+      - "scripts/check_doc_schema_parity.py"
+      - ".github/workflows/check-doc-schema-parity.yml"
+  pull_request:
+    paths:
+      - "docs/ai-support/mcp-server-tronlink.*.md"
+      - "scripts/check_doc_schema_parity.py"
+      - ".github/workflows/check-doc-schema-parity.yml"
+  schedule:
+    # Daily — catches upstream Zod schema drift even if our docs are unchanged.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      schemas_pin:
+        description: "Upstream ref (SHA or branch) to check against; default = main"
+        required: false
+        default: "main"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run parity check
+        env:
+          SCHEMAS_PIN: ${{ github.event.inputs.schemas_pin || 'main' }}
+        run: python3 scripts/check_doc_schema_parity.py
