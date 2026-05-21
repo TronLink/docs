@@ -417,6 +417,199 @@ Triggering the request shows an unlock popup if TronLink is locked, then a netwo
 
 ---
 
+## JSON Schema Reference
+
+All RPC-style methods below are invoked via `window.tron.request({ method, params? })`. tronWeb-based methods (sign, multiSign, signMessageV2) take a positional argument and return a promise. Schemas follow JSON Schema Draft 7. Branch on integer `error.code` (table per method), never on `error.message`.
+
+### `eth_requestAccounts` (TIP-1102)
+
+**Request** — `params` must be omitted or `[]`:
+
+```json
+{
+  "type": "object",
+  "required": ["method"],
+  "properties": {
+    "method": { "const": "eth_requestAccounts" },
+    "params": { "type": "array", "maxItems": 0 }
+  }
+}
+```
+
+**Response** — array of exactly one approved base58 address:
+
+```json
+{
+  "type": "array",
+  "minItems": 1,
+  "maxItems": 1,
+  "items": { "type": "string", "description": "TRON address (base58, T-prefix)" }
+}
+```
+
+**Errors** — `4001` user rejected · `-32002` another request pending · `-32602` invalid params · `4200` method not supported.
+
+### `wallet_watchAsset` (Add Asset)
+
+**Request**:
+
+```json
+{
+  "type": "object",
+  "required": ["method", "params"],
+  "properties": {
+    "method": { "const": "wallet_watchAsset" },
+    "params": {
+      "type": "object",
+      "required": ["type", "options"],
+      "properties": {
+        "type": { "type": "string", "enum": ["trc10", "trc20", "trc721"] },
+        "options": {
+          "type": "object",
+          "required": ["address"],
+          "properties": {
+            "address":  { "type": "string", "description": "Token contract address (TRC20 / TRC721) or token id (TRC10)" },
+            "symbol":   { "type": "string", "description": "Optional display symbol" },
+            "decimals": { "type": "integer", "minimum": 0, "description": "Optional display decimals" },
+            "image":    { "type": "string", "format": "uri", "description": "Optional icon URI" }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Response** — no return value (`undefined`). The promise resolves when the user clicks Add and rejects with code `4001` on Cancel.
+
+### `wallet_switchEthereumChain` (TIP-3326)
+
+**Request**:
+
+```json
+{
+  "type": "object",
+  "required": ["method", "params"],
+  "properties": {
+    "method": { "const": "wallet_switchEthereumChain" },
+    "params": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["chainId"],
+        "properties": {
+          "chainId": { "type": "string", "enum": ["0x2b6653dc", "0x94a9059e", "0xcd8690dc"], "description": "Mainnet / Shasta / Nile (case-sensitive)" }
+        }
+      }
+    }
+  }
+}
+```
+
+**Response** — `null` on success.
+
+**Errors** — `4001` user rejected · `4902` invalid chainId · `-32002` another request pending · `-32602` invalid params · `4200` method not supported.
+
+### `tronweb.trx.sign(transaction)` — sign a TRON transaction
+
+**Argument** — an unsigned TronWeb transaction object (the same shape returned by `tronweb.transactionBuilder.*`):
+
+```json
+{
+  "type": "object",
+  "required": ["txID", "raw_data", "raw_data_hex"],
+  "properties": {
+    "visible":      { "type": "boolean" },
+    "txID":         { "type": "string", "description": "64-char hex transaction id" },
+    "raw_data":     { "type": "object", "description": "Protocol-level transaction body (ref_block_*, expiration, contract[], timestamp, fee_limit?)" },
+    "raw_data_hex": { "type": "string" }
+  }
+}
+```
+
+**Return** — same shape plus a `signature` array:
+
+```json
+{
+  "type": "object",
+  "required": ["txID", "raw_data", "raw_data_hex", "signature"],
+  "properties": {
+    "signature": { "type": "array", "items": { "type": "string", "description": "65-byte hex signature (r||s||v)" } }
+  }
+}
+```
+
+Rejection throws `Error("Confirmation declined by user")` (no numeric code).
+
+### `tronweb.trx.multiSign(transaction, privateKey?, permissionId)` — multi-sig signing
+
+Same input/output shape as `sign`. `permissionId` is an integer; `2` typically corresponds to the first active permission. Each call appends one signature to the array — collect signatures until the threshold is reached before broadcasting via `sendRawTransaction`.
+
+### `tronweb.trx.signMessageV2(message)` — TIP-191 message signing
+
+**Argument** — a string (plain UTF-8 or `0x`-prefixed hex):
+
+```json
+{ "type": "string" }
+```
+
+**Return** — `0x`-prefixed 65-byte hex signature:
+
+```json
+{ "type": "string", "pattern": "^0x[0-9a-fA-F]{130}$" }
+```
+
+Rejection throws `Error("Invalid transaction provided")` / `Error("user rejected request")` — branch on the thrown exception (try / catch); there is no `code` field.
+
+### TIP-6963 (provider discovery)
+
+Event-based, not a `request` method. The shape is defined by TypeScript interfaces in [Get TronLink Provider via TIP-6963](#get-tronlink-provider-via-tip-6963) above; the wire format is two `CustomEvent` types:
+
+- `TIP6963:requestProvider` — dispatched by the DApp, no payload.
+- `TIP6963:announceProvider` — dispatched by each installed wallet with `detail = { info: { uuid, name, icon, rdns }, provider }`. TronLink uses `rdns = "org.tronlink.www"` and `name = "TronLink"`.
+
+### Legacy `tron_requestAccounts`
+
+Retained for back-compat; new integrations should use `eth_requestAccounts`.
+
+**Request**:
+
+```json
+{
+  "type": "object",
+  "required": ["method"],
+  "properties": {
+    "method": { "const": "tron_requestAccounts" },
+    "params": {
+      "type": "object",
+      "properties": {
+        "websiteIcon": { "type": "string", "format": "uri" },
+        "websiteName": { "type": "string" }
+      }
+    }
+  }
+}
+```
+
+**Response**:
+
+```json
+{
+  "type": "object",
+  "required": ["code", "message"],
+  "properties": {
+    "code":    { "type": "integer", "enum": [200, 4000, 4001] },
+    "message": { "type": "string" }
+  }
+}
+```
+
+`code`: `200` site already authorized **or** user approved · `4000` duplicate authorization request pending · `4001` user rejected. Wallet-locked is signaled by an empty string return, not a code.
+
+---
+
 ## Legacy Usage (Not Recommended)
 
 The following interfaces are retained as compatibility aliases. New integrations should use the recommended usage above. `window.tronLink` and `window.tron` are functionally equivalent, but the former is being phased out and is no longer actively maintained.

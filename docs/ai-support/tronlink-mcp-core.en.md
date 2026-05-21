@@ -247,6 +247,8 @@ interface GasFreeCapability {
 
 All tools use the `tl_` prefix. Organized into 13 categories:
 
+> **Schema SSOT.** Every tool's `inputSchema` is generated from the Zod schemas in [`src/mcp-server/schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) and surfaced at runtime via `list_tools`. Tables below list **name + one-line description only**; for parameter types, required fields, enums, and defaults, either call `list_tools` against a running server, or read the Zod source. The downstream [`mcp-server-tronlink` page](mcp-server-tronlink.md#selected-tool-schemas-inline-mirror) mirrors JSON Schema for a curated set of 7 high-impact tools (`tl_chain_send`, `tl_chain_swap_v3`, `tl_chain_stake`, `tl_multisig_submit_tx`, `tl_gasfree_send`, `tl_chain_get_account`, `tl_evaluate`) — useful when writing a call site without an MCP session open. The SSOT is still this package.
+
 ### 1. Session Management (2)
 | Tool | Description |
 |------|-------------|

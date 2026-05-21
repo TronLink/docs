@@ -437,6 +437,116 @@ Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bump
 - **Human-in-the-loop:** write tools sign with the encrypted local `agent-wallet`; in browser-mode flows the user approves in the TronLink UI. Treat every Remote Write tool as requiring confirmation in production.
 - **Retry:** read-only tools are safe to retry; Remote Write tools must not be auto-retried unless proven idempotent.
 
+### Selected tool schemas (inline mirror)
+
+These are **docs-side mirrors** of the most critical tool inputs — useful when an agent is writing a tool-call call site without an MCP session open. Runtime `list_tools` remains the authoritative source: the schemas there carry full Zod metadata (descriptions, `default`, etc.) plus `meta.schemaVersion`. Fields below are derived from `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts` and follow JSON Schema Draft 7. The full set of 52 tool schemas is **not** reproduced here — see core for the SSOT.
+
+#### `tl_chain_send` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount"],
+  "properties": {
+    "to":               { "type": "string", "description": "Recipient TRON address (T-prefix, 34 chars)" },
+    "amount":           { "type": "string", "description": "Amount to send (e.g. \"1.5\" for TRX, or token amount string)" },
+    "token_type":       { "type": "string", "enum": ["TRX", "TRC10", "TRC20"], "description": "Default: TRX" },
+    "token_id":         { "type": "string", "description": "TRC10 token ID (required when token_type=TRC10)" },
+    "contract_address": { "type": "string", "description": "TRC20 contract address (required when token_type=TRC20)" },
+    "memo":             { "type": "string", "description": "Optional transaction memo" }
+  }
+}
+```
+
+#### `tl_chain_swap_v3` — **Remote Write** (when `action=execute`)
+
+```json
+{
+  "type": "object",
+  "required": ["action", "from_token", "to_token", "amount"],
+  "properties": {
+    "action":           { "type": "string", "enum": ["estimate", "execute"], "description": "estimate = quote-only (Network Read); execute = sign & broadcast (Remote Write)" },
+    "from_token":       { "type": "string", "description": "Source token address or 'TRX' for native" },
+    "to_token":         { "type": "string", "description": "Target token address or 'TRX' for native" },
+    "amount":           { "type": "string", "description": "Input amount in token units" },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in bps: 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
+    "slippage":         { "type": "number", "description": "Slippage tolerance percent (default: 0.5). See 'Swap safety' above — never accept an unstated default for production execution." },
+    "sqrt_price_limit": { "type": "string", "description": "Optional price limit for partial fills (advanced)" }
+  }
+}
+```
+
+#### `tl_chain_stake` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["action", "amount_trx"],
+  "properties": {
+    "action":     { "type": "string", "enum": ["freeze", "unfreeze"], "description": "freeze locks TRX for resources; unfreeze starts the 14-day withdrawal" },
+    "amount_trx": { "type": "number", "description": "Amount of TRX to freeze / unfreeze" },
+    "resource":   { "type": "string", "enum": ["BANDWIDTH", "ENERGY"], "description": "Resource type (default: BANDWIDTH)" }
+  }
+}
+```
+
+#### `tl_multisig_submit_tx` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["address", "transaction"],
+  "properties": {
+    "address":           { "type": "string", "description": "Signer address submitting this transaction" },
+    "function_selector": { "type": "string", "description": "e.g. 'transfer(address,uint256)' (optional)" },
+    "expire_time":       { "type": "number", "description": "Expiration timestamp in ms (default: now + 24h)" },
+    "transaction":       { "type": "object", "description": "Signed transaction { raw_data, signature[] }. Each contract entry may carry a Permission_id." }
+  }
+}
+```
+
+The full `transaction` shape (raw_data → contract[] → parameter, etc.) is in [`tronlink-mcp-core` `schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) — too verbose to mirror inline.
+
+#### `tl_gasfree_send` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount", "contract_address"],
+  "properties": {
+    "to":               { "type": "string", "description": "Recipient TRON address" },
+    "amount":           { "type": "string", "description": "Token amount in token units (e.g. '10.5')" },
+    "contract_address": { "type": "string", "description": "TRC20 token contract address" }
+  }
+}
+```
+
+#### `tl_chain_get_account` — **Network Read**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "address": { "type": "string", "description": "TRON address to query (default: configured wallet)" }
+  }
+}
+```
+
+#### `tl_evaluate` — **High-risk / Destructive** (Playwright-only)
+
+```json
+{
+  "type": "object",
+  "required": ["script"],
+  "properties": {
+    "script":  { "type": "string", "description": "JavaScript expression to evaluate in the controlled browser page context. Return value is serialized." },
+    "timeout": { "type": "number", "description": "Timeout in ms (default: 30000)" }
+  }
+}
+```
+
+Reminder: `tl_evaluate` runs arbitrary JS in the controlled Playwright browser. Disable it from the MCP host's tool allowlist unless strictly needed (see Security Model below).
+
 ---
 
 ## Security Model

@@ -429,6 +429,116 @@ mcp-server-tronlink/
 - **人工确认（HITL）：** 写操作工具使用加密的本地 `agent-wallet` 签名；浏览器模式下由用户在 TronLink UI 审批。生产环境应将每个「远程写」工具视为需要确认。
 - **重试：** 只读工具可安全重试；「远程写」工具除非证明幂等，否则不得自动重试。
 
+### 精选工具 schema（文档侧镜像）
+
+以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）以及 `meta.schemaVersion`。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**镜像全部 52 个工具——以 core 仓库为 SSOT。
+
+#### `tl_chain_send` —— **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount"],
+  "properties": {
+    "to":               { "type": "string", "description": "收款方 TRON 地址（T 开头、34 字符）" },
+    "amount":           { "type": "string", "description": "金额（如 TRX 用 \"1.5\"，代币用字符串数量）" },
+    "token_type":       { "type": "string", "enum": ["TRX", "TRC10", "TRC20"], "description": "默认: TRX" },
+    "token_id":         { "type": "string", "description": "TRC10 token ID（token_type=TRC10 时必填）" },
+    "contract_address": { "type": "string", "description": "TRC20 合约地址（token_type=TRC20 时必填）" },
+    "memo":             { "type": "string", "description": "可选交易备注" }
+  }
+}
+```
+
+#### `tl_chain_swap_v3` —— **Remote Write**（`action=execute` 时）
+
+```json
+{
+  "type": "object",
+  "required": ["action", "from_token", "to_token", "amount"],
+  "properties": {
+    "action":           { "type": "string", "enum": ["estimate", "execute"], "description": "estimate = 仅报价（Network Read）；execute = 签名 + 广播（Remote Write）" },
+    "from_token":       { "type": "string", "description": "源代币地址，或 'TRX' 表示原生 TRX" },
+    "to_token":         { "type": "string", "description": "目标代币地址，或 'TRX'" },
+    "amount":           { "type": "string", "description": "输入金额（代币单位）" },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "池费率 bps：500=0.05%、3000=0.3%、10000=1%（默认 3000）" },
+    "slippage":         { "type": "number", "description": "滑点容忍百分比（默认 0.5）。详见上方“兑换安全”——生产环境绝不允许未声明默认值。" },
+    "sqrt_price_limit": { "type": "string", "description": "可选 partial-fill 价格上限（进阶）" }
+  }
+}
+```
+
+#### `tl_chain_stake` —— **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["action", "amount_trx"],
+  "properties": {
+    "action":     { "type": "string", "enum": ["freeze", "unfreeze"], "description": "freeze 锁定 TRX 换资源；unfreeze 开始 14 天解冻倒计时" },
+    "amount_trx": { "type": "number", "description": "冻结 / 解冻的 TRX 数量" },
+    "resource":   { "type": "string", "enum": ["BANDWIDTH", "ENERGY"], "description": "资源类型（默认 BANDWIDTH）" }
+  }
+}
+```
+
+#### `tl_multisig_submit_tx` —— **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["address", "transaction"],
+  "properties": {
+    "address":           { "type": "string", "description": "提交此交易的签名方地址" },
+    "function_selector": { "type": "string", "description": "如 'transfer(address,uint256)'（可选）" },
+    "expire_time":       { "type": "number", "description": "过期时间戳，毫秒（默认: 当前时间 + 24h）" },
+    "transaction":       { "type": "object", "description": "已签名交易 { raw_data, signature[] }；contract 条目可携带 Permission_id" }
+  }
+}
+```
+
+完整 `transaction` 结构（raw_data → contract[] → parameter 等）见 [`tronlink-mcp-core` `schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts)——过长不在此处镜像。
+
+#### `tl_gasfree_send` —— **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount", "contract_address"],
+  "properties": {
+    "to":               { "type": "string", "description": "收款 TRON 地址" },
+    "amount":           { "type": "string", "description": "代币数量（代币单位，如 '10.5'）" },
+    "contract_address": { "type": "string", "description": "TRC20 代币合约地址" }
+  }
+}
+```
+
+#### `tl_chain_get_account` —— **Network Read**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "address": { "type": "string", "description": "查询的 TRON 地址（默认：当前配置钱包）" }
+  }
+}
+```
+
+#### `tl_evaluate` —— **High-risk / Destructive**（仅 Playwright 模式）
+
+```json
+{
+  "type": "object",
+  "required": ["script"],
+  "properties": {
+    "script":  { "type": "string", "description": "在受控浏览器页面上下文中执行的 JS 表达式；返回值会被序列化。" },
+    "timeout": { "type": "number", "description": "超时毫秒数（默认 30000）" }
+  }
+}
+```
+
+提醒：`tl_evaluate` 在受控 Playwright 浏览器中执行任意 JS。严格不需要时请从 MCP host 白名单中禁用（见下方“安全模型”）。
+
 ---
 
 ## 安全模型

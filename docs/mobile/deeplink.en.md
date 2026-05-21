@@ -248,3 +248,207 @@ Callback:
 | 301 | Transaction executed in TronLink |
 | 302 | Broadcast failure - returned with incorrect info |
 | -1 | Unknown reason |
+
+## JSON Schema Reference
+
+The `param` query value is a JSON object that — once URL-encoded — is the **entire DeepLink contract**. Schemas below follow JSON Schema Draft 7. The callback delivered to `callbackUrl` follows a small set of shapes keyed by action.
+
+### Common envelope
+
+Every `param` shares this prefix:
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version"],
+  "properties": {
+    "protocol":    { "type": "string", "const": "TronLink" },
+    "version":     { "type": "string", "const": "1.0" },
+    "action":      { "type": "string", "enum": ["open", "login", "transfer", "sign"] },
+    "actionId":    { "type": "string", "description": "UUID v4 — required for any action that produces a callback (login, transfer, sign); the callback echoes the same actionId" },
+    "url":         { "type": "string", "format": "uri", "description": "DApp URL — required for everything except 'open wallet'" },
+    "callbackUrl": { "type": "string", "format": "uri", "description": "HTTPS endpoint that receives the JSON callback" },
+    "dappName":    { "type": "string", "description": "DApp display name shown on the approval screen" },
+    "dappIcon":    { "type": "string", "format": "uri", "description": "DApp icon URI shown on the approval screen" },
+    "chainId":     { "type": "string", "enum": ["0x2b6653dc", "0x94a9059e", "0xcd8690dc"], "description": "Mainnet / Shasta / Nile (case-sensitive hex)" }
+  }
+}
+```
+
+### Per-action schemas
+
+**Open wallet** (no callback):
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version"],
+  "properties": {
+    "action":   { "const": "open" },
+    "protocol": { "const": "TronLink" },
+    "version":  { "const": "1.0" }
+  }
+}
+```
+
+**Open DApp in DApp Explorer** (no callback):
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version", "url"],
+  "properties": {
+    "action":   { "const": "open" },
+    "protocol": { "const": "TronLink" },
+    "version":  { "const": "1.0" },
+    "url":      { "type": "string", "format": "uri" }
+  }
+}
+```
+
+**Login** request:
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "protocol", "version"],
+  "properties": {
+    "action":      { "const": "login" },
+    "actionId":    { "type": "string" },
+    "url":         { "type": "string", "format": "uri" },
+    "callbackUrl": { "type": "string", "format": "uri" },
+    "dappName":    { "type": "string" },
+    "dappIcon":    { "type": "string", "format": "uri" },
+    "chainId":     { "type": "string" },
+    "protocol":    { "const": "TronLink" },
+    "version":     { "const": "1.0" }
+  }
+}
+```
+
+**Login** callback:
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId": { "type": "string" },
+    "code":     { "type": "integer", "description": "0 = success; see Result Code table for failure codes" },
+    "id":       { "type": "integer", "description": "Internal request id (echoed for debugging)" },
+    "message":  { "type": "string" },
+    "address":  { "type": "string", "description": "Authorized TRON address (base58, T-prefix). Present only when code = 0." }
+  }
+}
+```
+
+**Transfer** request — `tokenId` (TRX / TRC10) and `contract` (TRC20) are **mutually exclusive**; supplying both returns `10025`. Set the unused one to `""` (empty string):
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "from", "to", "loginAddress", "amount", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "transfer" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "from":         { "type": "string", "description": "Sender TRON address (base58)" },
+    "to":           { "type": "string", "description": "Recipient TRON address (base58)" },
+    "loginAddress": { "type": "string", "description": "Address that authorized this session — must match the current wallet (otherwise code 10021)" },
+    "tokenId":      { "type": "string", "description": "TRC10 token id or '0' for TRX; pass '' when sending TRC20" },
+    "contract":     { "type": "string", "description": "TRC20 contract address; pass '' when sending TRX / TRC10" },
+    "amount":       { "type": "string", "description": "Decimal string in human units (e.g. '1.5'); the app handles decimals" },
+    "memo":         { "type": "string", "description": "Optional transaction memo" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**Transfer / sign-transaction** callback:
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId":        { "type": "string" },
+    "code":            { "type": "integer" },
+    "id":              { "type": "integer" },
+    "message":         { "type": "string" },
+    "successful":      { "type": "boolean", "description": "Only present for sign-transaction; reflects on-chain execution result" },
+    "transactionHash": { "type": "string", "description": "64-char hex tx id; present when broadcast succeeded" }
+  }
+}
+```
+
+**Sign transaction** request — pass a fully-built TronWeb transaction in `data` (JSON string):
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "loginAddress", "signType", "data", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "sign" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "loginAddress": { "type": "string" },
+    "signType":     { "const": "signTransaction" },
+    "method":       { "type": "string", "description": "Optional function selector for UI display, e.g. 'transfer(address,uint256)'" },
+    "data":         { "type": "string", "description": "JSON-stringified TronWeb transaction (raw_data, raw_data_hex, txID, visible)" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**Sign message** request — `signType` controls the digest:
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "loginAddress", "signType", "message", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "sign" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "loginAddress": { "type": "string" },
+    "signType":     { "type": "string", "enum": ["signStr", "signTypedData"], "description": "signStr = signMessageV2 (TIP-191); signTypedData = TIP-712" },
+    "message":      { "type": "string", "description": "Plain text or hex (signStr) / JSON-stringified typed-data domain+message (signTypedData)" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**Sign message** callback:
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId":   { "type": "string" },
+    "code":       { "type": "integer" },
+    "id":         { "type": "integer" },
+    "message":    { "type": "string" },
+    "signedData": { "type": "string", "description": "0x-prefixed hex signature; present when code = 0" }
+  }
+}
+```
+
+### Result code enum (callback `code`)
+
+The full set of values is in the [Result Code](#result-code) table above. Branch on `code` (integer), not on `message` (which is human-readable and may be localized).

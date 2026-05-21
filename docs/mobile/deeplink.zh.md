@@ -244,3 +244,207 @@ img {
 | 301 | Transaction executed in TronLink |  |
 | 302 | Broadcast failure - returned with incorrect info |  |
 | -1 | Unknown reason |  |
+
+## JSON Schema 参考
+
+`param` 查询参数的值是一个 JSON 对象——URL-encode 之后，就是 **整个 DeepLink 契约**。下方 schema 遵循 JSON Schema Draft 7；投递到 `callbackUrl` 的回调结构按 action 分几种形态。
+
+### 公共信封
+
+每个 `param` 都共享这部分前缀：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version"],
+  "properties": {
+    "protocol":    { "type": "string", "const": "TronLink" },
+    "version":     { "type": "string", "const": "1.0" },
+    "action":      { "type": "string", "enum": ["open", "login", "transfer", "sign"] },
+    "actionId":    { "type": "string", "description": "UUID v4——所有会产生回调的 action（login、transfer、sign）必填；回调会原样回带" },
+    "url":         { "type": "string", "format": "uri", "description": "DApp URL——除“打开钱包”外所有 action 都必填" },
+    "callbackUrl": { "type": "string", "format": "uri", "description": "接收 JSON 回调的 HTTPS 端点" },
+    "dappName":    { "type": "string", "description": "审批界面上显示的 DApp 名称" },
+    "dappIcon":    { "type": "string", "format": "uri", "description": "审批界面上显示的 DApp 图标 URI" },
+    "chainId":     { "type": "string", "enum": ["0x2b6653dc", "0x94a9059e", "0xcd8690dc"], "description": "主网 / Shasta / Nile（大小写敏感的 hex）" }
+  }
+}
+```
+
+### 各 action 的 schema
+
+**打开钱包**（无回调）：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version"],
+  "properties": {
+    "action":   { "const": "open" },
+    "protocol": { "const": "TronLink" },
+    "version":  { "const": "1.0" }
+  }
+}
+```
+
+**在 DApp Explorer 中打开 DApp**（无回调）：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "protocol", "version", "url"],
+  "properties": {
+    "action":   { "const": "open" },
+    "protocol": { "const": "TronLink" },
+    "version":  { "const": "1.0" },
+    "url":      { "type": "string", "format": "uri" }
+  }
+}
+```
+
+**登录** 请求：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "protocol", "version"],
+  "properties": {
+    "action":      { "const": "login" },
+    "actionId":    { "type": "string" },
+    "url":         { "type": "string", "format": "uri" },
+    "callbackUrl": { "type": "string", "format": "uri" },
+    "dappName":    { "type": "string" },
+    "dappIcon":    { "type": "string", "format": "uri" },
+    "chainId":     { "type": "string" },
+    "protocol":    { "const": "TronLink" },
+    "version":     { "const": "1.0" }
+  }
+}
+```
+
+**登录** 回调：
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId": { "type": "string" },
+    "code":     { "type": "integer", "description": "0 = 成功；失败码见上方“回传消息码”表" },
+    "id":       { "type": "integer", "description": "内部请求 id（用于调试，原样回传）" },
+    "message":  { "type": "string" },
+    "address":  { "type": "string", "description": "已授权的 TRON 地址（base58，T 开头）。仅在 code = 0 时出现。" }
+  }
+}
+```
+
+**转账** 请求——`tokenId`（TRX / TRC10）与 `contract`（TRC20）**互斥**；同时传入会返回 `10025`。不用的那个传 `""`（空字符串）：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "from", "to", "loginAddress", "amount", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "transfer" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "from":         { "type": "string", "description": "发起方 TRON 地址（base58）" },
+    "to":           { "type": "string", "description": "收款方 TRON 地址（base58）" },
+    "loginAddress": { "type": "string", "description": "本次会话的授权地址——必须与当前钱包一致，否则返回 10021" },
+    "tokenId":      { "type": "string", "description": "TRC10 token id，或 '0' 表示 TRX；发送 TRC20 时传 ''" },
+    "contract":     { "type": "string", "description": "TRC20 合约地址；发送 TRX / TRC10 时传 ''" },
+    "amount":       { "type": "string", "description": "人类单位的十进制字符串（如 '1.5'），App 内部处理 decimals" },
+    "memo":         { "type": "string", "description": "可选交易备注" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**转账 / 交易签名** 回调：
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId":        { "type": "string" },
+    "code":            { "type": "integer" },
+    "id":              { "type": "integer" },
+    "message":         { "type": "string" },
+    "successful":      { "type": "boolean", "description": "仅交易签名时出现，反映链上执行结果" },
+    "transactionHash": { "type": "string", "description": "64 字符十六进制 tx id；广播成功时出现" }
+  }
+}
+```
+
+**交易签名** 请求——`data` 传一个已用 TronWeb 构建好的交易 JSON 字符串：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "loginAddress", "signType", "data", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "sign" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "loginAddress": { "type": "string" },
+    "signType":     { "const": "signTransaction" },
+    "method":       { "type": "string", "description": "可选的函数选择子，用于 UI 显示，例如 'transfer(address,uint256)'" },
+    "data":         { "type": "string", "description": "TronWeb 交易的 JSON 字符串（raw_data、raw_data_hex、txID、visible）" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**消息签名** 请求——`signType` 决定摘要方式：
+
+```json
+{
+  "type": "object",
+  "required": ["action", "actionId", "callbackUrl", "url", "loginAddress", "signType", "message", "protocol", "version"],
+  "properties": {
+    "action":       { "const": "sign" },
+    "actionId":     { "type": "string" },
+    "url":          { "type": "string", "format": "uri" },
+    "callbackUrl":  { "type": "string", "format": "uri" },
+    "loginAddress": { "type": "string" },
+    "signType":     { "type": "string", "enum": ["signStr", "signTypedData"], "description": "signStr = signMessageV2（TIP-191）；signTypedData = TIP-712" },
+    "message":      { "type": "string", "description": "纯文本或 hex（signStr） / JSON 字符串化的 typed-data domain+message（signTypedData）" },
+    "dappName":     { "type": "string" },
+    "dappIcon":     { "type": "string", "format": "uri" },
+    "chainId":      { "type": "string" },
+    "protocol":     { "const": "TronLink" },
+    "version":      { "const": "1.0" }
+  }
+}
+```
+
+**消息签名** 回调：
+
+```json
+{
+  "type": "object",
+  "required": ["actionId", "code", "id", "message"],
+  "properties": {
+    "actionId":   { "type": "string" },
+    "code":       { "type": "integer" },
+    "id":         { "type": "integer" },
+    "message":    { "type": "string" },
+    "signedData": { "type": "string", "description": "带 0x 前缀的十六进制签名；code = 0 时出现" }
+  }
+}
+```
+
+### 回调 `code` 枚举
+
+完整取值见上方[回传消息码](#回传消息码)表。请基于 `code`（integer）分支，**不要**解析 `message`（人类可读，可能会本地化）。
