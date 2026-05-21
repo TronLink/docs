@@ -8,10 +8,10 @@ TronLink's developer documentation is published in machine-readable form so AI a
 
 | Endpoint (deployed URL) | Description |
 | --- | --- |
-| [/llms.txt](../llms.txt) | Curated English index of key pages ([llmstxt.org](https://llmstxt.org/) format) |
-| [/zh/llms.txt](../llms.zh.txt) | Curated Chinese index — same layout, links into `/zh/` pages |
-| [/llms-full.txt](../llms-full.txt) | Every English page concatenated for single-fetch ingestion (built from `docs/llms-full.en.txt`) |
-| [/zh/llms-full.txt](../llms-full.zh.txt) | Every Chinese page concatenated for single-fetch ingestion (built from `docs/llms-full.zh.txt`) |
+| [/llms.txt](../../llms.txt) | Curated English index of key pages ([llmstxt.org](https://llmstxt.org/) format) |
+| [/zh/llms.txt](../../zh/llms.txt) | Curated Chinese index — same layout, links into `/zh/` pages |
+| [/llms-full.txt](../../llms-full.txt) | Every English page concatenated for single-fetch ingestion (built from `docs/llms-full.en.txt`) |
+| [/zh/llms-full.txt](../../zh/llms-full.txt) | Every Chinese page concatenated for single-fetch ingestion (built from `docs/llms-full.zh.txt`) |
 
 Production URLs: `https://docs.tronlink.org/llms.txt`, `https://docs.tronlink.org/zh/llms.txt`, and the matching `llms-full.txt` bundles under each locale root.
 
