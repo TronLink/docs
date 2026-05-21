@@ -8,7 +8,7 @@ If you are an AI coding agent or an autonomous tool reading this for orientation
 
 - **Curated index:** [docs/llms.txt](docs/llms.txt) — short, link-only map of the documentation, following [llmstxt.org](https://llmstxt.org/). Use this first.
 - **Single-fetch full text:** [docs/llms-full.txt](docs/llms-full.txt) — every English page concatenated for one-shot ingestion. The header records the generating commit SHA, UTC timestamp, page count, and a rough token estimate; check those before relying on the content.
-- **Human-readable site:** [https://docs.tronlink.org/docs/](https://docs.tronlink.org/docs/)
+- **Human-readable site:** [https://docs.tronlink.org/](https://docs.tronlink.org/)
 
 ## Topic map
 

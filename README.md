@@ -7,8 +7,8 @@ This is the official developer documentation for the TronLink wallet, providing 
 If you are an AI agent (Claude, Cursor, Codex, etc.) reading this repo, start here:
 
 - [`AGENTS.md`](AGENTS.md) — orientation: topic map, SSOT boundaries (error codes, schemas, versions), upstream package pointers.
-- [`docs/llms.txt`](docs/llms.txt) / [`docs/llms.zh.txt`](docs/llms.zh.txt) — curated [llmstxt.org](https://llmstxt.org/) indexes. **Source filenames** carry `.en`/`.zh` suffixes; **deployed URLs** strip them: `/docs/llms.txt` (EN) and `/docs/zh/llms.txt` (ZH).
-- [`docs/llms-full.en.txt`](docs/llms-full.en.txt) / [`docs/llms-full.zh.txt`](docs/llms-full.zh.txt) — every page concatenated for single-fetch ingestion. Deployed at `/docs/llms-full.txt` (EN) and `/docs/zh/llms-full.txt` (ZH).
+- [`docs/llms.txt`](docs/llms.txt) / [`docs/llms.zh.txt`](docs/llms.zh.txt) — curated [llmstxt.org](https://llmstxt.org/) indexes. **Source filenames** carry `.en`/`.zh` suffixes; **deployed URLs** strip them: `/llms.txt` (EN) and `/zh/llms.txt` (ZH).
+- [`docs/llms-full.en.txt`](docs/llms-full.en.txt) / [`docs/llms-full.zh.txt`](docs/llms-full.zh.txt) — every page concatenated for single-fetch ingestion. Deployed at `/llms-full.txt` (EN) and `/zh/llms-full.txt` (ZH).
 - [`docs/ai-support/`](docs/ai-support/) — MCP servers, Skills, CLI, signer SDK. Live AI/agent surface; see [`ai-llms.en.md`](docs/ai-support/ai-llms.en.md) for the overview.
 
 Branch on structured `error.code` / `error.retryable`, never on prose. Sign / Remote Write tools require user approval (HITL) and must not be auto-retried — see each tool's Safety section.
