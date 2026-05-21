@@ -83,6 +83,40 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 8. TronLink 完成交易签名 — 私钥始终留在钱包中
 9. 结果返回给 AI 智能体 — 页面保持打开以便处理下一次操作
 
+## 端到端示例
+
+一个典型的 `send_trx` 流程，从用户提问到链上结果：
+
+**1. 用户 → 智能体**
+
+> 「在 nile 上给 TJRabc…xyz 转 5 个 TRX。」
+
+**2. 智能体 → MCP 工具调用**
+
+```json
+{
+  "name": "send_trx",
+  "arguments": { "to": "TJRabc...xyz", "amount": 5, "network": "nile" }
+}
+```
+
+**3. 审批（人工确认 HITL）** —— 服务打开 TronLink 审批页;用户核对「Send 5 TRX → TJRabc…xyz (Nile)」后点击 **Approve**。若点击 Reject 则返回 `USER_REJECTED`（不可重试）。
+
+**4. MCP 工具 → 智能体（结果）**
+
+```json
+{
+  "txId": "0a1b2c...",
+  "status": "success"
+}
+```
+
+**5. 智能体 → 用户**
+
+> 「已发送 5 TRX——链上已确认（交易 `0a1b2c…`）。」
+
+> 请基于 `status` / `error.code` 分支,不要解析自然语言。`status: "pending"` 表示广播成功但确认超时——应用 `get_balance` 或浏览器查询对账,而不是重发(见[错误](#错误)）。
+
 ## 取消
 
 所有签名工具均支持 MCP 取消机制。如果 AI 客户端取消了一个待处理的工具调用（例如用户在 Claude Code 中按下 Ctrl+C），进行中的请求会被自动中止，对于已被取消的请求不会打开浏览器授权页面。

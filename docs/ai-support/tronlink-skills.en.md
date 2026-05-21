@@ -153,6 +153,80 @@ Stake 2.0 queries and SR information.
 
 ---
 
+## Skill ↔ MCP Tool Map
+
+`scripts/mcp_server.mjs` (the wrapper from [Method 2](#method-2-mcp-server)) exposes **25 of the 33 commands** as MCP tools — every signature, every input field, every output shape is generated from the same `tron_api.mjs` implementation, so the CLI and the MCP tool are guaranteed equivalent. The 8 CLI-only commands stay reachable through Method 1 (skill prompt) and Method 3 (direct CLI). Use this table when an agent needs to route a user request to a specific tool or when you're inspecting `tools/list` output.
+
+| Skill | CLI command | MCP tool name | Side effect | Retryable |
+|---|---|---|---|:---:|
+| `tron-wallet` | `wallet-balance` | `tron_wallet_balance` | Network Read | Yes |
+| `tron-wallet` | `token-balance` | `tron_token_balance` | Network Read | Yes |
+| `tron-wallet` | `wallet-tokens` | `tron_wallet_tokens` | Network Read | Yes |
+| `tron-wallet` | `tx-history` | `tron_tx_history` | Network Read | Yes |
+| `tron-wallet` | `account-info` | `tron_account_info` | Network Read | Yes |
+| `tron-wallet` | `validate-address` | `tron_validate_address` | Local (pure) | Yes |
+| `tron-token` | `token-info` | `tron_token_info` | Network Read | Yes |
+| `tron-token` | `token-search` | `tron_token_search` | Network Read | Yes |
+| `tron-token` | `contract-info` | — _(CLI only)_ | Network Read | Yes |
+| `tron-token` | `token-holders` | `tron_token_holders` | Network Read | Yes |
+| `tron-token` | `trending-tokens` | `tron_trending_tokens` | Network Read | Yes |
+| `tron-token` | `token-rankings` | `tron_token_rankings` | Network Read | Yes |
+| `tron-token` | `token-security` | `tron_token_security` | Network Read | Yes |
+| `tron-market` | `token-price` | `tron_token_price` | Network Read | Yes |
+| `tron-market` | `kline` | `tron_kline` | Network Read | Yes |
+| `tron-market` | `trade-history` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `dex-volume` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `whale-transfers` | `tron_whale_transfers` | Network Read | Yes |
+| `tron-market` | `large-transfers` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `pool-info` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `market-overview` | `tron_market_overview` | Network Read | Yes |
+| `tron-swap` | `swap-quote` | `tron_swap_quote` | Network Read | Yes |
+| `tron-swap` | `swap-route` | — _(CLI only)_ | Network Read | Yes |
+| `tron-swap` | `tx-status` | `tron_tx_status` | Network Read | Yes |
+| `tron-resource` | `resource-info` | `tron_resource_info` | Network Read | Yes |
+| `tron-resource` | `estimate-energy` | `tron_estimate_energy` | Network Read | Yes |
+| `tron-resource` | `estimate-bandwidth` | — _(CLI only)_ | Network Read | Yes |
+| `tron-resource` | `energy-price` | `tron_energy_price` | Network Read | Yes |
+| `tron-resource` | `energy-rental` | — _(CLI only)_ | Network Read | Yes |
+| `tron-resource` | `optimize-cost` | `tron_optimize_cost` | Network Read | Yes |
+| `tron-staking` | `sr-list` | `tron_sr_list` | Network Read | Yes |
+| `tron-staking` | `staking-info` | `tron_staking_info` | Network Read | Yes |
+| `tron-staking` | `staking-apy` | `tron_staking_apy` | Network Read | Yes |
+
+**Totals.** 33 CLI commands · 25 MCP tools · 8 CLI-only commands. Every command is read-only — no signing, no broadcast, no fund movement. To execute a transaction, route to [MCP Server TronLink](mcp-server-tronlink.md) (`tl_chain_*`) or [signer SDK](tronlink-signer.md) (`sendTrx`, `sendTrc20`, `sign*`).
+
+### Intent → Skill → Tool Routing
+
+Pick a skill first by the **kind of question**, then a command by the **field the user asked about**. Common intents:
+
+| User says (intent) | Skill | Command / MCP tool |
+|---|---|---|
+| "What's the TRX balance of T…?" / "How many tokens in this wallet?" | `tron-wallet` | `wallet-balance` · `tron_wallet_balance` |
+| "Is `Tabcd…` a valid TRON address?" | `tron-wallet` | `validate-address` · `tron_validate_address` |
+| "Show recent transactions for T…" | `tron-wallet` | `tx-history` · `tron_tx_history` |
+| "Is this token safe / a honeypot?" | `tron-token` | `token-security` · `tron_token_security` |
+| "Who are the top holders of USDT?" | `tron-token` | `token-holders` · `tron_token_holders` |
+| "What's the contract ABI of …?" | `tron-token` | `contract-info` (CLI only) |
+| "What are the top-volume tokens today?" | `tron-token` | `trending-tokens` · `tron_trending_tokens` |
+| "What's TRX / USDT price?" | `tron-market` | `token-price` · `tron_token_price` |
+| "Show 1h K-line for SUN" | `tron-market` | `kline` · `tron_kline` |
+| "Recent SunSwap trades for USDT?" | `tron-market` | `trade-history` (CLI only) |
+| "What's the TVL of SUN/TRX pool?" | `tron-market` | `pool-info` (CLI only) |
+| "How much USDT will I get for 100 TRX?" | `tron-swap` | `swap-quote` · `tron_swap_quote` |
+| "What's the cheapest route TRX → JST?" | `tron-swap` | `swap-route` (CLI only) |
+| "Did transaction `0xabc…` succeed?" | `tron-swap` | `tx-status` · `tron_tx_status` |
+| "How much Energy / Bandwidth do I have?" | `tron-resource` | `resource-info` · `tron_resource_info` |
+| "Should I freeze, rent, or burn?" | `tron-resource` | `optimize-cost` · `tron_optimize_cost` |
+| "How much Energy does a USDT transfer cost?" | `tron-resource` | `estimate-energy` · `tron_estimate_energy` |
+| "Where can I rent Energy?" | `tron-resource` | `energy-rental` (CLI only) |
+| "List the current Super Representatives" | `tron-staking` | `sr-list` · `tron_sr_list` |
+| "What's my staking position?" | `tron-staking` | `staking-info` · `tron_staking_info` |
+| "If I stake 10000 TRX, what's my APY?" | `tron-staking` | `staking-apy` · `tron_staking_apy` |
+
+If the request implies **changing on-chain state** (transfer, swap execution, freeze, vote, claim), this skill set is the wrong layer — see the routing notes under each skill's "When NOT to use".
+
+---
+
 ## Recommended Skill Workflows
 
 ### Balance & Token Check
@@ -226,6 +300,7 @@ No `npm install` needed for read-only operations.
 claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 
 # Provides 25 MCP tools callable by Claude Desktop / Claude Code
+# (see "Skill ↔ MCP Tool Map" above for the per-command mapping; 8 commands are CLI-only)
 ```
 
 ### Method 3: Manual CLI

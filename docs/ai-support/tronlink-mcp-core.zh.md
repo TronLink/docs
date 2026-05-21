@@ -18,35 +18,25 @@
 
 ## 架构设计
 
-```text
-┌─ AI 代理 (Claude, GPT 等)
-│
-├─ MCP 协议 (stdio / JSON-RPC 2.0)
-│
-├─ MCP 服务器实例 (createMcpServer)
-│  ├─ 52 tl_* 工具处理器
-│  ├─ Knowledge Store（跨会话持久化）
-│  ├─ Flow Registry（流程管理）
-│  └─ Discovery 工具
-│
-├─ ISessionManager 接口（使用者实现）
-│  ├─ 会话生命周期
-│  ├─ 页面/标签管理
-│  ├─ 能力注入（9 个接口）
-│  └─ 环境模式 (e2e / prod)
-│
-├─ 能力系统（9 个可插拔接口）
-│  ├─ BuildCapability
-│  ├─ FixtureCapability
-│  ├─ ChainCapability
-│  ├─ ContractSeedingCapability
-│  ├─ StateSnapshotCapability
-│  ├─ MockServerCapability
-│  ├─ OnChainCapability
-│  ├─ MultiSigCapability
-│  └─ GasFreeCapability
-│
-└─ 可选: Playwright（浏览器自动化）
+```mermaid
+flowchart TD
+  Agent["AI 代理 (Claude、GPT 等)"]
+  Server["MCP 服务器实例<br/>createMcpServer()"]
+  Tools["52 个 tl_* 工具处理器"]
+  KS["Knowledge Store<br/>（跨会话持久化）"]
+  FR["Flow Registry<br/>（流程管理）"]
+  Disc["Discovery 工具"]
+  SM["ISessionManager 接口（使用者实现）<br/>会话生命周期 · 页面/标签管理 · 能力注入 · e2e/prod 模式"]
+  Caps["能力系统 — 9 个可插拔接口<br/>Build · Fixture · Chain · ContractSeeding · StateSnapshot · MockServer · OnChain · MultiSig · GasFree"]
+  PW["可选: Playwright<br/>（浏览器自动化）"]
+  Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
+  Server --> Tools
+  Server --> KS
+  Server --> FR
+  Server --> Disc
+  Server --> SM
+  SM --> Caps
+  SM -. "按需配置" .-> PW
 ```
 
 **设计原则：**

@@ -17,28 +17,32 @@
 
 ## Architecture
 
-```text
-AI Agent (Claude Desktop / Claude Code)
-         | (MCP Protocol — stdio / JSON-RPC 2.0)
-         v
-TronLink MCP Server
-├── Playwright Mode ─── TronLinkSessionManager
-│   └── Browser automation + TronLink extension UI control
-├── Direct API Mode
-│   ├── TronLinkOnChainCapability   (14 tools)
-│   ├── TronLinkMultiSigCapability  (5 tools)
-│   └── TronLinkGasFreeCapability   (3 tools)
-├── Utility Capabilities
-│   ├── TronLinkBuildCapability     (extension build)
-│   ├── TronLinkStateSnapshotCapability (UI state extraction)
-│   └── TRON Crypto Utils           (address derivation, signing, Base58)
-└── Flow Recipes (32 built-in recipes with pre-checks)
-         |
-         v
-TronGrid API / Multi-Sig Service / GasFree Service
-         |
-         v
-TRON Blockchain
+```mermaid
+flowchart TD
+  Agent["AI Agent<br/>(Claude Desktop / Claude Code)"]
+  Server["TronLink MCP Server"]
+  PW["Playwright Mode<br/>TronLinkSessionManager<br/>(browser automation + extension UI)"]
+  API["Direct API Mode"]
+  OnChain["TronLinkOnChainCapability (14 tools)"]
+  Multi["TronLinkMultiSigCapability (5 tools)"]
+  GasFree["TronLinkGasFreeCapability (3 tools)"]
+  Util["Utility Capabilities<br/>Build · StateSnapshot · TRON Crypto"]
+  Flow["Flow Recipes<br/>(32 built-in, pre-checked)"]
+  Ext["TronGrid API / Multi-Sig Service / GasFree Service"]
+  Chain["TRON Blockchain"]
+  Agent -- "MCP Protocol — stdio / JSON-RPC 2.0" --> Server
+  Server --> PW
+  Server --> API
+  Server --> Util
+  Server --> Flow
+  API --> OnChain
+  API --> Multi
+  API --> GasFree
+  PW --> Ext
+  OnChain --> Ext
+  Multi --> Ext
+  GasFree --> Ext
+  Ext --> Chain
 ```
 
 Both modes can run simultaneously and tools are auto-enabled based on configuration.
@@ -457,6 +461,25 @@ Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bump
 | **HITL bypass** | Direct-API tools (`tl_chain_send`, `tl_chain_swap_v3`, etc.) sign with the local encrypted `agent-wallet` and broadcast **without** a TronLink browser approval. The `agent-wallet` password is the only barrier. | Hold `AGENT_WALLET_PASSWORD` outside the agent's reach. For production, prefer `mcp-tronlink-signer` (browser approval) over Direct-API for any tool that moves funds. |
 | **Confused deputy** | Tools operate under the local `agent-wallet` identity, not the calling user's identity. There is no per-call authorization scope. | One MCP session = one wallet identity; do not multiplex multiple end users through the same server. |
 | **Transport** | stdio transport; the server does not bind a network listener. | Do not wrap this server behind a public HTTP transport without re-introducing auth and rate limiting. |
+
+#### Swap safety (`tl_chain_swap` / `tl_chain_swap_v3`)
+
+Swaps are **Remote Write** and execute against a public DEX router, so they are exposed to **price slippage** and **front-running / MEV** (e.g. sandwich attacks): the realized output can be worse than quoted if the pool moves between quote and execution.
+
+- **Always bound the trade with a minimum-output / slippage limit.** Inspect the `tl_chain_swap_v3` input schema via `list_tools` (the `SwapV3Params` shape) for the exact slippage / minimum-output field names — do **not** rely on an unstated default, and treat a missing or zero minimum-output as unsafe.
+- **Quote immediately before executing.** Get a fresh quote/route (e.g. Skills `tron-swap` `swap-quote` / `swap-route`), pick a tolerance you accept, and pass it explicitly.
+- **Pin the router.** `TL_SUNSWAP_V3_ROUTER` has no built-in default; a stale or wrong router can route funds unexpectedly. Set it to the current SunSwap V3 router (see Environment Variables).
+- **No auto-retry.** A failed/uncertain swap is a Remote Write — confirm on-chain before re-issuing (`TL_CHAIN_SWAP_FAILED` is not retryable).
+
+#### Multi-sig credential hygiene (`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`)
+
+These are HMAC-SHA256 API credentials for the multi-sig service (not on-chain keys), but they authorize transaction submission — treat them as secrets.
+
+- **Per-environment isolation.** Use distinct credentials for Mainnet vs testnet and per project/channel (`TL_MULTISIG_CHANNEL`). Never reuse a Mainnet secret in a test/staging MCP host.
+- **Storage.** Keep them in the host's secret manager / env, never in a `.mcp.json` committed to git (see the token-passthrough boundary above).
+- **Rotation.** Rotate `TL_MULTISIG_SECRET_KEY` periodically, and immediately if a host or log may have captured it. The server reads credentials from env at startup, so rotation on this side is an **env update + server restart**; issue/revoke the credential itself through the multi-sig service console.
+- **Revocation.** If a secret is suspected leaked, revoke it at the service and rotate before the next signing session — an exposed secret lets an attacker submit transactions to the multi-sig queue.
+- **Least privilege.** Scope each credential to the channel/project it needs; do not share one secret across unrelated agents.
 
 #### Disabling `tl_evaluate`
 

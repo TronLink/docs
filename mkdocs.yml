@@ -120,6 +120,16 @@ plugins:
       use_directory_urls: true  # 推荐保持为 true     
       suffix_mode: true 
 
+# Markdown 扩展（开启 mermaid 图表渲染）
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
 # 版权信息
 copyright: Copyright &copy; 2025 TronLink Team
 

@@ -6,19 +6,23 @@ TronLink's developer documentation is published in machine-readable form so AI a
 
 | Endpoint | Description |
 | --- | --- |
-| [/docs/llms.txt](/docs/llms.txt) | Curated index of key pages with one-line descriptions ([llmstxt.org](https://llmstxt.org/) format) |
-| [/docs/llms-full.txt](/docs/llms-full.txt) | Every English page concatenated for single-fetch ingestion |
+| [/docs/llms.txt](/docs/llms.txt) | Curated English index of key pages with one-line descriptions ([llmstxt.org](https://llmstxt.org/) format) |
+| [/docs/llms.zh.txt](/docs/llms.zh.txt) | Curated Chinese index — same layout, links into `/docs/zh/` pages |
+| [/docs/llms-full.en.txt](/docs/llms-full.en.txt) | Every English page concatenated for single-fetch ingestion |
+| [/docs/llms-full.zh.txt](/docs/llms-full.zh.txt) | Every Chinese page concatenated for single-fetch ingestion |
+| [/docs/llms-full.txt](/docs/llms-full.txt) | Alias of `llms-full.en.txt` (kept for back-compat) |
 
-Production URLs: `https://docs.tronlink.org/docs/llms.txt` and `https://docs.tronlink.org/docs/llms-full.txt`.
+Production URLs: `https://docs.tronlink.org/docs/llms.txt`, `https://docs.tronlink.org/docs/llms.zh.txt`, and the matching `llms-full.*.txt` bundles.
 
 ## Which file should I use?
 
 | Use case | File |
 | --- | --- |
-| Navigate / find the right page | `llms.txt` — short, link-only map |
-| Ingest the whole documentation in one request | `llms-full.txt` — full text of every page |
+| Navigate / find the right English page | `llms.txt` — short, link-only map |
+| Navigate / find the right Chinese page | `llms.zh.txt` — same layout, Chinese descriptions |
+| Ingest the whole documentation in one request | `llms-full.en.txt` / `llms-full.zh.txt` — full text per language |
 
-Start with `llms.txt` and follow its links; fetch `llms-full.txt` when you need everything at once.
+Start with the index for your language and follow its links; fetch a `llms-full.*` bundle when you need everything at once. The Chinese index points at `/docs/zh/` slugs; the English index points at `/docs/` slugs.
 
 ## Add to your AI tool
 

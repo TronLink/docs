@@ -18,35 +18,25 @@
 
 ## Architecture
 
-```text
-┌─ AI Agent (Claude, GPT, etc.)
-│
-├─ MCP Protocol (stdio / JSON-RPC 2.0)
-│
-├─ MCP Server Instance (createMcpServer)
-│  ├─ 52 tl_* tool handlers
-│  ├─ Knowledge Store (cross-session persistence)
-│  ├─ Flow Registry (recipe management)
-│  └─ Discovery utilities
-│
-├─ ISessionManager Interface (consumer implements)
-│  ├─ Session lifecycle
-│  ├─ Page/tab management
-│  ├─ Capability injection (9 interfaces)
-│  └─ Environment mode (e2e / prod)
-│
-├─ Capability System (9 pluggable interfaces)
-│  ├─ BuildCapability
-│  ├─ FixtureCapability
-│  ├─ ChainCapability
-│  ├─ ContractSeedingCapability
-│  ├─ StateSnapshotCapability
-│  ├─ MockServerCapability
-│  ├─ OnChainCapability
-│  ├─ MultiSigCapability
-│  └─ GasFreeCapability
-│
-└─ Optional: Playwright (browser automation)
+```mermaid
+flowchart TD
+  Agent["AI Agent (Claude, GPT, etc.)"]
+  Server["MCP Server Instance<br/>createMcpServer()"]
+  Tools["52 tl_* tool handlers"]
+  KS["Knowledge Store<br/>(cross-session persistence)"]
+  FR["Flow Registry<br/>(recipe management)"]
+  Disc["Discovery utilities"]
+  SM["ISessionManager Interface (consumer implements)<br/>session lifecycle · page/tab mgmt · capability injection · e2e/prod"]
+  Caps["Capability System — 9 pluggable interfaces<br/>Build · Fixture · Chain · ContractSeeding · StateSnapshot · MockServer · OnChain · MultiSig · GasFree"]
+  PW["Optional: Playwright<br/>(browser automation)"]
+  Agent -- "MCP Protocol — stdio / JSON-RPC 2.0" --> Server
+  Server --> Tools
+  Server --> KS
+  Server --> FR
+  Server --> Disc
+  Server --> SM
+  SM --> Caps
+  SM -. "when configured" .-> PW
 ```
 
 **Design Principles:**

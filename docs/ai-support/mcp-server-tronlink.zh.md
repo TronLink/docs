@@ -17,28 +17,32 @@
 
 ## 架构设计
 
-```text
-AI 代理 (Claude Desktop / Claude Code)
-         | (MCP 协议 — stdio / JSON-RPC 2.0)
-         v
-TronLink MCP 服务器
-├── Playwright 模式 ─── TronLinkSessionManager
-│   └── 浏览器自动化 + TronLink 扩展 UI 控制
-├── Direct API 模式
-│   ├── TronLinkOnChainCapability   (14 个工具)
-│   ├── TronLinkMultiSigCapability  (5 个工具)
-│   └── TronLinkGasFreeCapability   (3 个工具)
-├── 实用能力
-│   ├── TronLinkBuildCapability     (扩展构建)
-│   ├── TronLinkStateSnapshotCapability (UI 状态提取)
-│   └── TRON Crypto Utils           (地址派生、签名、Base58)
-└── Flow Recipes (32 个内置流程配方)
-         |
-         v
-TronGrid API / 多签服务 / GasFree 服务
-         |
-         v
-TRON 区块链
+```mermaid
+flowchart TD
+  Agent["AI 代理<br/>(Claude Desktop / Claude Code)"]
+  Server["TronLink MCP 服务器"]
+  PW["Playwright 模式<br/>TronLinkSessionManager<br/>(浏览器自动化 + 扩展 UI 控制)"]
+  API["Direct API 模式"]
+  OnChain["TronLinkOnChainCapability (14 个工具)"]
+  Multi["TronLinkMultiSigCapability (5 个工具)"]
+  GasFree["TronLinkGasFreeCapability (3 个工具)"]
+  Util["实用能力<br/>Build · StateSnapshot · TRON Crypto"]
+  Flow["Flow Recipes<br/>(32 个内置流程配方)"]
+  Ext["TronGrid API / 多签服务 / GasFree 服务"]
+  Chain["TRON 区块链"]
+  Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
+  Server --> PW
+  Server --> API
+  Server --> Util
+  Server --> Flow
+  API --> OnChain
+  API --> Multi
+  API --> GasFree
+  PW --> Ext
+  OnChain --> Ext
+  Multi --> Ext
+  GasFree --> Ext
+  Ext --> Chain
 ```
 
 两种模式可同时运行，工具根据配置自动启用。
@@ -449,6 +453,25 @@ mcp-server-tronlink/
 | **HITL 绕过** | Direct-API 工具（`tl_chain_send`、`tl_chain_swap_v3` 等）使用本地加密 `agent-wallet` 签名并直接广播，**不**经过 TronLink 浏览器审批。`agent-wallet` 密码是唯一屏障。 | 把 `AGENT_WALLET_PASSWORD` 保管在 agent 不可达处。生产环境涉及资金转移的工具，优先用 `mcp-tronlink-signer`（浏览器审批），而非 Direct-API。 |
 | **Confused deputy** | 工具以本地 `agent-wallet` 身份执行，不是调用用户的身份；无逐次调用授权 scope。 | 一个 MCP session = 一个钱包身份，不要把多个终端用户复用到同一 server。 |
 | **传输** | 仅 stdio，server 不监听网络端口。 | 包成对外 HTTP 之前必须重新引入认证与限流。 |
+
+#### 兑换安全（`tl_chain_swap` / `tl_chain_swap_v3`）
+
+兑换属于 **远程写**，且对接公开 DEX 路由器，因此暴露在 **价格滑点** 与 **三明治攻击 / MEV** 之下：在报价和执行之间池子价格变动时，实际成交可能比报价更差。
+
+- **必须设置 minOut / 滑点上限。** 通过 `list_tools` 查看 `tl_chain_swap_v3` 的输入 schema（`SwapV3Params`），核对实际的 minimum-output / 滑点字段名；**不要**依赖未声明的默认值，缺省或 0 的 minOut 一律视为不安全。
+- **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或同等接口）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
+- **钉死 router。** `TL_SUNSWAP_V3_ROUTER` 没有内置默认值；过期或错误的 router 会把资金路由到非预期目标。请按当前 SunSwap V3 router 地址设置（见环境变量）。
+- **不可自动重试。** swap 失败或结果未知都属于远程写——先在链上确认再决定是否重发（`TL_CHAIN_SWAP_FAILED` 不可重试）。
+
+#### 多签凭证管理（`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`）
+
+这是多签服务的 HMAC-SHA256 API 凭证（不是链上私钥），但它们授权交易提交——必须按 secret 对待。
+
+- **按环境隔离。** Mainnet 与测试网必须使用不同凭证，按项目 / 渠道（`TL_MULTISIG_CHANNEL`）分别申请。**绝不**在测试或预发 MCP host 中复用 Mainnet 凭证。
+- **存储。** 放进 host 的 secret manager / env，不要写进会提交 git 的 `.mcp.json`（参见上面的 token passthrough 边界）。
+- **轮换。** 周期性轮换 `TL_MULTISIG_SECRET_KEY`；如果 host 或日志可能记录过，立刻轮换。server 在启动时读取凭证，所以本侧轮换 = **更新 env + 重启 server**；凭证本身的颁发 / 撤销在多签服务控制台完成。
+- **撤销。** 一旦怀疑泄漏，先在服务侧吊销该凭证，再轮换到新值后再开始下一次签名会话——曝光的凭证可让攻击者直接向多签队列提交交易。
+- **最小权限。** 每条凭证只授予所需的 channel / project；不要在多个无关 agent 间共享同一凭证。
 
 #### 禁用 `tl_evaluate`
 

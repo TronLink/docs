@@ -83,6 +83,40 @@ All tools support an optional `network` parameter (`mainnet` / `nile` / `shasta`
 8. TronLink signs the transaction — private keys never leave the wallet
 9. Result is returned to the AI agent — the page stays open for the next operation
 
+## End-to-End Example
+
+A typical `send_trx` flow, from the user's prompt to the on-chain result:
+
+**1. User → agent**
+
+> "Send 5 TRX to TJRabc…xyz on nile."
+
+**2. Agent → MCP tool call**
+
+```json
+{
+  "name": "send_trx",
+  "arguments": { "to": "TJRabc...xyz", "amount": 5, "network": "nile" }
+}
+```
+
+**3. Approval (human-in-the-loop)** — the server opens the TronLink approval page; the user reviews "Send 5 TRX → TJRabc…xyz (Nile)" and clicks **Approve**. Clicking Reject returns `USER_REJECTED` (not retryable).
+
+**4. MCP tool → agent (result)**
+
+```json
+{
+  "txId": "0a1b2c...",
+  "status": "success"
+}
+```
+
+**5. Agent → user**
+
+> "Sent 5 TRX — confirmed on-chain (tx `0a1b2c…`)."
+
+> Branch on `status` / `error.code`, never on prose. `status: "pending"` means the broadcast succeeded but confirmation timed out — reconcile with `get_balance` or an explorer lookup rather than resending (see [Errors](#errors)).
+
 ## Cancellation
 
 All signing tools support MCP cancellation. If the AI client cancels a pending tool call (e.g., user presses Ctrl+C in Claude Code), the in-flight request is automatically aborted and the browser approval page is not opened for already-cancelled requests.

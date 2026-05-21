@@ -153,6 +153,80 @@ Stake 2.0 查询与 SR 信息。
 
 ---
 
+## Skill ↔ MCP 工具映射
+
+`scripts/mcp_server.mjs`（即[方式二](#mcp)的封装）将 **33 个 CLI 命令中的 25 个** 暴露为 MCP 工具——签名、输入字段、输出结构都由同一份 `tron_api.mjs` 实现派生，因此 CLI 与 MCP 工具保证等价。剩余 8 个 CLI-only 命令仍可通过方式一（skill 提示词）和方式三（直接 CLI）使用。需要按用户提问路由到具体工具，或核对 `tools/list` 输出时，请用下表。
+
+| Skill | CLI 命令 | MCP 工具名 | 副作用 | 可重试 |
+|---|---|---|---|:---:|
+| `tron-wallet` | `wallet-balance` | `tron_wallet_balance` | Network Read | 可 |
+| `tron-wallet` | `token-balance` | `tron_token_balance` | Network Read | 可 |
+| `tron-wallet` | `wallet-tokens` | `tron_wallet_tokens` | Network Read | 可 |
+| `tron-wallet` | `tx-history` | `tron_tx_history` | Network Read | 可 |
+| `tron-wallet` | `account-info` | `tron_account_info` | Network Read | 可 |
+| `tron-wallet` | `validate-address` | `tron_validate_address` | Local（纯函数） | 可 |
+| `tron-token` | `token-info` | `tron_token_info` | Network Read | 可 |
+| `tron-token` | `token-search` | `tron_token_search` | Network Read | 可 |
+| `tron-token` | `contract-info` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-token` | `token-holders` | `tron_token_holders` | Network Read | 可 |
+| `tron-token` | `trending-tokens` | `tron_trending_tokens` | Network Read | 可 |
+| `tron-token` | `token-rankings` | `tron_token_rankings` | Network Read | 可 |
+| `tron-token` | `token-security` | `tron_token_security` | Network Read | 可 |
+| `tron-market` | `token-price` | `tron_token_price` | Network Read | 可 |
+| `tron-market` | `kline` | `tron_kline` | Network Read | 可 |
+| `tron-market` | `trade-history` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-market` | `dex-volume` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-market` | `whale-transfers` | `tron_whale_transfers` | Network Read | 可 |
+| `tron-market` | `large-transfers` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-market` | `pool-info` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-market` | `market-overview` | `tron_market_overview` | Network Read | 可 |
+| `tron-swap` | `swap-quote` | `tron_swap_quote` | Network Read | 可 |
+| `tron-swap` | `swap-route` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-swap` | `tx-status` | `tron_tx_status` | Network Read | 可 |
+| `tron-resource` | `resource-info` | `tron_resource_info` | Network Read | 可 |
+| `tron-resource` | `estimate-energy` | `tron_estimate_energy` | Network Read | 可 |
+| `tron-resource` | `estimate-bandwidth` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-resource` | `energy-price` | `tron_energy_price` | Network Read | 可 |
+| `tron-resource` | `energy-rental` | — _(仅 CLI)_ | Network Read | 可 |
+| `tron-resource` | `optimize-cost` | `tron_optimize_cost` | Network Read | 可 |
+| `tron-staking` | `sr-list` | `tron_sr_list` | Network Read | 可 |
+| `tron-staking` | `staking-info` | `tron_staking_info` | Network Read | 可 |
+| `tron-staking` | `staking-apy` | `tron_staking_apy` | Network Read | 可 |
+
+**汇总。** 33 个 CLI 命令 · 25 个 MCP 工具 · 8 个仅 CLI 命令。所有命令都是只读——不签名、不广播、不动资金。若需执行交易，请路由到 [MCP Server TronLink](mcp-server-tronlink.md)（`tl_chain_*`）或 [signer SDK](tronlink-signer.md)（`sendTrx`、`sendTrc20`、`sign*`）。
+
+### 用户提问 → Skill → 工具路由
+
+先按"问的是什么类"挑 skill，再按"问的是哪个字段"挑命令。常见提问对照：
+
+| 用户提问（意图） | Skill | 命令 / MCP 工具 |
+|---|---|---|
+| 「T… 这个地址有多少 TRX？」/「钱包里有什么代币？」 | `tron-wallet` | `wallet-balance` · `tron_wallet_balance` |
+| 「`Tabcd…` 是合法的 TRON 地址吗？」 | `tron-wallet` | `validate-address` · `tron_validate_address` |
+| 「T… 最近的交易？」 | `tron-wallet` | `tx-history` · `tron_tx_history` |
+| 「这个代币安全吗 / 是不是蜜罐？」 | `tron-token` | `token-security` · `tron_token_security` |
+| 「USDT 的大户是谁？」 | `tron-token` | `token-holders` · `tron_token_holders` |
+| 「这个合约的 ABI 是？」 | `tron-token` | `contract-info`（仅 CLI） |
+| 「今日成交量最高的代币？」 | `tron-token` | `trending-tokens` · `tron_trending_tokens` |
+| 「TRX / USDT 现在价格？」 | `tron-market` | `token-price` · `tron_token_price` |
+| 「SUN 的 1 小时 K 线」 | `tron-market` | `kline` · `tron_kline` |
+| 「SunSwap 上 USDT 的最近成交？」 | `tron-market` | `trade-history`（仅 CLI） |
+| 「SUN/TRX 池子的 TVL 是多少？」 | `tron-market` | `pool-info`（仅 CLI） |
+| 「100 TRX 可以换多少 USDT？」 | `tron-swap` | `swap-quote` · `tron_swap_quote` |
+| 「TRX → JST 最便宜的路径是？」 | `tron-swap` | `swap-route`（仅 CLI） |
+| 「交易 `0xabc…` 成功了吗？」 | `tron-swap` | `tx-status` · `tron_tx_status` |
+| 「我还有多少能量 / 带宽？」 | `tron-resource` | `resource-info` · `tron_resource_info` |
+| 「我应该冻结、租赁还是燃烧？」 | `tron-resource` | `optimize-cost` · `tron_optimize_cost` |
+| 「一笔 USDT 转账要多少能量？」 | `tron-resource` | `estimate-energy` · `tron_estimate_energy` |
+| 「在哪租能量？」 | `tron-resource` | `energy-rental`（仅 CLI） |
+| 「现在 SR 列表」 | `tron-staking` | `sr-list` · `tron_sr_list` |
+| 「我的质押状态？」 | `tron-staking` | `staking-info` · `tron_staking_info` |
+| 「质押 10000 TRX 的 APY 是多少？」 | `tron-staking` | `staking-apy` · `tron_staking_apy` |
+
+若意图涉及**改变链上状态**（转账、执行 swap、freeze、投票、领奖），说明这里已不是合适的入口——请回看每个 skill 的"何时不要用"小节。
+
+---
+
 ## 推荐技能组合工作流
 
 ### 余额与代币查询
@@ -226,6 +300,7 @@ claude   # 自动发现 SKILL.md 文件
 claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 
 # 提供 25 个 MCP 工具，可被 Claude Desktop / Claude Code 直接调用
+# （逐项对照见上文 "Skill ↔ MCP 工具映射"；剩余 8 个命令仅 CLI 可用）
 ```
 
 ### 方式三：命令行直接使用
