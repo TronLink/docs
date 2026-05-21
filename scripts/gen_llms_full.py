@@ -187,6 +187,44 @@ def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> t
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 
+# `> Updated: <iso> · Commit: <sha>` is upserted into llms.txt /
+# llms.zh.txt so an agent can self-check staleness without parsing the
+# bundle bodies.
+UPDATED_PREFIX = "> Updated: "
+
+
+def stamp_index_header(path: Path, updated_at: str, sha: str) -> None:
+    """Upsert a `> Updated: <iso> · Commit: <sha>` line into a curated index.
+
+    If a matching line already exists, replace it in place. Otherwise
+    insert it as a fresh blockquote immediately after the primary blurb
+    blockquote. No-op if the file lacks a primary blockquote (we'd
+    rather raise loudly than guess where to put metadata).
+    """
+    new_line = f"{UPDATED_PREFIX}{updated_at} · Commit: {sha}"
+    lines = path.read_text(encoding="utf-8").splitlines()
+
+    for i, line in enumerate(lines):
+        if line.startswith(UPDATED_PREFIX):
+            lines[i] = new_line
+            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return
+
+    quote_end: int | None = None
+    in_quote = False
+    for i, line in enumerate(lines):
+        if line.startswith("> "):
+            in_quote = True
+        elif in_quote:
+            quote_end = i
+            break
+
+    if quote_end is None:
+        raise SystemExit(f"No primary blockquote in {path}; cannot stamp header")
+
+    new_lines = lines[: quote_end + 1] + [new_line, ""] + lines[quote_end + 1 :]
+    path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+
 
 def parse_index_links(path: Path) -> list[str]:
     """Extract in-site `[label](target)` link targets from a curated index.
@@ -297,6 +335,12 @@ def generate_bundles() -> None:
             print(f"Wrote {(DOCS / 'llms-full.txt').relative_to(REPO)} (alias of {out_name})")
         if missing:
             all_missing[lang] = missing
+
+    for index_name in ("llms.txt", "llms.zh.txt"):
+        index_path = DOCS / index_name
+        if index_path.exists():
+            stamp_index_header(index_path, generated_at, sha)
+            print(f"Stamped {index_path.relative_to(REPO)} (commit {sha})")
 
     if all_missing:
         msg = "; ".join(f"{lang}: {', '.join(m)}" for lang, m in all_missing.items())

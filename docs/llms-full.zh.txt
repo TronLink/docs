@@ -2,8 +2,8 @@
 
 > 中文文档全文拼接，适合 LLM 一次性 ingest。由 scripts/gen_llms_full.py 生成。索引见 ../llms.txt 的 Localized 段。
 
-- Generated: 2026-05-21T13:22:30Z
-- Commit: 7dc8ab49f75f
+- Generated: 2026-05-21T13:35:23Z
+- Commit: b12d3587cb6f
 - Language: zh
 - Pages: 23
 - Token estimate: ~38,584 (chars / 4)
