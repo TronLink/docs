@@ -302,4 +302,21 @@ export type {
 
 - **Package:** `tronlink-signer` v0.1.4
 - **License:** MIT — `SPDX-License-Identifier: MIT`
-- **Changelog / releases:** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
+- **Changelog / releases:** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases) — shared with `mcp-tronlink-signer`; published releases: **v0.1.1, v0.1.2** (2026-04-15). v0.1.3 / v0.1.4 are npm-only at time of writing — see the [inline changelog in `mcp-tronlink-signer`](mcp-tronlink-signer.md#inline-changelog) for MCP-visible deltas; SDK-level changes follow the same wave.
+
+### Compatibility & migration policy
+
+The SDK and the MCP wrapper share a version line and are released together.
+
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** (0.1.x → 0.1.y) will not change exported types, function signatures, or `error.code` values. Post-1.0: standard semver — major-only.
+- **Stable contracts** (won't change in a patch):
+    - Exported function names (`connect`, `sendTrx`, `sendTrc20`, `signMessage`, `signTypedData`, `signTransaction`).
+    - The `BroadcastResult` shape (`status: 'success' | 'pending'`, `txId`, `error?`).
+    - `error.code` enum values and `error.retryable` semantics.
+    - The HITL (browser approval) requirement — no programmatic bypass will ever be added in a patch.
+- **Volatile contracts** (may change at any time):
+    - Internal helper exports under `./internal/*`, `./browser-bridge.ts`, etc.
+    - Wording of approval-page UI, signing-notice text, and stderr log lines.
+    - The exact layout of `error.message`; branch on `error.code`.
+- **Type-level breakage.** Because the SDK is TypeScript-first, a minor bump may **add** required properties to an internal options interface without changing the callable function signature — this surfaces as a `tsc` error in your code but not a runtime change. We treat that as **a minor change**, not major; pin TypeScript-strict consumers to a `~0.1` range or read the diff before bumping.
+- **Verifying after upgrade.** Re-import the public types and confirm your `BroadcastResult` branching still compiles; in MCP mode, re-call `list_tools` to verify wrapper tool names and `inputSchema`.

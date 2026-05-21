@@ -225,6 +225,21 @@ Pick a skill first by the **kind of question**, then a command by the **field th
 
 If the request implies **changing on-chain state** (transfer, swap execution, freeze, vote, claim), this skill set is the wrong layer — see the routing notes under each skill's "When NOT to use".
 
+### ❌ When NOT to route here (negative examples)
+
+Skills are **read-only**. If the user intent implies a signed / Remote Write action, do **not** dispatch to a skill — the underlying command will succeed but only as a query/estimate, and the user's actual goal will go unfulfilled. Route to the signer SDK or `mcp-server-tronlink` instead:
+
+| User says (intent) | ❌ Wrong route (looks plausible, but read-only) | ✅ Correct route |
+|---|---|---|
+| "Send 100 TRX to `T…`" | `tron-wallet wallet-balance` then stop — this only checks the balance, never sends. | [signer SDK](tronlink-signer.md) `sendTrx` (HITL) or [`mcp-server-tronlink`](mcp-server-tronlink.md) `tl_chain_send` |
+| "Freeze 1000 TRX to get Energy" | `tron-resource optimize-cost` — this only computes the recommendation. | `mcp-server-tronlink` `tl_chain_stake` (Remote Write, HITL) |
+| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | `mcp-server-tronlink` `tl_chain_stake` / signer SDK `signTransaction` |
+| "Approve USDT spending for the SunSwap router" | `tron-token token-info` / `contract-info` — pure metadata, no approval is broadcast. | [signer SDK](tronlink-signer.md) `signTransaction` or `mcp-server-tronlink` `tl_chain_send` |
+| "Swap 100 TRX for USDT now" | `tron-swap swap-quote` — only quotes price, never executes. | `mcp-server-tronlink` `tl_chain_swap_v3` (Remote Write, HITL, set `minOut`) |
+| "Claim my staking rewards" | `tron-staking staking-info` — only shows the pending balance. | `mcp-server-tronlink` `tl_chain_stake` (withdraw / claim) or signer SDK |
+
+**Heuristic.** If the user's verb is *send / freeze / unfreeze / vote / unvote / approve / swap (execute) / claim / sign / broadcast*, the answer never starts in this Skills set. Skills can still **precede** the write (quote, estimate cost, validate address, check balance) — just don't claim a Skills call finished the user's request.
+
 ---
 
 ## Recommended Skill Workflows
@@ -530,4 +545,21 @@ node scripts/tron_api.mjs optimize-cost --address TAddress...
 
 - **Package:** `tronlink-skills` v1.0.1
 - **License:** MIT — `SPDX-License-Identifier: MIT`
-- **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases)
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+Skills are at **v1.0.x**, so standard semver applies — only **major** bumps may break the public surface.
+
+- **Stable contracts** (won't change in a minor or patch):
+    - The 33 CLI command names and their required / optional flags (`tron_api.mjs <command> [...]`).
+    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill--mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
+    - Exit codes: `0` success, `1` query error / invalid input, `2` unsupported / unknown command.
+    - The `Network Read` side-effect classification — no command will ever become a Remote Write without a major bump.
+- **Volatile contracts** (may change in a minor):
+    - The exact field layout of JSON `stdout` payloads — new fields can be added in any minor; renames or removals are major. Use a tolerant parser.
+    - Built-in token-symbol shortcut list (`USDT`, `USDC`, `WTRX`, …) — symbols may be added in any minor; existing mappings won't be repointed in a minor.
+    - Heuristics and thresholds (`whale-transfers` default cutoff, `optimize-cost` decision tree weights, etc.).
+- **Subset relationship.** The MCP tool subset (currently 25 of 33) may **grow** in a minor (a previously CLI-only command exposed as an MCP tool); it will not **shrink** in a minor.
+- **Deprecation window.** A command / tool marked deprecated continues to work for at least one minor cycle; the runtime prints a `STDERR: [DEPRECATED]` warning. Removal lands no earlier than the next major.
+- **Verifying after upgrade.** Re-run `tron_api.mjs --help` and (if using MCP) `tools/list` to confirm the names you depend on are still present. The MCP `serverInfo.version` exposed during `initialize` should match the bumped `package.json` version.

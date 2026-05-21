@@ -462,4 +462,21 @@ tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network
 
 - **包：** `@tronlink/tronlink-cli` v1.0.1
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases)
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases) —— 截至当前 v1.0.x 尚无 GitHub tag 发布；打 tag 之前请直接看 commit 历史。
+
+### 兼容性与迁移策略
+
+CLI 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级允许破坏脚本依赖的公开面。
+
+- **稳定契约**（minor / patch 不会动）：
+    - 子命令名与其必填位置参数 / flag。
+    - **Exit code** —— Exit Codes 表中的每一条都属于公开面。minor 允许为此前的通用失败新增 code；重新分配已有数字属于 major。
+    - **`--json` 输出 key** —— 顶层 key（`ok`、`error.code`、`error.retryable`、`txid` 等）以及 `error` 下的结构。minor 允许新增可选字段；改名 / 删除属于 major。
+    - `error.code` 枚举（与 [TronLink MCP Core](tronlink-mcp-core.md#错误码) 共享 SSOT）。
+- **不稳定契约**（随时可能变化）：
+    - 未带 `--json` 的人类可读 stdout 文本。
+    - 提示、横幅、颜色码的具体文本。
+    - stderr 日志行格式（自动化请用 `--json`）。
+- **`--json` 是自动化契约。** 如果脚本调用本 CLI，**必须**传 `--json` 并基于结构化字段分支；纯文本输出供人阅读，minor 之间会漂移。
+- **废弃窗口。** 被标 deprecated 的子命令 / flag 至少在 **一个 minor 周期** 内继续可用，使用时 stderr 打印 `[DEPRECATED]`；移除最早发生在下一个 major。
+- **升级后校验。** 重新 `tronlink-cli --help` + 依赖的子命令 `--help`，并对一条读操作 + 一条 preview-only 写操作的 `--json` 结构抽查一次再恢复自动化。

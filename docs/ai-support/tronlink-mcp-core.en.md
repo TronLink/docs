@@ -634,4 +634,20 @@ npm run clean      # Remove dist/
 
 - **Package:** `@tronlink/tronlink-mcp-core` v0.1.0
 - **License:** MIT — `SPDX-License-Identifier: MIT`
-- **Changelog / releases:** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases)
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases) — no GitHub-tagged releases yet; pre-1.0 ships via `package.json` version bumps. Track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+This package is **the SSOT** for tool schemas, error codes, and `meta.schemaVersion` consumed by `mcp-server-tronlink` and any downstream MCP server built on this core. The compatibility surface is therefore wider than a typical library:
+
+- **Semver.** Pre-1.0: a **minor** bump may change the `ISessionManager` interface, capability shapes, or `Tool[]` registration order; a **patch** will not. Post-1.0: standard semver — major-only breaking changes.
+- **Stable contracts** (won't change in a patch):
+    - The `error.code` enum (the SSOT exported as `ERROR_CODES`) — adding a new code is non-breaking; renaming or removing one is breaking.
+    - The `{ ok, result/error, meta }` response envelope and `meta.schemaVersion` major component.
+    - Tool names and the **shape** of each tool's `inputSchema` (adding optional fields is non-breaking; renaming or making a field required is breaking).
+    - The 9 capability interfaces (`OnChainCapability`, `MultiSigCapability`, …) — adding an optional method is non-breaking.
+- **Volatile contracts** (may change at any time):
+    - Internal helper exports under `src/internal/*`, `Knowledge Store` keys, recipe-runner internals.
+    - Pre-check error `details` strings (branch on `code`, not `details.reason`).
+- **Deprecation window.** A deprecated tool / field / capability method stays present for at least one minor cycle alongside its replacement, marked with `meta.deprecated` in `list_tools` output; removal lands no earlier than the cycle after.
+- **Adopting downstream.** Bump the `@tronlink/tronlink-mcp-core` peer / dependency only after re-running your downstream's `list_tools` snapshot test against the new core; assert `meta.schemaVersion` major matches the version your harness was written for.

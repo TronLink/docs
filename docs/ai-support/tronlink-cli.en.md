@@ -466,4 +466,21 @@ tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network
 
 - **Package:** `@tronlink/tronlink-cli` v1.0.1
 - **License:** MIT — `SPDX-License-Identifier: MIT`
-- **Changelog / releases:** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases)
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+The CLI is at **v1.0.x**, so standard semver applies — only **major** bumps may break the public surface that scripts depend on.
+
+- **Stable contracts** (won't change in a minor or patch):
+    - Subcommand names and their required positional / flag arguments.
+    - **Exit codes** — every code in the [Exit Codes](#exit-codes) table is part of the public surface. Adding a new code for a previously generic failure is allowed in a minor; reassigning an existing number is major.
+    - **`--json` output keys** — top-level keys (`ok`, `error.code`, `error.retryable`, `txid`, etc.) and the shape under `error`. New optional fields can be added in a minor; renames / removals are major.
+    - The `error.code` enum (shared SSOT with [TronLink MCP Core](tronlink-mcp-core.md#error-codes)).
+- **Volatile contracts** (may change at any time):
+    - Human-readable stdout text without `--json`.
+    - The exact wording of prompts, banner output, color codes.
+    - Log line formats on stderr (parse `--json` instead).
+- **`--json` is the automation contract.** If you are scripting against this CLI, always pass `--json` and branch on structured fields. Plain-text output is for humans and will drift across minor releases.
+- **Deprecation window.** Deprecated subcommands / flags are kept for at least one minor cycle alongside their replacement; the CLI prints `[DEPRECATED]` to stderr when they are used. Removal lands no earlier than the next major.
+- **Verifying after upgrade.** Re-run `tronlink-cli --help` and any subcommand `--help` you depend on; spot-check the `--json` schema for one read and one preview-only write before resuming automation.

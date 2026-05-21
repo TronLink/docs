@@ -609,4 +609,20 @@ npm install && npm run build
 
 - **Package:** `@tronlink/mcp-server-tronlink` v0.1.1
 - **License:** MIT — `SPDX-License-Identifier: MIT`
-- **Changelog / releases:** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases)
+- **Changelog / releases:** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases) — no GitHub-tagged releases yet; pre-1.0 ships via `package.json` version bumps. Track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** bump (0.1.x → 0.1.y) will not change tool names, input schemas, `error.code` values, or `meta.schemaVersion` semantics. Post-1.0: standard semver — major-only breaking changes.
+- **Stable contracts** (won't change in a patch):
+    - Tool names (`tl_chain_send`, `tl_chain_swap_v3`, `tl_multisig_*`, `tl_gasfree_*`, `tl_evaluate`, etc.)
+    - `error.code` enum (SSOT: [TronLink MCP Core — Error Codes](tronlink-mcp-core.md#error-codes))
+    - `error.retryable` semantics
+    - `meta.schemaVersion` major component
+    - Required env var names (`TL_TRONGRID_URL`, `TL_MULTISIG_SECRET_KEY`, `AGENT_WALLET_PASSWORD`, …)
+- **Volatile contracts** (may change at any time):
+    - Prose `message` text, log line formats, stderr output
+    - Internal Knowledge Store keys (consumers should not parse them)
+    - Pre-check error detail strings (branch on `code`, not on `details.reason`)
+- **Deprecation window.** When a tool or input field is deprecated, the next minor release retains the old form alongside the new one for at least one minor cycle, with a `meta.deprecated` flag exposed via `list_tools`; removal lands no earlier than the cycle after that.
+- **Verifying after upgrade.** Re-call `list_tools` and confirm the tool names + `inputSchema` you depend on are still present before resuming the workflow. Compare `meta.schemaVersion` against the value cached at session start.

@@ -302,4 +302,21 @@ export type {
 
 - **包：** `tronlink-signer` v0.1.4
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases) —— 与 `mcp-tronlink-signer` 共用版本线；已发布 GitHub release：**v0.1.1、v0.1.2**（2026-04-15）。v0.1.3 / v0.1.4 截至当前仅 npm —— MCP 可见变更详见 [`mcp-tronlink-signer` 的内联 changelog](mcp-tronlink-signer.md#内联-changelog)，SDK 层跟随同一波次。
+
+### 兼容性与迁移策略
+
+SDK 与 MCP 封装层共用版本线、共同发布。
+
+- **语义化版本。** 1.0 之前：**minor**（0.x → 0.y）允许破坏性变更；**patch**（0.1.x → 0.1.y）不变更导出类型、函数签名或 `error.code`。1.0 之后：标准 semver，仅 major 允许破坏。
+- **稳定契约**（patch 不会动）：
+    - 导出函数名（`connect`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
+    - `BroadcastResult` 结构（`status: 'success' | 'pending'`、`txId`、`error?`）。
+    - `error.code` 枚举值与 `error.retryable` 语义。
+    - HITL（浏览器审批）强制要求——patch 永远不会引入程序化绕过。
+- **不稳定契约**（随时可能变化）：
+    - `./internal/*`、`./browser-bridge.ts` 等内部 helper 导出。
+    - 审批页 UI 文案、签名提示、stderr 日志行。
+    - `error.message` 的具体文本（分支用 `error.code`）。
+- **类型层破坏。** SDK 是 TS-first，minor 升级可能 **新增** 内部 options 接口的必填字段而不改函数签名——在 TS 严格模式下表现为 `tsc` 报错但 runtime 行为不变。这种我们当作 **minor 变更** 处理，不算 major；TS-严格的消费方请把版本钉到 `~0.1`，或升级前先看 diff。
+- **升级后校验。** 重新导入公开类型，确认 `BroadcastResult` 分支仍能通过编译；MCP 模式下再 `list_tools` 复核封装层工具名 + `inputSchema`。

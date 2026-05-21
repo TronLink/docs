@@ -528,4 +528,20 @@ npm run clean      # 删除 dist/
 
 - **包：** `@tronlink/tronlink-mcp-core` v0.1.0
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases)
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-mcp-core/releases](https://github.com/TronLink/tronlink-mcp-core/releases) —— 截至当前尚无 GitHub tag 发布；1.0 之前通过 `package.json` 版本号迭代。打 tag 之前请直接看 commit 历史。
+
+### 兼容性与迁移策略
+
+本包是 `mcp-server-tronlink` 及任何下游 MCP server 在工具 schema、错误码、`meta.schemaVersion` 上的 **SSOT**，兼容面比普通库更宽：
+
+- **语义化版本。** 1.0 之前：**minor** 升级可能改 `ISessionManager` 接口、能力 shape、`Tool[]` 注册顺序；**patch** 不会。1.0 之后：标准 semver，仅 major 允许破坏。
+- **稳定契约**（patch 不会动）：
+    - `error.code` 枚举（导出为 `ERROR_CODES`，SSOT）——新增 code 非破坏；改名或删除是破坏。
+    - `{ ok, result/error, meta }` 响应包络与 `meta.schemaVersion` 的 major 分量。
+    - 工具名与各工具 `inputSchema` 的**结构**——新增可选字段非破坏；改名或将字段改必填是破坏。
+    - 9 个能力接口（`OnChainCapability`、`MultiSigCapability`…）——新增可选方法非破坏。
+- **不稳定契约**（随时可能变化）：
+    - `src/internal/*` 下的内部 helper 导出、Knowledge Store key、recipe-runner 内部。
+    - 预检查错误 `details` 文本（分支用 `code`，别用 `details.reason`）。
+- **废弃窗口。** 废弃的工具 / 字段 / 能力方法在 `list_tools` 中带 `meta.deprecated` 标记，至少保留 **一个 minor 周期** 与替代并存，移除最早发生在再下一周期。
+- **下游升级。** 升级 `@tronlink/tronlink-mcp-core` 之前，先在下游对新 core 跑一遍 `list_tools` 快照测试；断言 `meta.schemaVersion` major 与你的 harness 编写时一致。

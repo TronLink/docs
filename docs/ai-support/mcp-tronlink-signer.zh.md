@@ -167,3 +167,42 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 - **包：** `mcp-tronlink-signer` v0.1.4
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
+
+### 内联 changelog
+
+本页是下游 README 镜像；以 GitHub releases 与各包 `CHANGELOG.md` 为准。下方条目只覆盖 **MCP 可见面**（工具、schema、安全边界），内部重构不列。
+
+#### v0.1.4 _(仅 npm，截至本文写就尚未在 GitHub 打 tag)_
+
+仅 patch 修复。无新工具、无破坏性输入/输出 shape 变化。升级后用 `list_tools` 复核。
+
+#### v0.1.3 _(仅 npm，截至本文写就尚未在 GitHub 打 tag)_
+
+仅 patch 修复。无新工具、无破坏性输入/输出 shape 变化。
+
+#### v0.1.2 — 2026-04-15
+
+与 `tronlink-signer@0.1.2` 同步发布。**审批流大改版**；MCP 工具 schema 无破坏性变化。
+
+- **新增** —— `sign_transaction` 支持 `broadcast: true` 同步签名 + 广播（此前仅签名）。
+- **新增** —— `connect_wallet` 在钱包已连接时自动完成，无需再走一次审批。
+- **新增** —— 交易解析：TRX 转账、TRC10、TRC20、TRC721 NFT、质押/解冻、委托、投票等在审批页以人类可读形式呈现。
+- **改进** —— 单页审批流：一个常驻浏览器标签 + 心跳检测；server 重启后旧标签自动失效。
+- **改进** —— TRC20 金额校验改用 BigInt 小数转换（处理 0 位小数、>18 位小数等边界）。
+- **改进** —— `send_trx`、`sign_transaction` 在提交失败时返回真实的 broadcast 错误，不再是空消息。
+- **迁移** —— 若你已经基于 `error.code` / `status` 分支，无需迁移；如有解析 message 文本，请立即切换（见 [错误](#错误)）。
+
+#### v0.1.1 — 2026-04-15
+
+- `tronlink-signer@0.1.1` + `mcp-tronlink-signer@0.1.1` 首次 npm 发布。
+- 各包 README，含用法与 API 文档。
+- npm package metadata（keywords、repository、license、files）。
+- LICENSE 增加版权声明。
+
+### 兼容性与迁移策略
+
+- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更 MCP 工具名、输入 schema 或 `error.code` 值。1.0 之后：标准 semver，仅 major 允许破坏。
+- **废弃窗口。** 当某工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，schema 内置 `meta.deprecated` 标记；移除最早发生在再下一周期。
+- **稳定契约。** 工具名、`error.code` 枚举、`status` 值（`success` / `pending`）属于公开面，patch 不会动。
+- **不稳定契约。** `message` 自然语言文本、日志行格式、审批页的视觉布局 **不属于** 公开面，随时可能变化。
+- **升级后校验。** 升级后 **必须** 重新 `list_tools` 确认你依赖的名字 + schema 仍存在，再继续工作流。

@@ -167,3 +167,42 @@ The server returns errors in the standard MCP shape. Each error carries a stable
 - **Package:** `mcp-tronlink-signer` v0.1.4
 - **License:** MIT — `SPDX-License-Identifier: MIT`
 - **Changelog / releases:** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
+
+### Inline changelog
+
+This page mirrors a downstream README; for the source of truth see the GitHub releases above and the `CHANGELOG.md` in each package. Entries below cover the **MCP-visible** surface (tools, schema, security boundaries) — internal refactors are omitted.
+
+#### v0.1.4 _(npm-only, not GitHub-tagged at time of writing)_
+
+Patch-only. No new tools, no breaking input/output shapes. Verify against `list_tools` after upgrade.
+
+#### v0.1.3 _(npm-only, not GitHub-tagged at time of writing)_
+
+Patch-only. No new tools, no breaking input/output shapes.
+
+#### v0.1.2 — 2026-04-15
+
+Co-released with `tronlink-signer@0.1.2`. **Major UX overhaul** on the approval flow; no breaking MCP tool schemas.
+
+- **New** — `sign_transaction` accepts `broadcast: true` to sign and broadcast in one step (was sign-only previously).
+- **New** — `connect_wallet` auto-completes when the wallet is already connected; no extra approval round-trip.
+- **New** — Transaction parsing: TRX transfer, TRC10, TRC20, TRC721 NFT, stake/unstake, delegate, vote, etc. are rendered in human-readable form on the approval page.
+- **Improved** — Single-page approval flow: one persistent browser tab with heartbeat-based liveness; stale tabs across server restarts are invalidated automatically.
+- **Improved** — TRC20 amount validation now uses BigInt-based decimal conversion (handles 0-decimal and >18-decimal edge cases).
+- **Improved** — `send_trx` and `sign_transaction` return real broadcast errors instead of empty messages on submission failure.
+- **Migration** — None required if you were already branching on `error.code` / `status`; if you parsed message prose, switch now (see [Errors](#errors)).
+
+#### v0.1.1 — 2026-04-15
+
+- Initial npm release of `tronlink-signer@0.1.1` + `mcp-tronlink-signer@0.1.1`.
+- Per-package README with usage instructions and API documentation.
+- npm package metadata (keywords, repository, license, files).
+- Copyright notice added to LICENSE.
+
+### Compatibility & migration policy
+
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** bump (0.1.x → 0.1.y) will not change MCP tool names, input schemas, or `error.code` values. Post-1.0: standard semver — major-only breaking changes.
+- **Deprecation window.** When a tool or input field is deprecated, the next minor release retains the old form alongside the new one for at least one minor cycle, with a `meta.deprecated` flag in the schema; removal lands no earlier than the cycle after that.
+- **Stable contracts.** Tool names, the `error.code` enum, and `status` values (`success` / `pending`) are part of the public surface — they don't change in a patch.
+- **Volatile contracts.** Prose `message` text, log line formats, and the layout of the browser approval page are **not** part of the public surface and may change at any time.
+- **Verifying after upgrade.** Re-call `list_tools` and confirm the names + schemas you depend on are still present before resuming a workflow.

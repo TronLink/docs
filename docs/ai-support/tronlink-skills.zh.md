@@ -225,6 +225,21 @@ Stake 2.0 查询与 SR 信息。
 
 若意图涉及**改变链上状态**（转账、执行 swap、freeze、投票、领奖），说明这里已不是合适的入口——请回看每个 skill 的"何时不要用"小节。
 
+### ❌ 不要走这里（反例）
+
+Skills 是**只读**的。如果用户意图涉及签名或 Remote Write，**不要**派发到 skill——底层命令会成功，但只是做了查询/估算，用户真正的目标并没有完成。这种意图请改路由到 signer SDK 或 `mcp-server-tronlink`：
+
+| 用户提问（意图） | ❌ 误路由（看起来合理，但只读） | ✅ 正确路由 |
+|---|---|---|
+| 「给 `T…` 转 100 TRX」 | `tron-wallet wallet-balance` 就停下——只查了余额，没转。 | [signer SDK](tronlink-signer.md) `sendTrx`（HITL）或 [`mcp-server-tronlink`](mcp-server-tronlink.md) `tl_chain_send` |
+| 「冻 1000 TRX 换能量」 | `tron-resource optimize-cost`——只算了建议，没冻。 | `mcp-server-tronlink` `tl_chain_stake`（Remote Write、HITL） |
+| 「给 SR `T…` 投 5000 票」 | `tron-staking sr-list`——只读了 SR 列表，没投票。 | `mcp-server-tronlink` `tl_chain_stake` / signer SDK `signTransaction` |
+| 「给 SunSwap 路由器授权 USDT 额度」 | `tron-token token-info` / `contract-info`——纯元数据查询，没发送 approve。 | [signer SDK](tronlink-signer.md) `signTransaction` 或 `mcp-server-tronlink` `tl_chain_send` |
+| 「现在把 100 TRX 换成 USDT」 | `tron-swap swap-quote`——只报了价，没执行。 | `mcp-server-tronlink` `tl_chain_swap_v3`（Remote Write、HITL，必传 `minOut`） |
+| 「领我的质押奖励」 | `tron-staking staking-info`——只看了待领数量。 | `mcp-server-tronlink` `tl_chain_stake`（withdraw / claim）或 signer SDK |
+
+**判断口诀。** 用户动词只要出现 *send / freeze / unfreeze / vote / unvote / approve / swap（执行）/ claim / sign / broadcast*，答案就**不在**这个 Skills 集里起步。Skills 仍然可以做**前置**（报价、估算成本、校验地址、查余额）——只是别声称"Skills 调用完成了用户的请求"。
+
 ---
 
 ## 推荐技能组合工作流
@@ -530,4 +545,21 @@ node scripts/tron_api.mjs optimize-cost --address T地址...
 
 - **包：** `tronlink-skills` v1.0.1
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases)
+- **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) —— 截至当前 v1.0.x 尚无 GitHub tag 发布；打 tag 之前请直接看 commit 历史。
+
+### 兼容性与迁移策略
+
+Skills 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级允许破坏公开面。
+
+- **稳定契约**（minor / patch 不会动）：
+    - 33 个 CLI 命令名与其必填 / 可选 flag（`tron_api.mjs <command> [...]`）。
+    - [Skill ↔ MCP 工具映射](#skill--mcp-工具映射) 列出的 25 个 MCP 工具名（`tron_*` 形式）及其 `inputSchema` 字段名。
+    - Exit code：`0` 成功，`1` 查询错误 / 参数非法，`2` 未支持 / 未知命令。
+    - `Network Read` 副作用分级——任何命令未经 major 升级都不会变成 Remote Write。
+- **不稳定契约**（minor 允许变化）：
+    - JSON `stdout` 输出的具体字段——新增字段任意 minor 都允许；改名或删除属于 major。请用宽容解析。
+    - 内置代币 symbol 快捷表（`USDT`、`USDC`、`WTRX`…）——minor 允许新增 symbol；已存在的映射 minor 不会重指。
+    - 启发式与阈值（`whale-transfers` 默认阈值、`optimize-cost` 决策树权重等）。
+- **子集关系。** MCP 工具子集（目前 25 / 33）可能在 minor 中 **扩大**（CLI-only 命令被新增为 MCP 工具）；不会在 minor 中 **缩小**。
+- **废弃窗口。** 被标 deprecated 的命令 / 工具至少在 **一个 minor 周期** 内继续可用，runtime 会在 stderr 打印 `[DEPRECATED]` 警告；移除最早发生在下一个 major。
+- **升级后校验。** 重新 `tron_api.mjs --help`，使用 MCP 时再跑 `tools/list`，确认依赖的名字仍在。MCP `initialize` 阶段返回的 `serverInfo.version` 应与升级后的 `package.json` 版本一致。

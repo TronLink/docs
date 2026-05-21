@@ -602,4 +602,20 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 
 - **包：** `@tronlink/mcp-server-tronlink` v0.1.1
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases)
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases) —— 截至当前尚无 GitHub tag 发布；1.0 之前通过 `package.json` 版本号迭代。打 tag 之前请直接看 commit 历史。
+
+### 兼容性与迁移策略
+
+- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema、`error.code` 值或 `meta.schemaVersion` 语义。1.0 之后：标准 semver，仅 major 允许破坏。
+- **稳定契约**（patch 不会动）：
+    - 工具名（`tl_chain_send`、`tl_chain_swap_v3`、`tl_multisig_*`、`tl_gasfree_*`、`tl_evaluate` 等）
+    - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码)）
+    - `error.retryable` 语义
+    - `meta.schemaVersion` 的 major 分量
+    - 必需环境变量名（`TL_TRONGRID_URL`、`TL_MULTISIG_SECRET_KEY`、`AGENT_WALLET_PASSWORD` 等）
+- **不稳定契约**（随时可能变化）：
+    - `message` 自然语言文本、日志行格式、stderr 输出
+    - 内部 Knowledge Store key（消费者不应解析）
+    - 预检查的错误 detail 文本（分支用 `code`，别用 `details.reason`）
+- **废弃窗口。** 工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，`list_tools` 会带 `meta.deprecated` 标记；移除最早在再下一周期。
+- **升级后校验。** 重新 `list_tools` 确认依赖的工具名 + `inputSchema` 仍在，再继续工作流；将 `meta.schemaVersion` 与会话开始时缓存的值对比。
