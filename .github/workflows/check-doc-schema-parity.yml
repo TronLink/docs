@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feature/ai-readability-p0
     paths:
       - "docs/ai-support/mcp-server-tronlink.*.md"
       - "scripts/check_doc_schema_parity.py"
