@@ -83,6 +83,7 @@ plugins:
             - Reference:
               - Networks & Addresses: reference/networks.en.md
               - Glossary: reference/glossary.en.md
+              - Error Code Map: reference/error-code-map.en.md
               - FAQ: reference/faq.en.md
         - locale: zh
           name: 中文
@@ -116,6 +117,7 @@ plugins:
             - 参考:
               - 网络与地址: reference/networks.zh.md
               - 术语表: reference/glossary.zh.md
+              - 错误码对照表: reference/error-code-map.zh.md
               - 常见问题: reference/faq.zh.md
       use_directory_urls: true  # 推荐保持为 true     
       suffix_mode: true 

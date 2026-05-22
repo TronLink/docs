@@ -2,16 +2,21 @@
 
 TronLink's developer documentation is published in machine-readable form so AI agents and LLM-based tools can discover, read, and integrate it directly.
 
+!!! info "Allowed uses vs. crawler policy"
+    This site is curated for **retrieval / RAG / inference-time grounding** — the `llms.txt` and `llms-full.txt` bundles below are the canonical ingestion points for that case, and they are explicitly maintained for AI use.
+
+    Training-time bulk crawling is a separate question and is governed by the site's `robots.txt` plus the `Content-Signal` directives served at the edge. Some training-only user-agents are currently disallowed there; if you need a different policy for your use case, contact us rather than parsing the bundles to circumvent the signal.
+
 ## Available endpoints
 
 > **URL ≠ source filename.** Source files carry `.en` / `.zh` suffixes (`llms.zh.txt`, `llms-full.en.txt`, `llms-full.zh.txt`) so the mkdocs i18n plugin can route them. **In the deployed site the suffix is stripped** — Chinese variants live under `/zh/`. Use the deployed URLs below; the source-name URLs (e.g. `/llms-full.en.txt`) return 404.
 
 | Endpoint (deployed URL) | Description |
 | --- | --- |
-| [/llms.txt](../llms.txt) | Curated English index of key pages ([llmstxt.org](https://llmstxt.org/) format) |
-| [/zh/llms.txt](../llms.zh.txt) | Curated Chinese index — same layout, links into `/zh/` pages |
-| [/llms-full.txt](../llms-full.txt) | Every English page concatenated for single-fetch ingestion (built from `docs/llms-full.en.txt`) |
-| [/zh/llms-full.txt](../llms-full.zh.txt) | Every Chinese page concatenated for single-fetch ingestion (built from `docs/llms-full.zh.txt`) |
+| [/llms.txt](../../llms.txt) | Curated English index of key pages ([llmstxt.org](https://llmstxt.org/) format) |
+| [/zh/llms.txt](../../zh/llms.txt) | Curated Chinese index — same layout, links into `/zh/` pages |
+| [/llms-full.txt](../../llms-full.txt) | Every English page concatenated for single-fetch ingestion (built from `docs/llms-full.en.txt`) |
+| [/zh/llms-full.txt](../../zh/llms-full.txt) | Every Chinese page concatenated for single-fetch ingestion (built from `docs/llms-full.zh.txt`) |
 
 Production URLs: `https://docs.tronlink.org/llms.txt`, `https://docs.tronlink.org/zh/llms.txt`, and the matching `llms-full.txt` bundles under each locale root.
 

@@ -44,3 +44,13 @@ try {
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
 
+## 错误码
+
+| 码 | 含义 | 来源 | 可重试? |
+| :---: | --- | --- | :---: |
+| `4001` | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.signMessageV2(message)` | 否——用户拒绝 |
+| (抛出) | `Invalid transaction provided` / 非 hex 输入 | `signMessageV2(...)` 参数校验 | 否——传合法的 hex 字符串 |
+| (抛出) | provider 未注入 / 钱包未授权 | `window.tron.tronWeb` 未定义 | 否——先通过 `eth_requestAccounts` 连接 |
+
+跨 surface 的码对照见[错误码对照表](../reference/error-code-map.md)。
+
