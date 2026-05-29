@@ -4,7 +4,7 @@
 
 **GitHub**: [https://github.com/TronLink/mcp-server-tronlink](https://github.com/TronLink/mcp-server-tronlink)
 
-**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **55+ tools** across two complementary operation modes.
+**mcp-server-tronlink** is a production-ready Model Context Protocol (MCP) server that enables AI agents (Claude, GPT, etc.) to interact with the TRON blockchain through natural language. Built on `@tronlink/tronlink-mcp-core`, it provides **55 tools** in `list_tools` — **52 core tools** registered by [`tronlink-mcp-core`](tronlink-mcp-core.md) + **3 wallet management tools** registered locally by this server's [`src/wallet-tools.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/wallet-tools.ts) — across two complementary operation modes.
 
 **Key Highlights:**
 - Dual-mode architecture: **Playwright** (browser automation) + **Direct API** (on-chain operations)
@@ -17,28 +17,32 @@
 
 ## Architecture
 
-```
-AI Agent (Claude Desktop / Claude Code)
-         | (MCP Protocol — stdio / JSON-RPC 2.0)
-         v
-TronLink MCP Server
-├── Playwright Mode ─── TronLinkSessionManager
-│   └── Browser automation + TronLink extension UI control
-├── Direct API Mode
-│   ├── TronLinkOnChainCapability   (14 tools)
-│   ├── TronLinkMultiSigCapability  (5 tools)
-│   └── TronLinkGasFreeCapability   (3 tools)
-├── Utility Capabilities
-│   ├── TronLinkBuildCapability     (extension build)
-│   ├── TronLinkStateSnapshotCapability (UI state extraction)
-│   └── TRON Crypto Utils           (address derivation, signing, Base58)
-└── Flow Recipes (32 built-in recipes with pre-checks)
-         |
-         v
-TronGrid API / Multi-Sig Service / GasFree Service
-         |
-         v
-TRON Blockchain
+```mermaid
+flowchart TD
+  Agent["AI Agent<br/>(Claude Desktop / Claude Code)"]
+  Server["TronLink MCP Server"]
+  PW["Playwright Mode<br/>TronLinkSessionManager<br/>(browser automation + extension UI)"]
+  API["Direct API Mode"]
+  OnChain["TronLinkOnChainCapability (14 tools)"]
+  Multi["TronLinkMultiSigCapability (5 tools)"]
+  GasFree["TronLinkGasFreeCapability (3 tools)"]
+  Util["Utility Capabilities<br/>Build · StateSnapshot · TRON Crypto"]
+  Flow["Flow Recipes<br/>(32 built-in, pre-checked)"]
+  Ext["TronGrid API / Multi-Sig Service / GasFree Service"]
+  Chain["TRON Blockchain"]
+  Agent -- "MCP Protocol — stdio / JSON-RPC 2.0" --> Server
+  Server --> PW
+  Server --> API
+  Server --> Util
+  Server --> Flow
+  API --> OnChain
+  API --> Multi
+  API --> GasFree
+  PW --> Ext
+  OnChain --> Ext
+  Multi --> Ext
+  GasFree --> Ext
+  Ext --> Chain
 ```
 
 Both modes can run simultaneously and tools are auto-enabled based on configuration.
@@ -61,18 +65,23 @@ Controls the TronLink Chrome extension via Playwright Chromium. Ideal for **E2E 
 
 **27 Playwright tools include:** `tl_launch`, `tl_cleanup`, `tl_navigate`, `tl_click`, `tl_type`, `tl_screenshot`, `tl_accessibility_snapshot`, `tl_describe_screen`, etc.
 
-### Mode 2: Direct API (On-Chain)
+> The "27" is **`52 core − 22 chain/multisig/gasfree − 3 mode-agnostic (run_steps, list_flows, set_context) = 27`**. `tl_clipboard`, `tl_keyboard`, `tl_scroll`, etc. are Playwright-mode UI tools and counted in the 27.
 
-Operates directly against TronGrid REST API — no browser required. Ideal for **account queries, transfers, swaps, staking, and multi-sig management**.
+### Mode 2: Direct API + Wallet Management
 
-**25 API tools grouped into:**
+Operates directly against TronGrid / multi-sig / GasFree REST APIs — no browser required. Ideal for **account queries, transfers, swaps, staking, multi-sig management, and runtime wallet hot-swap**.
 
-| Group | Tools | Description |
-|-------|-------|-------------|
-| On-Chain | 14 | Transfer, stake, swap, query, multisig setup |
-| Multi-Signature | 5 | Permission query, tx submit, WebSocket monitoring |
-| GasFree | 3 | Zero-gas TRC20 transfers |
-| Wallet Management | 3 | List wallets, auto-create a wallet, switch the active wallet |
+**28 tools** = 22 mode-2 API tools (from core) + 3 mode-agnostic core tools + 3 wallet management tools (from this server). Grouping:
+
+| Group | Tools | Source | Description |
+|-------|-------|--------|-------------|
+| On-Chain | 14 | core | Transfer, stake, swap, query, multisig setup |
+| Multi-Signature | 5 | core | Permission query, tx submit, WebSocket monitoring |
+| GasFree | 3 | core | Zero-gas TRC20 transfers |
+| Wallet Management | 3 | **this server** (`src/wallet-tools.ts`) | List wallets, auto-create a wallet, switch the active wallet |
+| Mode-agnostic | 3 | core | `tl_run_steps`, `tl_list_flows`, `tl_set_context` — invoked from either mode |
+
+> **Why the breakdown differs from the architecture diagram.** The architecture node only enumerates capability classes (`OnChainCapability`, `MultiSigCapability`, `GasFreeCapability`). Wallet management lives outside the capability interface — it's registered by `src/wallet-tools.ts` and hot-swaps wallets into running capabilities via the `onWalletSwap` callback in [`src/index.ts`](https://github.com/TronLink/mcp-server-tronlink/blob/main/src/index.ts).
 
 ---
 
@@ -153,7 +162,7 @@ The auto-create path generates a random password, saves it to `~/.agent-wallet/r
 
 Pure cryptographic functions — no external service calls:
 
-```
+```text
 signTransaction()          raw_data_hex → 65-byte signature (via agent-wallet)
 base58CheckEncode()        Payload → base58check address
 base58CheckDecode()        TRON address → 21-byte payload
@@ -230,10 +239,10 @@ Pre-configured multi-step workflows with dependency checks and parameter templat
 | Variable | Description |
 |----------|-------------|
 | `TL_TRONGRID_URL` | Full-node API URL |
-| `TL_TRONGRID_API_KEY` | API key (required for Mainnet) |
-| `TL_SUNSWAP_ROUTER` | SunSwap V2 router address |
-| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address |
-| `TL_WTRX_ADDRESS` | WTRX contract address |
+| `TL_TRONGRID_API_KEY` | API key (required for Mainnet). Free tier ≈ 100k requests/day at ~5 QPS; paid tiers raise QPS, daily quota, and add billing. Quotas and headers change over time — see [TronGrid Pricing](https://www.trongrid.io/pricing) and the dashboard for current values, and inspect `X-Ratelimit-*` response headers in your own runtime. Hitting the limit returns HTTP 429 (mapped to `TL_CHAIN_QUERY_FAILED`, retryable). For long-running agents, set up billing alerts at 50% / 80% / 95% of your plan. |
+| `TL_SUNSWAP_ROUTER` | SunSwap V2 router address. **No built-in default** — pin to the current router; the value in the example below is **effective as of 2026-05** (Mainnet). Source: [docs.sun.io](https://docs.sun.io). When SunSwap publishes a new router, set this env var rather than waiting on a docs/code change. |
+| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address. Same rules as V2. |
+| `TL_WTRX_ADDRESS` | WTRX contract address. Mainnet WTRX is `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`. Effective as of 2026-05. |
 
 **Wallet (`agent-wallet`):**
 
@@ -370,7 +379,7 @@ Supports stdio transport protocol — compatible with any MCP-compliant client.
 
 ## Project Structure
 
-```
+```text
 mcp-server-tronlink/
 ├── src/
 │   ├── index.ts                    # Server entry, config, capability registration
@@ -403,14 +412,147 @@ mcp-server-tronlink/
 
 ## Dependencies
 
+Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bumping major versions of the wallet, MCP, or crypto libraries.
+
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `@noble/curves` | ^2.0.1 | secp256k1 ECDSA signing |
 | `@noble/hashes` | ^2.0.1 | Keccak-256, SHA256 |
-| `@tronlink/tronlink-mcp-core` | local | Core MCP server framework |
+| `@tronlink/tronlink-mcp-core` | ^0.1.0 | Core MCP server framework |
 | `playwright` | ^1.49.0 | Browser automation |
-| `@bankofai/agent-wallet` | latest | Encrypted local wallet management (`local_secure`) |
+| `@bankofai/agent-wallet` | ^2.3.0 | Encrypted local wallet management (`local_secure`) — pinned, not `latest`, to keep wallet behavior reproducible |
 | `ws` | ^8.18.0 | WebSocket (multi-sig monitoring) |
+
+---
+
+## Tool Contract & Side Effects
+
+**Input/output schemas and error contract.** Each tool's input/output schema and the structured error envelope are defined by the underlying framework — see [TronLink MCP Core](tronlink-mcp-core.md#error-codes) for the SSOT error code table (`code` / `retryable` / `hint` / triggered_by). Every response carries `meta.schemaVersion`; field meanings are stable within a major version. Agents should branch on `error.code` and `error.retryable`, never on the human-readable `message`.
+
+**Per-tool input schemas are discoverable at runtime.** Every tool's parameters are Zod-validated in core and exposed as a JSON `inputSchema` via the MCP `list_tools` method, so a client can enumerate names, types, and required fields without reading this page. The tables below summarize tools by capability; `list_tools` is the authoritative, machine-readable source.
+
+**Side-effect classification.** Classify before calling; never auto-retry a write whose outcome is uncertain.
+
+| Side effect | Examples |
+| --- | --- |
+| **Read-only** (Network Read) | `tl_chain_get_account`, `tl_chain_get_tx`, `tl_gasfree_get_account`, `tl_wallet_list`, screen/state reads |
+| **Remote Write** (signs / changes remote state) | `tl_chain_send`, `tl_chain_stake`, `tl_chain_swap_v3`, `tl_multisig_submit_tx`, transfers, delegation |
+
+- **Pre-checks:** all transaction tools validate (balances, reverts, resource burn) before execution.
+- **Human-in-the-loop:** write tools sign with the encrypted local `agent-wallet`; in browser-mode flows the user approves in the TronLink UI. Treat every Remote Write tool as requiring confirmation in production.
+- **Retry:** read-only tools are safe to retry; Remote Write tools must not be auto-retried unless proven idempotent.
+
+### Selected tool schemas (inline mirror)
+
+These are **docs-side mirrors** of the most critical tool inputs — useful when an agent is writing a tool-call call site without an MCP session open. Runtime `list_tools` remains the authoritative source: the schemas there carry full Zod metadata (descriptions, `default`, etc.) plus `meta.schemaVersion`. Fields below are derived from `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts` and follow JSON Schema Draft 7. The full set of 52 tool schemas is **not** reproduced here — see core for the SSOT.
+
+> **Parity is enforced.** `scripts/check_doc_schema_parity.py` (run on push, PR, and daily via [`check-doc-schema-parity.yml`](https://github.com/xueyuanying/docs/blob/main/.github/workflows/check-doc-schema-parity.yml)) diffs the top-level field set + required-flag set of every block below against the live `schemas.ts`. Upstream rename or required→optional drift fails CI.
+
+#### `tl_chain_send` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount"],
+  "properties": {
+    "to":               { "type": "string", "description": "Recipient TRON address (T-prefix, 34 chars)" },
+    "amount":           { "type": "string", "description": "Amount to send (e.g. \"1.5\" for TRX, or token amount string)" },
+    "token_type":       { "type": "string", "enum": ["TRX", "TRC10", "TRC20"], "description": "Default: TRX" },
+    "token_id":         { "type": "string", "description": "TRC10 token ID (required when token_type=TRC10)" },
+    "contract_address": { "type": "string", "description": "TRC20 contract address (required when token_type=TRC20)" },
+    "memo":             { "type": "string", "description": "Optional transaction memo" }
+  }
+}
+```
+
+#### `tl_chain_swap_v3` — **Remote Write** (when `action=execute`)
+
+```json
+{
+  "type": "object",
+  "required": ["action", "from_token", "to_token", "amount"],
+  "properties": {
+    "action":           { "type": "string", "enum": ["estimate", "execute"], "description": "estimate = quote-only (Network Read); execute = sign & broadcast (Remote Write)" },
+    "from_token":       { "type": "string", "description": "Source token address or 'TRX' for native" },
+    "to_token":         { "type": "string", "description": "Target token address or 'TRX' for native" },
+    "amount":           { "type": "string", "description": "Input amount in token units" },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in bps: 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
+    "slippage":         { "type": "number", "description": "Slippage tolerance percent (default: 0.5). See 'Swap safety' above — never accept an unstated default for production execution." },
+    "sqrt_price_limit": { "type": "string", "description": "Optional price limit for partial fills (advanced)" }
+  }
+}
+```
+
+#### `tl_chain_stake` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["action", "amount_trx"],
+  "properties": {
+    "action":     { "type": "string", "enum": ["freeze", "unfreeze"], "description": "freeze locks TRX for resources; unfreeze starts the 14-day withdrawal" },
+    "amount_trx": { "type": "number", "description": "Amount of TRX to freeze / unfreeze" },
+    "resource":   { "type": "string", "enum": ["BANDWIDTH", "ENERGY"], "description": "Resource type (default: BANDWIDTH)" }
+  }
+}
+```
+
+#### `tl_multisig_submit_tx` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["address", "transaction"],
+  "properties": {
+    "address":           { "type": "string", "description": "Signer address submitting this transaction" },
+    "function_selector": { "type": "string", "description": "e.g. 'transfer(address,uint256)' (optional)" },
+    "expire_time":       { "type": "number", "description": "Expiration timestamp in ms (default: now + 24h)" },
+    "transaction":       { "type": "object", "description": "Signed transaction { raw_data, signature[] }. Each contract entry may carry a Permission_id." }
+  }
+}
+```
+
+The full `transaction` shape (raw_data → contract[] → parameter, etc.) is in [`tronlink-mcp-core` `schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) — too verbose to mirror inline.
+
+#### `tl_gasfree_send` — **Remote Write**
+
+```json
+{
+  "type": "object",
+  "required": ["to", "amount", "contract_address"],
+  "properties": {
+    "to":               { "type": "string", "description": "Recipient TRON address" },
+    "amount":           { "type": "string", "description": "Token amount in token units (e.g. '10.5')" },
+    "contract_address": { "type": "string", "description": "TRC20 token contract address" }
+  }
+}
+```
+
+#### `tl_chain_get_account` — **Network Read**
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "address": { "type": "string", "description": "TRON address to query (default: configured wallet)" }
+  }
+}
+```
+
+#### `tl_evaluate` — **High-risk / Destructive** (Playwright-only)
+
+```json
+{
+  "type": "object",
+  "required": ["script"],
+  "properties": {
+    "script":  { "type": "string", "description": "JavaScript expression to evaluate in the controlled browser page context. Return value is serialized." },
+    "timeout": { "type": "number", "description": "Timeout in ms (default: 30000)" }
+  }
+}
+```
+
+Reminder: `tl_evaluate` runs arbitrary JS in the controlled Playwright browser. Disable it from the MCP host's tool allowlist unless strictly needed (see Security Model below).
 
 ---
 
@@ -424,6 +566,128 @@ mcp-server-tronlink/
 | Pre-checks | All transactions validate before execution |
 | Git safety | Config files in `.gitignore` prevent accidental commits |
 | Default network | Nile testnet with safe defaults |
+
+### Security Boundaries
+
+| Boundary | Guarantee | Agent / operator obligation |
+|---|---|---|
+| **Prompt injection** | Tool inputs are consumed verbatim as call arguments. The server never concatenates tool inputs into a prompt re-sent to an LLM. Strings retrieved from chain or third-party APIs (account memos, contract revert reasons, transaction notes) **may contain attacker-controlled text** — treat them as untrusted. | Do not let the agent auto-route Remote Write tools off prose returned from a read. Always require structured fields (`txId`, `code`, `retryable`) for branching. |
+| **Outbound host allowlist (SSRF)** | The server only originates HTTPS to the four configured endpoints: `TL_TRONGRID_URL` (TronGrid), `TL_MULTISIG_BASE_URL`, `TL_GASFREE_BASE_URL`, and SunSwap routers via TronWeb. Tools never accept user-supplied URLs that get fetched verbatim. | Pin these env vars to known hosts in production; do not let LLM input populate any `*_BASE_URL`. |
+| **API key handling (token passthrough)** | `TL_TRONGRID_API_KEY`, `TL_MULTISIG_SECRET_KEY`, `TL_GASFREE_API_SECRET` are read from env at startup and used only on the outbound leg. They are **not** returned in any tool response, error `details`, or Knowledge Store record. The server does not accept Authorization headers from MCP clients and forward them upstream. | Audit env capture in your MCP host config (some hosts log env); store secrets in the host's secret manager, not in `.mcp.json` committed to git. |
+| **Browser JS execution** | `tl_evaluate` runs arbitrary JavaScript in the controlled Playwright browser context. This is a **High-risk / Destructive** primitive — it can read DOM, click invisible elements, exfiltrate state, and bypass UI HITL. | Disable `tl_evaluate` from the MCP host's tool allowlist for any agent that does not strictly require it. Never expose it to a remote/multi-user MCP deployment. |
+| **HITL bypass** | Direct-API tools (`tl_chain_send`, `tl_chain_swap_v3`, etc.) sign with the local encrypted `agent-wallet` and broadcast **without** a TronLink browser approval. The `agent-wallet` password is the only barrier. | Hold `AGENT_WALLET_PASSWORD` outside the agent's reach. For production, prefer `mcp-tronlink-signer` (browser approval) over Direct-API for any tool that moves funds. |
+| **Confused deputy** | Tools operate under the local `agent-wallet` identity, not the calling user's identity. There is no per-call authorization scope. | One MCP session = one wallet identity; do not multiplex multiple end users through the same server. |
+| **Transport** | stdio transport; the server does not bind a network listener. | Do not wrap this server behind a public HTTP transport without re-introducing auth and rate limiting. |
+
+#### Swap safety (`tl_chain_swap` / `tl_chain_swap_v3`)
+
+Swaps are **Remote Write** and execute against a public DEX router, so they are exposed to **price slippage** and **front-running / MEV** (e.g. sandwich attacks): the realized output can be worse than quoted if the pool moves between quote and execution.
+
+- **Always bound the trade with a minimum-output / slippage limit.** Inspect the `tl_chain_swap_v3` input schema via `list_tools` (the `SwapV3Params` shape) for the exact slippage / minimum-output field names — do **not** rely on an unstated default, and treat a missing or zero minimum-output as unsafe.
+- **Quote immediately before executing.** Get a fresh quote/route (e.g. Skills `tron-swap` `swap-quote` / `swap-route`), pick a tolerance you accept, and pass it explicitly.
+- **Pin the router.** `TL_SUNSWAP_V3_ROUTER` has no built-in default; a stale or wrong router can route funds unexpectedly. Set it to the current SunSwap V3 router (see Environment Variables).
+- **No auto-retry.** A failed/uncertain swap is a Remote Write — confirm on-chain before re-issuing (`TL_CHAIN_SWAP_FAILED` is not retryable).
+
+#### Multi-sig credential hygiene (`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`)
+
+These are HMAC-SHA256 API credentials for the multi-sig service (not on-chain keys), but they authorize transaction submission — treat them as secrets.
+
+- **Per-environment isolation.** Use distinct credentials for Mainnet vs testnet and per project/channel (`TL_MULTISIG_CHANNEL`). Never reuse a Mainnet secret in a test/staging MCP host.
+- **Storage.** Keep them in the host's secret manager / env, never in a `.mcp.json` committed to git (see the token-passthrough boundary above).
+- **Rotation.** Rotate `TL_MULTISIG_SECRET_KEY` periodically, and immediately if a host or log may have captured it. The server reads credentials from env at startup, so rotation on this side is an **env update + server restart**; issue/revoke the credential itself through the multi-sig service console.
+- **Revocation.** If a secret is suspected leaked, revoke it at the service and rotate before the next signing session — an exposed secret lets an attacker submit transactions to the multi-sig queue.
+- **Least privilege.** Scope each credential to the channel/project it needs; do not share one secret across unrelated agents.
+
+#### Disabling `tl_evaluate`
+
+If your workflow does not require running arbitrary JS in the controlled browser, take it off the tool surface explicitly. The exact key depends on the host:
+
+```jsonc
+// Claude Code — .claude/settings.json (project) or ~/.claude/settings.json (user)
+{
+  "permissions": {
+    "deny": ["mcp__tronlink__tl_evaluate"]
+  }
+}
+```
+
+```jsonc
+// Claude Desktop — claude_desktop_config.json
+{
+  "mcpServers": {
+    "tronlink": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "disabledTools": ["tl_evaluate"]
+    }
+  }
+}
+```
+
+```jsonc
+// Generic MCP client: prefer client-side filtering via list_tools.
+// Filter the server's announced tools before exposing them to the model;
+// drop any tool whose name is "tl_evaluate".
+```
+
+Verify after restart with `list_tools` — `tl_evaluate` should not appear. The same pattern works for `tl_seed_contract` / `tl_seed_contracts` (e2e-only contract deployment).
+
+### Wallet Secret Storage
+
+The Direct-API path signs with a local encrypted wallet managed by `@bankofai/agent-wallet`. Two paths exist for unlocking it; pick deliberately.
+
+**Path A — Manual (recommended for production).** Create the wallet out-of-band, set `AGENT_WALLET_PASSWORD` via the MCP host's secret manager, and start the server. The password lives only in process memory; nothing is written by this server.
+
+**Path B — Auto-create (convenience for local dev).** If no wallet exists at startup and the agent calls `tl_wallet_create`, the server:
+
+1. Generates a random password.
+2. Writes it in plaintext to `~/.agent-wallet/runtime_secrets.json` so a restart can reuse the wallet.
+3. Creates an encrypted `main` wallet at `~/.agent-wallet/` (override with `AGENT_WALLET_DIR`).
+
+| Aspect | Behavior |
+|---|---|
+| **File** | `~/.agent-wallet/runtime_secrets.json` (plaintext JSON containing the password) |
+| **Recommended permissions** | `chmod 600` — the file is created under the user's `$HOME`, but no umask hardening is enforced. Verify after first run. |
+| **Git safety** | `~/.agent-wallet/` is outside any repo by default. If you point `AGENT_WALLET_DIR` inside a repo, add it to `.gitignore` explicitly. |
+| **Knowledge Store redaction** | The Knowledge Store auto-redacts `password`, `mnemonic`, `private_key`, `seed` fields in tool inputs / outputs. It does **not** read or sanitize `runtime_secrets.json`. The file is independent of the Knowledge Store. |
+| **Logs / stderr** | The auto-generated password is not logged. The file path may appear in startup output. |
+| **Backups** | Backing up `~/.agent-wallet/` without also protecting `runtime_secrets.json` defeats encryption-at-rest. Either back up both encrypted, or back up the encrypted wallet and re-set the password by hand on restore. |
+
+**Production guidance.**
+
+- Prefer Path A. Source `AGENT_WALLET_PASSWORD` from the host's secret manager (Claude Desktop env, vault, etc.).
+- If you must use Path B (e.g., ephemeral CI), set `AGENT_WALLET_DIR` to a tmpfs path that is destroyed at job end.
+- For any tool that moves real funds, prefer `mcp-tronlink-signer` (browser approval, no on-disk password) over Direct-API.
+
+**How to enforce Path A (doc-side, today).**
+
+1. Provision the wallet **before** the server boots. From a separate shell:
+
+    ```bash
+    agent-wallet start local_secure --generate --wallet-id main
+    # take note of the password you supply here — it is the only copy
+    ```
+
+2. Inject the password via the MCP host's secret manager so it lands in the server's `env` at launch:
+
+    ```jsonc
+    // .mcp.json — secret comes from host env, not from this file
+    {
+      "mcpServers": {
+        "tronlink": {
+          "command": "node",
+          "args": ["dist/index.js"],
+          "env": { "AGENT_WALLET_PASSWORD": "${AGENT_WALLET_PASSWORD}" }
+        }
+      }
+    }
+    ```
+
+3. **Do not let the agent call `tl_wallet_create`.** Disable it the same way as `tl_evaluate` above (Claude Code `permissions.deny`, Claude Desktop `disabledTools`, or client-side `list_tools` filtering on the name `tl_wallet_create`).
+
+4. Verify on first launch: `list_tools` should not include `tl_wallet_create`, and the absence of `~/.agent-wallet/runtime_secrets.json` confirms Path B did not run.
+
+**Tracking issue (code-side).** A `--no-auto-create` / `AGENT_WALLET_DISABLE_AUTOCREATE=1` flag that makes the server fail-loud at startup when no wallet exists is the proper long-term fix; until that ships upstream, the doc-side enforcement above is the defense in depth.
 
 ---
 
@@ -457,3 +721,25 @@ npm install && npm run build
 # "Send 10 TRX to TAddress..."
 # "Swap 100 TRX for USDT on SunSwap V3"
 ```
+
+## Version & License
+
+- **Package:** `@tronlink/mcp-server-tronlink` v0.1.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/mcp-server-tronlink/releases](https://github.com/TronLink/mcp-server-tronlink/releases) — no GitHub-tagged releases yet; pre-1.0 ships via `package.json` version bumps. Track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** bump (0.1.x → 0.1.y) will not change tool names, input schemas, `error.code` values, or `meta.schemaVersion` semantics. Post-1.0: standard semver — major-only breaking changes.
+- **Stable contracts** (won't change in a patch):
+    - Tool names (`tl_chain_send`, `tl_chain_swap_v3`, `tl_multisig_*`, `tl_gasfree_*`, `tl_evaluate`, etc.)
+    - `error.code` enum (SSOT: [TronLink MCP Core — Error Codes](tronlink-mcp-core.md#error-codes))
+    - `error.retryable` semantics
+    - `meta.schemaVersion` major component
+    - Required env var names (`TL_TRONGRID_URL`, `TL_MULTISIG_SECRET_KEY`, `AGENT_WALLET_PASSWORD`, …)
+- **Volatile contracts** (may change at any time):
+    - Prose `message` text, log line formats, stderr output
+    - Internal Knowledge Store keys (consumers should not parse them)
+    - Pre-check error detail strings (branch on `code`, not on `details.reason`)
+- **Deprecation window.** When a tool or input field is deprecated, the next minor release retains the old form alongside the new one for at least one minor cycle, with a `meta.deprecated` flag exposed via `list_tools`; removal lands no earlier than the cycle after that.
+- **Verifying after upgrade.** Re-call `list_tools` and confirm the tool names + `inputSchema` you depend on are still present before resuming the workflow. Compare `meta.schemaVersion` against the value cached at session start.

@@ -12,6 +12,13 @@ All transactions are built locally and signed through the TronLink browser exten
 - TronLink browser extension installed
 - Browser running (write operations open TronLink for signing)
 
+**Bundled runtime (pinned by `@tronlink/tronlink-cli@1.0.1`):**
+
+- `tronweb` `6.2.2` — used by `transactionBuilder`, the ABI v2 trigger path, `TronWeb.isAddress()`, and local broadcast. TronWeb 6.x exposes the ethers-backed ABI v2 encoder that powers tuple / nested-array / arrays-of-tuples in `trigger`; earlier TronWeb majors do not. If you ever bump this dep, re-test every `trigger` example.
+- `tronlink-signer` `0.1.4` — the local signing bridge to the browser extension. Same SDK documented in [tronlink-signer](tronlink-signer.md).
+
+Effective as of 2026-05; source: each package's `package.json`.
+
 ## Installation
 
 ```bash
@@ -237,6 +244,10 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --amount 100 --local-broadcast
 ```
 
+**The two paths are mutually exclusive, not redundant.** Setting `--local-broadcast` tells the signer to return the signed transaction **without** broadcasting; the CLI then sends it once via its own TronWeb. The same signed payload is never submitted twice from this CLI in a single command.
+
+If a network race causes the CLI's local broadcast and a stale signer broadcast to both reach the network (e.g. flapping connectivity, two CLI invocations against the same nonce), the second submission is rejected by the node — TRON nodes deduplicate by transaction id, so you will see one block-inclusion plus one `DUP_TRANSACTION_ERROR`-class failure, not two on-chain effects. Treat any such error after a confirmed first inclusion as benign; treat it before confirmation as you would any `5` exit (network) — reconcile with an explorer before retrying.
+
 ## Input Validation
 
 All inputs are validated before connecting to TronLink:
@@ -261,7 +272,59 @@ Invalid inputs are rejected immediately with a clear error before any wallet int
 
 **Table (default):** Human-readable table output.
 
-**JSON (`--json`):** Machine-readable output for scripts and AI agents.
+**JSON (`--json`):** Machine-readable output for scripts and AI agents. Always pass `--json` for automation.
+
+A successful write command returns:
+
+```json
+{
+  "Status": "Success",
+  "TxID": "0abc...",
+  "Explorer": "https://tronscan.org/#/transaction/0abc..."
+}
+```
+
+Read commands return the queried data (balances, resources, etc.) under the same top-level object. Field names are stable within a major version.
+
+## Exit Codes
+
+The CLI exits with one of these stable codes so an automation script can branch on failure class without parsing prose. In `--json` mode the same classification appears in the output as well.
+
+| Exit code | Class | Meaning | Retryable |
+| :---: | --- | --- | :---: |
+| `0` | Success | Query returned, or transaction signed and broadcast | n/a |
+| `1` | Invalid input | Validation failed before any wallet interaction (see [Input Validation](#input-validation)) | No — fix the input |
+| `2` | User rejected | User clicked Reject on the TronLink approval page | No — user declined |
+| `3` | Signing timeout | No approval within `--timeout <ms>` (default 5 min) | Yes — but **not** for a broadcast that may already be in flight |
+| `4` | On-chain failure | Broadcast succeeded but execution failed (`OUT_OF_ENERGY`, `REVERT`, `FAILED`) | No — the tx is final; address the root cause |
+| `5` | Network error | TronGrid / RPC request failed (transient) | Yes — transient; for write commands, confirm the previous tx didn't land first |
+
+> **Retry policy.** Read commands (any `balance` / `resource` / `--constant trigger`) are always safe to retry. For write/signing commands (transfer, stake, delegate, vote, writeable trigger), do **not** auto-retry after a submitted-but-uncertain result — re-issuing re-opens the signing prompt and may double-submit. Re-issue only after confirming the previous tx did not land (via explorer or `balance`).
+
+## Errors
+
+The error class an agent should branch on is given by the exit code above. The table below maps the conditions the CLI surfaces (in stderr and in `--json` output) to that class:
+
+| Condition | Exit code |
+| --- | :---: |
+| Argument parse / type / range failure | `1` |
+| User clicks Reject in TronLink | `2` |
+| `--timeout` elapsed without an approval | `3` |
+| `OUT_OF_ENERGY` returned by the node | `4` |
+| `REVERT` (Solidity revert) | `4` |
+| `FAILED` (other on-chain failure) | `4` |
+| TronGrid / RPC unreachable, 5xx, timeout | `5` |
+
+## Safety & Side Effects
+
+| Side effect | Commands |
+| --- | --- |
+| **Read-only** (Network Read, no signing) | `balance`, `resource`, constant `trigger` (`--constant`) |
+| **Remote Write** (signs + broadcasts) | `transfer`, `stake`, `unstake`, `withdraw`, `delegate`, `reclaim`, `vote`, `reward`, writeable `trigger` |
+
+- **Human-in-the-loop:** every write command builds the transaction locally, shows a [Transaction Preview](#transaction-preview), and requires explicit approval on the TronLink browser page before signing. Private keys never leave TronLink.
+- **No auto-retry on writes:** see the retry policy above.
+- **Low-risk by default:** prefer testnets (`--network nile` / `shasta`); pass `--network mainnet` only for real funds.
 
 ## Supported Networks
 
@@ -399,3 +462,25 @@ tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network
 - Use `--timeout <ms>` to adjust the signing timeout
 - Amounts use string-based math internally — no floating point precision issues
 
+## Version & License
+
+- **Package:** `@tronlink/tronlink-cli` v1.0.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-cli/releases](https://github.com/TronLink/tronlink-cli/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+The CLI is at **v1.0.x**, so standard semver applies — only **major** bumps may break the public surface that scripts depend on.
+
+- **Stable contracts** (won't change in a minor or patch):
+    - Subcommand names and their required positional / flag arguments.
+    - **Exit codes** — every code in the [Exit Codes](#exit-codes) table is part of the public surface. Adding a new code for a previously generic failure is allowed in a minor; reassigning an existing number is major.
+    - **`--json` output keys** — top-level keys (`ok`, `error.code`, `error.retryable`, `txid`, etc.) and the shape under `error`. New optional fields can be added in a minor; renames / removals are major.
+    - The `error.code` enum (shared SSOT with [TronLink MCP Core](tronlink-mcp-core.md#error-codes)).
+- **Volatile contracts** (may change at any time):
+    - Human-readable stdout text without `--json`.
+    - The exact wording of prompts, banner output, color codes.
+    - Log line formats on stderr (parse `--json` instead).
+- **`--json` is the automation contract.** If you are scripting against this CLI, always pass `--json` and branch on structured fields. Plain-text output is for humans and will drift across minor releases.
+- **Deprecation window.** Deprecated subcommands / flags are kept for at least one minor cycle alongside their replacement; the CLI prints `[DEPRECATED]` to stderr when they are used. Removal lands no earlier than the next major.
+- **Verifying after upgrade.** Re-run `tronlink-cli --help` and any subcommand `--help` you depend on; spot-check the `--json` schema for one read and one preview-only write before resuming automation.

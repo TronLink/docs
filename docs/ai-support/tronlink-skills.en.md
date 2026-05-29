@@ -7,7 +7,7 @@
 **TronLink Wallet Skills** is an AI Agent skill set that provides complete TRON blockchain wallet and DeFi functionality through natural language. Designed for Claude Code, Cursor, OpenCode, Codex CLI, and other AI agents.
 
 **Key Highlights:**
-- **6 skills, 34 commands** covering wallet, token research, market data, swaps, resources, and staking
+- **6 skills, 33 commands** covering wallet, token research, market data, swaps, resources, and staking
 - **Zero npm dependencies** — uses native Node.js 18+ `fetch` and `crypto`, no `npm install` needed
 - **TRON-specific domain knowledge** — dedicated handling of Energy + Bandwidth resource model
 - **Multi-platform support** — Claude Code, Cursor, OpenCode, Codex CLI, LangChain/CrewAI
@@ -32,7 +32,7 @@ TronLink Skills fills this gap with deep TRON-specific domain knowledge.
 
 ## Architecture
 
-```
+```text
 Natural Language Input
          |
          v
@@ -67,6 +67,8 @@ Wallet queries and account information.
 
 **Features:** Handles both Base58Check (T...) and hex address formats, supports known token symbols, auto-converts decimals.
 
+**When NOT to use:** Sending TRX/tokens — these are read-only; use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md). For deep token-level analytics (rug-pull / liquidity locks), prefer `tron-token`.
+
 ### 2. tron-token (7 commands)
 
 Token research and security analysis.
@@ -82,6 +84,8 @@ Token research and security analysis.
 | `token-security` | Security audit (honeypot, proxy, owner permissions) |
 
 **Features:** Detects rug pulls, analyzes holder concentration, checks liquidity locks.
+
+**When NOT to use:** Per-account balances or transaction history — that's `tron-wallet`. Real-time price/volume — that's `tron-market`.
 
 ### 3. tron-market (8 commands)
 
@@ -100,6 +104,8 @@ Real-time market data and whale monitoring.
 
 **Features:** Multi-DEX aggregation, smart money signal detection, K-line analysis.
 
+**When NOT to use:** Quotes or routes for swapping right now — that's `tron-swap` (which factors in slippage). Static token metadata — `tron-token`.
+
 ### 4. tron-swap (3 commands)
 
 DEX swap quotes and route optimization.
@@ -111,6 +117,8 @@ DEX swap quotes and route optimization.
 | `tx-status` | Track transaction status |
 
 **Features:** Aggregates liquidity from multiple sources, estimates Energy cost, handles multi-hop routes.
+
+**When NOT to use:** Executing the swap — quotes are read-only; the swap itself goes through [MCP Server TronLink](mcp-server-tronlink.md) (`tl_chain_swap_v3`) or the signer SDK. Historical trade data — `tron-market`.
 
 ### 5. tron-resource (6 commands)
 
@@ -127,6 +135,8 @@ Energy & Bandwidth management — TRON-specific.
 
 **Features:** Decision tree logic for cost optimization, tracks daily free bandwidth, calculates TRX burn equivalent.
 
+**When NOT to use:** Actually freezing TRX to acquire Energy/Bandwidth — that's a Remote Write; use the signer SDK / MCP Server. SR voting strategy after freezing — see `tron-staking`.
+
 ### 6. tron-staking (3 commands)
 
 Stake 2.0 queries and SR information.
@@ -139,27 +149,118 @@ Stake 2.0 queries and SR information.
 
 **Features:** Stake 2.0 status queries, APY calculation, SR commission tracking.
 
+**When NOT to use:** Performing the freeze/vote/unfreeze actions — those are Remote Writes; route through the signer SDK / MCP Server. Calculating Energy cost per operation — `tron-resource`.
+
+---
+
+## Skill ↔ MCP Tool Map
+
+`scripts/mcp_server.mjs` (the wrapper from [Method 2](#method-2-mcp-server)) exposes **25 of the 33 commands** as MCP tools — every signature, every input field, every output shape is generated from the same `tron_api.mjs` implementation, so the CLI and the MCP tool are guaranteed equivalent. The 8 CLI-only commands stay reachable through Method 1 (skill prompt) and Method 3 (direct CLI). Use this table when an agent needs to route a user request to a specific tool or when you're inspecting `tools/list` output.
+
+| Skill | CLI command | MCP tool name | Side effect | Retryable |
+|---|---|---|---|:---:|
+| `tron-wallet` | `wallet-balance` | `tron_wallet_balance` | Network Read | Yes |
+| `tron-wallet` | `token-balance` | `tron_token_balance` | Network Read | Yes |
+| `tron-wallet` | `wallet-tokens` | `tron_wallet_tokens` | Network Read | Yes |
+| `tron-wallet` | `tx-history` | `tron_tx_history` | Network Read | Yes |
+| `tron-wallet` | `account-info` | `tron_account_info` | Network Read | Yes |
+| `tron-wallet` | `validate-address` | `tron_validate_address` | Local (pure) | Yes |
+| `tron-token` | `token-info` | `tron_token_info` | Network Read | Yes |
+| `tron-token` | `token-search` | `tron_token_search` | Network Read | Yes |
+| `tron-token` | `contract-info` | — _(CLI only)_ | Network Read | Yes |
+| `tron-token` | `token-holders` | `tron_token_holders` | Network Read | Yes |
+| `tron-token` | `trending-tokens` | `tron_trending_tokens` | Network Read | Yes |
+| `tron-token` | `token-rankings` | `tron_token_rankings` | Network Read | Yes |
+| `tron-token` | `token-security` | `tron_token_security` | Network Read | Yes |
+| `tron-market` | `token-price` | `tron_token_price` | Network Read | Yes |
+| `tron-market` | `kline` | `tron_kline` | Network Read | Yes |
+| `tron-market` | `trade-history` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `dex-volume` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `whale-transfers` | `tron_whale_transfers` | Network Read | Yes |
+| `tron-market` | `large-transfers` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `pool-info` | — _(CLI only)_ | Network Read | Yes |
+| `tron-market` | `market-overview` | `tron_market_overview` | Network Read | Yes |
+| `tron-swap` | `swap-quote` | `tron_swap_quote` | Network Read | Yes |
+| `tron-swap` | `swap-route` | — _(CLI only)_ | Network Read | Yes |
+| `tron-swap` | `tx-status` | `tron_tx_status` | Network Read | Yes |
+| `tron-resource` | `resource-info` | `tron_resource_info` | Network Read | Yes |
+| `tron-resource` | `estimate-energy` | `tron_estimate_energy` | Network Read | Yes |
+| `tron-resource` | `estimate-bandwidth` | — _(CLI only)_ | Network Read | Yes |
+| `tron-resource` | `energy-price` | `tron_energy_price` | Network Read | Yes |
+| `tron-resource` | `energy-rental` | — _(CLI only)_ | Network Read | Yes |
+| `tron-resource` | `optimize-cost` | `tron_optimize_cost` | Network Read | Yes |
+| `tron-staking` | `sr-list` | `tron_sr_list` | Network Read | Yes |
+| `tron-staking` | `staking-info` | `tron_staking_info` | Network Read | Yes |
+| `tron-staking` | `staking-apy` | `tron_staking_apy` | Network Read | Yes |
+
+**Totals.** 33 CLI commands · 25 MCP tools · 8 CLI-only commands. Every command is read-only — no signing, no broadcast, no fund movement. To execute a transaction, route to [MCP Server TronLink](mcp-server-tronlink.md) (`tl_chain_*`) or [signer SDK](tronlink-signer.md) (`sendTrx`, `sendTrc20`, `sign*`).
+
+### Intent → Skill → Tool Routing
+
+Pick a skill first by the **kind of question**, then a command by the **field the user asked about**. Common intents:
+
+| User says (intent) | Skill | Command / MCP tool |
+|---|---|---|
+| "What's the TRX balance of T…?" / "How many tokens in this wallet?" | `tron-wallet` | `wallet-balance` · `tron_wallet_balance` |
+| "Is `Tabcd…` a valid TRON address?" | `tron-wallet` | `validate-address` · `tron_validate_address` |
+| "Show recent transactions for T…" | `tron-wallet` | `tx-history` · `tron_tx_history` |
+| "Is this token safe / a honeypot?" | `tron-token` | `token-security` · `tron_token_security` |
+| "Who are the top holders of USDT?" | `tron-token` | `token-holders` · `tron_token_holders` |
+| "What's the contract ABI of …?" | `tron-token` | `contract-info` (CLI only) |
+| "What are the top-volume tokens today?" | `tron-token` | `trending-tokens` · `tron_trending_tokens` |
+| "What's TRX / USDT price?" | `tron-market` | `token-price` · `tron_token_price` |
+| "Show 1h K-line for SUN" | `tron-market` | `kline` · `tron_kline` |
+| "Recent SunSwap trades for USDT?" | `tron-market` | `trade-history` (CLI only) |
+| "What's the TVL of SUN/TRX pool?" | `tron-market` | `pool-info` (CLI only) |
+| "How much USDT will I get for 100 TRX?" | `tron-swap` | `swap-quote` · `tron_swap_quote` |
+| "What's the cheapest route TRX → JST?" | `tron-swap` | `swap-route` (CLI only) |
+| "Did transaction `0xabc…` succeed?" | `tron-swap` | `tx-status` · `tron_tx_status` |
+| "How much Energy / Bandwidth do I have?" | `tron-resource` | `resource-info` · `tron_resource_info` |
+| "Should I freeze, rent, or burn?" | `tron-resource` | `optimize-cost` · `tron_optimize_cost` |
+| "How much Energy does a USDT transfer cost?" | `tron-resource` | `estimate-energy` · `tron_estimate_energy` |
+| "Where can I rent Energy?" | `tron-resource` | `energy-rental` (CLI only) |
+| "List the current Super Representatives" | `tron-staking` | `sr-list` · `tron_sr_list` |
+| "What's my staking position?" | `tron-staking` | `staking-info` · `tron_staking_info` |
+| "If I stake 10000 TRX, what's my APY?" | `tron-staking` | `staking-apy` · `tron_staking_apy` |
+
+If the request implies **changing on-chain state** (transfer, swap execution, freeze, vote, claim), this skill set is the wrong layer — see the routing notes under each skill's "When NOT to use".
+
+### ❌ When NOT to route here (negative examples)
+
+Skills are **read-only**. If the user intent implies a signed / Remote Write action, do **not** dispatch to a skill — the underlying command will succeed but only as a query/estimate, and the user's actual goal will go unfulfilled. Route to the signer SDK or `mcp-server-tronlink` instead:
+
+| User says (intent) | ❌ Wrong route (looks plausible, but read-only) | ✅ Correct route |
+|---|---|---|
+| "Send 100 TRX to `T…`" | `tron-wallet wallet-balance` then stop — this only checks the balance, never sends. | [signer SDK](tronlink-signer.md) `sendTrx` (HITL) or [`mcp-server-tronlink`](mcp-server-tronlink.md) `tl_chain_send` |
+| "Freeze 1000 TRX to get Energy" | `tron-resource optimize-cost` — this only computes the recommendation. | `mcp-server-tronlink` `tl_chain_stake` (Remote Write, HITL) |
+| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | `mcp-server-tronlink` `tl_chain_stake` / signer SDK `signTransaction` |
+| "Approve USDT spending for the SunSwap router" | `tron-token token-info` / `contract-info` — pure metadata, no approval is broadcast. | [signer SDK](tronlink-signer.md) `signTransaction` or `mcp-server-tronlink` `tl_chain_send` |
+| "Swap 100 TRX for USDT now" | `tron-swap swap-quote` — only quotes price, never executes. | `mcp-server-tronlink` `tl_chain_swap_v3` (Remote Write, HITL, set `minOut`) |
+| "Claim my staking rewards" | `tron-staking staking-info` — only shows the pending balance. | `mcp-server-tronlink` `tl_chain_stake` (withdraw / claim) or signer SDK |
+
+**Heuristic.** If the user's verb is *send / freeze / unfreeze / vote / unvote / approve / swap (execute) / claim / sign / broadcast*, the answer never starts in this Skills set. Skills can still **precede** the write (quote, estimate cost, validate address, check balance) — just don't claim a Skills call finished the user's request.
+
 ---
 
 ## Recommended Skill Workflows
 
 ### Balance & Token Check
-```
+```text
 tron-wallet (check balance) → tron-wallet (list tokens) → tron-resource (check energy status)
 ```
 
 ### Research & Swap Quote
-```
+```text
 tron-token (search) → tron-market (price/chart) → tron-resource (check energy) → tron-swap (get quote)
 ```
 
 ### Staking Analysis
-```
+```text
 tron-wallet (check balance) → tron-staking (staking info) → tron-staking (APY estimate) → tron-staking (SR list)
 ```
 
 ### Resource Optimization
-```
+```text
 tron-resource (check status) → tron-resource (estimate cost) → tron-resource (optimize-cost)
 ```
 
@@ -176,6 +277,8 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 
 ### Cost Examples
 
+> **Effective as of 2026-05.** Energy figures shift with contract upgrades (notably USDT TRC-20) and network parameters; the bandwidth/energy unit prices used to derive the TRX-burned column also change. Treat these as **order-of-magnitude reference**, not contractual values. Source: TronGrid / Tronscan transaction samples and TRON network parameters. For runtime accuracy, call the `tron-resource` skill's `estimate-energy` / `estimate-bandwidth` commands.
+
 | Operation | Bandwidth | Energy | TRX Burned (no resources) |
 |-----------|-----------|--------|---------------------------|
 | TRX transfer | ~267 | 0 | 0 (within free limit) |
@@ -187,7 +290,7 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 - Freeze TRX → Get Energy or Bandwidth → Vote for SR → Earn rewards
 - Unfreezing has **14-day wait** before withdrawal
 - Votes reset if you unfreeze; must re-vote after re-freezing
-- 1 frozen TRX ≈ 4.5 Energy/day
+- 1 frozen TRX ≈ 4.5 Energy/day — **dynamic**: depends on total network stake; use `tron-resource estimate-energy` for the live value. Effective figure as of 2026-05.
 - Voting rewards claimable every 6 hours
 
 ---
@@ -212,6 +315,7 @@ No `npm install` needed for read-only operations.
 claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 
 # Provides 25 MCP tools callable by Claude Desktop / Claude Code
+# (see "Skill ↔ MCP Tool Map" above for the per-command mapping; 8 commands are CLI-only)
 ```
 
 ### Method 3: Manual CLI
@@ -231,6 +335,62 @@ node scripts/tron_api.mjs swap-quote --from TRX --to USDT --amount 100
 | **Codex CLI** | Symlink to `~/.agents/skills/tronlink-skills` |
 | **OpenCode** | Register plugin, symlink skills |
 | **LangChain / CrewAI** | Wrap `tron_api.mjs` as a Tool |
+
+#### Cursor (or Windsurf, same schema)
+
+`~/.cursor/mcp.json`:
+
+```jsonc
+{
+  "mcpServers": {
+    "tronlink-skills": {
+      "command": "node",
+      "args": ["/absolute/path/to/tronlink-skills/scripts/mcp_server.mjs"]
+    }
+  }
+}
+```
+
+#### Codex CLI
+
+```bash
+# Symlink the skills bundle into the agent's discovery path
+ln -s "$(pwd)/tronlink-skills" ~/.agents/skills/tronlink-skills
+# Verify discovery
+codex skills list | grep tron
+```
+
+#### OpenCode
+
+`~/.config/opencode/config.json`:
+
+```jsonc
+{
+  "plugins": {
+    "tronlink-skills": { "path": "/absolute/path/to/tronlink-skills" }
+  }
+}
+```
+
+#### LangChain / CrewAI (Python)
+
+```python
+from langchain_core.tools import Tool
+import subprocess, json
+
+def tron_call(cmd: str) -> dict:
+    out = subprocess.check_output(
+        ["node", "scripts/tron_api.mjs", *cmd.split()],
+        cwd="/absolute/path/to/tronlink-skills",
+    )
+    return json.loads(out)
+
+tron_wallet_balance = Tool.from_function(
+    func=lambda addr: tron_call(f"wallet-balance --address {addr}"),
+    name="tron_wallet_balance",
+    description="TRX balance and frozen amounts. Address is a TRON Base58 (T...) string.",
+)
+```
 
 ### Quick Setup Script
 
@@ -281,7 +441,7 @@ export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
 
 ## Project Structure
 
-```
+```text
 tronlink-skills/
 ├── README.md                          # Main documentation
 ├── package.json                       # Node.js manifest
@@ -289,7 +449,7 @@ tronlink-skills/
 ├── uninstall.sh                       # Clean uninstall
 │
 ├── scripts/
-│   ├── tron_api.mjs                   # Main CLI (34 commands, zero dependencies)
+│   ├── tron_api.mjs                   # Main CLI (33 commands, zero dependencies)
 │   └── mcp_server.mjs                 # MCP protocol server wrapper
 │
 ├── skills/                            # Skill definitions (auto-discovered)
@@ -331,8 +491,10 @@ tronlink-skills/
 | Aspect | Implementation |
 |--------|----------------|
 | Read-only design | All commands are queries — no private keys, no signing, no fund movements |
+| Side effects | Every command is **Network Read**: it calls public APIs but changes no state. All commands are safe to retry; no human-in-the-loop confirmation is needed |
 | No secrets required | Only optional TRONGRID_API_KEY for higher rate limits |
 | Rate limits | Public TronGrid API; use TRONGRID_API_KEY for higher limits |
+| Error handling | Failures are query errors: rate limit (retryable, back off), network errors (retryable), invalid address/parameters (not retryable — fix the input). To execute a transaction (transfer, swap, stake), use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md) — these skills never sign or broadcast |
 
 ---
 
@@ -378,3 +540,26 @@ node scripts/tron_api.mjs wallet-balance --address TAddress...
 node scripts/tron_api.mjs token-price --token USDT
 node scripts/tron_api.mjs optimize-cost --address TAddress...
 ```
+
+## Version & License
+
+- **Package:** `tronlink-skills` v1.0.1
+- **License:** MIT — `SPDX-License-Identifier: MIT`
+- **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
+
+### Compatibility & migration policy
+
+Skills are at **v1.0.x**, so standard semver applies — only **major** bumps may break the public surface.
+
+- **Stable contracts** (won't change in a minor or patch):
+    - The 33 CLI command names and their required / optional flags (`tron_api.mjs <command> [...]`).
+    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill--mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
+    - Exit codes: `0` success, `1` query error / invalid input, `2` unsupported / unknown command.
+    - The `Network Read` side-effect classification — no command will ever become a Remote Write without a major bump.
+- **Volatile contracts** (may change in a minor):
+    - The exact field layout of JSON `stdout` payloads — new fields can be added in any minor; renames or removals are major. Use a tolerant parser.
+    - Built-in token-symbol shortcut list (`USDT`, `USDC`, `WTRX`, …) — symbols may be added in any minor; existing mappings won't be repointed in a minor.
+    - Heuristics and thresholds (`whale-transfers` default cutoff, `optimize-cost` decision tree weights, etc.).
+- **Subset relationship.** The MCP tool subset (currently 25 of 33) may **grow** in a minor (a previously CLI-only command exposed as an MCP tool); it will not **shrink** in a minor.
+- **Deprecation window.** A command / tool marked deprecated continues to work for at least one minor cycle; the runtime prints a `STDERR: [DEPRECATED]` warning. Removal lands no earlier than the next major.
+- **Verifying after upgrade.** Re-run `tron_api.mjs --help` and (if using MCP) `tools/list` to confirm the names you depend on are still present. The MCP `serverInfo.version` exposed during `initialize` should match the bumped `package.json` version.

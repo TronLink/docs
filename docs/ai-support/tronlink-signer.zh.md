@@ -193,6 +193,21 @@ try {
 }
 ```
 
+## 安全与副作用
+
+| 副作用 | 方法 |
+| --- | --- |
+| **读取**（无需审批，不改状态） | `getBalance`、`waitForTransaction`、`getConfig` |
+| **仅签名**（产出签名，无链上影响） | `signMessage`、`signTypedData`、`broadcast: false` 的 `signTransaction` |
+| **远程写**（签名 + 链上广播） | `sendTrx`、`sendTrc20`、`broadcast: true` 的 `signTransaction` |
+| **连接**（本地会话） | `connectWallet`、`start`、`stop` |
+
+- **人工确认（HITL）：** `connectWallet` 及每个签名/远程写调用都需要用户在 TronLink 审批页确认——被拒绝时 SDK 会抛错。私钥永不离开 TronLink。
+- **重试策略：**
+    - 读取与仅签名调用可安全重试（幂等，无链上影响）。
+    - 远程写调用**不得**盲目重试。SDK 仅在广播从未发生时抛错（签名错误、用户拒绝、网络不可达）——这些可安全重试。但返回 `status: "pending"` 意味着广播可能已上链,重发有双花风险。重试前请先用 `waitForTransaction(txId)` 对账。
+- **失败 ≠ 抛错：** 链上失败（`OUT_OF_ENERGY`、revert）以 `BroadcastResult` 的 `status: "failed"` 报告,不会抛出——请基于 `status` 分支,而非 try/catch。参见 [Broadcast Result](#broadcast-result)。
+
 ## 工作原理
 
 1. 你的代码调用签名方法（如 `signMessage`）
@@ -282,3 +297,26 @@ export type {
   BroadcastStatus, BroadcastResult,
 } from "./types.js";
 ```
+
+## 版本与许可证
+
+- **包：** `tronlink-signer` v0.1.4
+- **许可证：** MIT —— `SPDX-License-Identifier: MIT`
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases) —— 与 `mcp-tronlink-signer` 共用版本线；已发布 GitHub release：**v0.1.1、v0.1.2**（2026-04-15）。v0.1.3 / v0.1.4 截至当前仅 npm —— MCP 可见变更详见 [`mcp-tronlink-signer` 的内联 changelog](mcp-tronlink-signer.md#内联-changelog)，SDK 层跟随同一波次。
+
+### 兼容性与迁移策略
+
+SDK 与 MCP 封装层共用版本线、共同发布。
+
+- **语义化版本。** 1.0 之前：**minor**（0.x → 0.y）允许破坏性变更；**patch**（0.1.x → 0.1.y）不变更导出类型、函数签名或 `error.code`。1.0 之后：标准 semver，仅 major 允许破坏。
+- **稳定契约**（patch 不会动）：
+    - 导出函数名（`connect`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
+    - `BroadcastResult` 结构（`status: 'success' | 'pending'`、`txId`、`error?`）。
+    - `error.code` 枚举值与 `error.retryable` 语义。
+    - HITL（浏览器审批）强制要求——patch 永远不会引入程序化绕过。
+- **不稳定契约**（随时可能变化）：
+    - `./internal/*`、`./browser-bridge.ts` 等内部 helper 导出。
+    - 审批页 UI 文案、签名提示、stderr 日志行。
+    - `error.message` 的具体文本（分支用 `error.code`）。
+- **类型层破坏。** SDK 是 TS-first，minor 升级可能 **新增** 内部 options 接口的必填字段而不改函数签名——在 TS 严格模式下表现为 `tsc` 报错但 runtime 行为不变。这种我们当作 **minor 变更** 处理，不算 major；TS-严格的消费方请把版本钉到 `~0.1`，或升级前先看 diff。
+- **升级后校验。** 重新导入公开类型，确认 `BroadcastResult` 分支仍能通过编译；MCP 模式下再 `list_tools` 复核封装层工具名 + `inputSchema`。

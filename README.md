@@ -2,6 +2,17 @@
 
 This is the official developer documentation for the TronLink wallet, providing comprehensive development guides and API references.
 
+## 🤖 For AI Agents
+
+If you are an AI agent (Claude, Cursor, Codex, etc.) reading this repo, start here:
+
+- [`AGENTS.md`](AGENTS.md) — orientation: topic map, SSOT boundaries (error codes, schemas, versions), upstream package pointers.
+- [`docs/llms.txt`](docs/llms.txt) / [`docs/llms.zh.txt`](docs/llms.zh.txt) — curated [llmstxt.org](https://llmstxt.org/) indexes. **Source filenames** carry `.en`/`.zh` suffixes; **deployed URLs** strip them: `/llms.txt` (EN) and `/zh/llms.txt` (ZH).
+- [`docs/llms-full.en.txt`](docs/llms-full.en.txt) / [`docs/llms-full.zh.txt`](docs/llms-full.zh.txt) — every page concatenated for single-fetch ingestion. Deployed at `/llms-full.txt` (EN) and `/zh/llms-full.txt` (ZH).
+- [`docs/ai-support/`](docs/ai-support/) — MCP servers, Skills, CLI, signer SDK. Live AI/agent surface; see [`ai-llms.en.md`](docs/ai-support/ai-llms.en.md) for the overview.
+
+Branch on structured `error.code` / `error.retryable`, never on prose. Sign / Remote Write tools require user approval (HITL) and must not be auto-retried — see each tool's Safety section.
+
 ## 📖 Documentation Contents
 
 - **Introduction** - Overview of TronLink and the TRON ecosystem
@@ -19,6 +30,13 @@ This is the official developer documentation for the TronLink wallet, providing 
   - Message Signature
   - General Transfer
   - Stake2.0
+- **AI Support** - AI agent tooling and machine-readable documentation
+  - AI / LLMs (entry point + `llms.txt` / `llms-full.*.txt` endpoints)
+  - MCP Server TronLink (52 tools: on-chain, multi-sig, GasFree)
+  - TronLink MCP Core (framework library, SSOT for error codes & schemas)
+  - TronLink Skills (read-only agent skills, 33 commands / 25 MCP tools)
+  - MCP TronLink Signer & TronLink Signer SDK (HITL signing)
+  - TronLink CLI
 
 ## 🚀 Getting Started
 
