@@ -8,7 +8,7 @@
 
 **Key Highlights:**
 - Dual-mode architecture: **Playwright** (browser automation) + **Direct API** (on-chain operations)
-- 32 built-in Flow Recipes with pre-checks and dependency resolution
+- 24 built-in Flow Recipes with pre-checks and dependency resolution
 - Non-custodial local transaction signing via encrypted `agent-wallet`
 - Multi-signature management with real-time WebSocket monitoring
 - Gas-free TRC20 transfers via GasFree service integration
@@ -27,7 +27,7 @@ flowchart TD
   Multi["TronLinkMultiSigCapability (5 tools)"]
   GasFree["TronLinkGasFreeCapability (3 tools)"]
   Util["Utility Capabilities<br/>Build · StateSnapshot · TRON Crypto"]
-  Flow["Flow Recipes<br/>(32 built-in, pre-checked)"]
+  Flow["Flow Recipes<br/>(24 built-in, pre-checked)"]
   Ext["TronGrid API / Multi-Sig Service / GasFree Service"]
   Chain["TRON Blockchain"]
   Agent -- "MCP Protocol — stdio / JSON-RPC 2.0" --> Server
@@ -176,7 +176,7 @@ Uses `@noble/curves` (secp256k1 ECDSA) and `@noble/hashes` (Keccak-256, SHA256).
 
 ---
 
-## Flow Recipes (32 Built-In)
+## Flow Recipes (24 Built-In)
 
 Pre-configured multi-step workflows with dependency checks and parameter templates.
 
@@ -396,7 +396,7 @@ mcp-server-tronlink/
 │   │   ├── state-snapshot.ts       # UI state extraction
 │   │   └── tron-crypto.ts          # Address derivation, signing, Base58
 │   └── flows/
-│       ├── index.ts                # Flow registry (32 recipes)
+│       ├── index.ts                # Flow registry (24 recipes)
 │       ├── switch-network.ts       # Network switching flows
 │       ├── transfer-trx.ts         # Transfer flows
 │       ├── multisig.ts             # 6 multi-sig flows

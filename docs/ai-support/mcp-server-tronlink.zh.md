@@ -8,7 +8,7 @@
 
 **核心亮点：**
 - 双模架构：**Playwright**（浏览器自动化）+ **Direct API**（链上操作）
-- 32 个内置 Flow Recipe，带预检查和依赖解析
+- 24 个内置 Flow Recipe，带预检查和依赖解析
 - 基于加密 `agent-wallet` 的非托管本地交易签名
 - 多签管理，支持实时 WebSocket 监控
 - 通过 GasFree 服务集成实现零 Gas TRC20 转账
@@ -27,7 +27,7 @@ flowchart TD
   Multi["TronLinkMultiSigCapability (5 个工具)"]
   GasFree["TronLinkGasFreeCapability (3 个工具)"]
   Util["实用能力<br/>Build · StateSnapshot · TRON Crypto"]
-  Flow["Flow Recipes<br/>(32 个内置流程配方)"]
+  Flow["Flow Recipes<br/>(24 个内置流程配方)"]
   Ext["TronGrid API / 多签服务 / GasFree 服务"]
   Chain["TRON 区块链"]
   Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
@@ -176,7 +176,7 @@ hexToAddress()             0x41... → T 地址
 
 ---
 
-## Flow Recipes（32 个内置流程）
+## Flow Recipes（24 个内置流程）
 
 预配置的多步骤工作流，带依赖检查和参数模板。
 
@@ -388,7 +388,7 @@ mcp-server-tronlink/
 │   │   ├── state-snapshot.ts       # UI 状态提取
 │   │   └── tron-crypto.ts          # 地址派生、签名、Base58
 │   └── flows/
-│       ├── index.ts                # 流程注册（32 个配方）
+│       ├── index.ts                # 流程注册（24 个配方）
 │       ├── switch-network.ts       # 网络切换流程
 │       ├── transfer-trx.ts         # 转账流程
 │       ├── multisig.ts             # 6 个多签流程
