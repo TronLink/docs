@@ -31,10 +31,20 @@ TRON 地址有两种可互转的编码：
 
 - `1 TRX = 1,000,000 SUN`。`tronWeb` 交易构造器（如 `sendTrx`）中的金额以 **SUN** 为单位。
 
-## 常用代币合约（主网）
+## 常用代币合约（SSOT）
 
-| 代币 | 标准 | 合约地址 |
-|---|---|---|
-| USDT | TRC-20 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` |
+本表是常用主网代币合约地址的单一可信源（SSOT）。其他页面——[TronLink CLI](../ai-support/tronlink-cli.md) 与 [TronLink Skills](../ai-support/tronlink-skills.md)——均对齐本表；地址变更时，请先在此处更新。
+
+| 代币 | 标准 | 主网合约地址 | 精度 | 备注 |
+|---|---|---|---|---|
+| TRX | 原生 | — | 6 | 原生币，无 TRC-20 合约 |
+| USDT | TRC-20 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | 6 | |
+| USDC | TRC-20 | `TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8` | 6 | |
+| USDD | TRC-20 | `TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz` | 18 | |
+| WTRX | TRC-20 | `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR` | 6 | Wrapped TRX |
+| BTT | TRC-20 | `TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4` | 18 | |
+| JST | TRC-20 | `TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9` | 18 | |
+| SUN | TRC-20 | `TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S` | 18 | |
+| WIN | TRC-20 | `TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7` | 6 | |
 
 其他代币请在 [TronScan](https://tronscan.org/#/tokens) 查询其合约地址。集成前务必核对代币合约地址——不同网络上的地址不同。

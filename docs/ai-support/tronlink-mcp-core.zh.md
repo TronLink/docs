@@ -60,6 +60,18 @@ flowchart TD
 
 **mcp-server-tronlink 是 tronlink-mcp-core 的使用者。** 核心库定义了工具"是什么"；服务器提供了工具"怎么工作"。
 
+### 该选哪个？
+
+按场景用下面的决策矩阵在两个包之间做选择：
+
+| 场景 | 选 tronlink-mcp-core | 选 mcp-server-tronlink |
+|------|:---:|:---:|
+| 构建嵌入自有业务逻辑的自定义 MCP 服务器 | ✅ | |
+| 直接把一个开箱即用的服务器交给 agent 使用 | | ✅ |
+| 通过自定义 `Capability` 实现扩展能力 | ✅ | |
+| 用可注入的 fixture / mock server 做测试或 mock | ✅ | |
+| 学习 MCP 框架（接口、工具、响应格式）的工作原理 | ✅ | |
+
 ---
 
 ## ISessionManager 接口

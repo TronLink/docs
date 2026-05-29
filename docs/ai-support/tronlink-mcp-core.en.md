@@ -60,6 +60,18 @@ flowchart TD
 
 **mcp-server-tronlink is a consumer of tronlink-mcp-core.** The core defines WHAT tools exist; the server provides HOW they work.
 
+### Which one should I pick?
+
+Use this decision matrix to choose between the two packages by scenario:
+
+| Scenario | Pick tronlink-mcp-core | Pick mcp-server-tronlink |
+|----------|:---:|:---:|
+| Building a custom MCP server that embeds your own business logic | ✅ | |
+| Giving a ready-to-run server directly to an agent | | ✅ |
+| Extending capabilities with a custom `Capability` implementation | ✅ | |
+| Testing or mocking with injectable fixtures / mock server | ✅ | |
+| Learning how the MCP framework (interfaces, tools, response format) works | ✅ | |
+
 ---
 
 ## ISessionManager Interface

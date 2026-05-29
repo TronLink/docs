@@ -431,11 +431,13 @@ tronlink reward --json
 
 ### 常用代币合约
 
-| 代币 | 网络 | 合约地址 |
-| ---- | ---- | -------- |
-| USDT | mainnet | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
-| USDD | mainnet | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
-| USDC | mainnet | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
+> 权威来源：[reference/networks — 常用代币合约（SSOT）](../reference/networks.md#ssot)。下表为对齐该 SSOT 的子集。
+
+| 代币 | 网络 | 合约地址 | 精度 |
+| ---- | ---- | -------- | ---- |
+| USDT | mainnet | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t | 6 |
+| USDC | mainnet | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 | 6 |
+| USDD | mainnet | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz | 18 |
 
 ### 示例：AI 转账流程
 

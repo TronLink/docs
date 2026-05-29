@@ -264,6 +264,22 @@ tron-wallet（查余额）→ tron-staking（质押信息）→ tron-staking（A
 tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resource（optimize-cost）
 ```
 
+### 端到端示例
+
+**"把 100 TRX 换成 USDT 现在划算吗？"**
+
+1. `token-price`（`tron-market`）—— 获取 TRX 与 USDT 当前价格，确定 100 TRX 的参考价值。
+2. `kline`（`tron-market`）—— 拉取近期 K 线，判断 TRX 处于上行还是下行趋势（择时）。
+3. `resource-info`（`tron-resource`）—— 查询账户的能量/带宽，便于估算本次兑换是否需要燃烧 TRX 抵扣手续费。
+4. `swap-quote`（`tron-swap`）—— 对 100 TRX → USDT 请求实际报价，含预期到账数量与价格冲击。
+5. 智能体将报价的有效汇率与第 1 步现货价对比，结合第 3 步的资源成本，回答兑换是否划算。以上均为**只读**——若要真正执行，请路由到 `mcp-server-tronlink` 的 `tl_chain_swap_v3`（Remote Write、HITL，必传 `minOut`）或 [signer SDK](tronlink-signer.md)。
+
+**"我上一笔 USDT 转账到账了吗？现在余额多少？"**
+
+1. `tx-status`（`tron-swap`）—— 查询最近一笔转账的状态与确认数。
+2. `account-info`（`tron-wallet`）—— 确认该转账结算后的当前余额。
+3. `resource-info`（`tron-resource`）—— 核对剩余能量/带宽是否足够下一笔转账（否则将燃烧 TRX）。发送下一笔转账属于 Remote Write——请路由到 [signer SDK](tronlink-signer.md) 的 `sendTrc20` 或 `mcp-server-tronlink` 的 `tl_chain_send`。
+
 ---
 
 ## TRON 资源模型参考
@@ -416,6 +432,16 @@ export TRONGRID_API_KEY="your-api-key"
 export TRON_NETWORK="mainnet"    # 或 "shasta" / "nile"
 ```
 
+#### TronGrid API Key —— 凭证管理
+
+`TRONGRID_API_KEY` 是可选的（只读、提高限额），但一旦配置，请从以下五个维度管理：
+
+- **存储** —— 保存在环境变量或密钥管理器中。切勿硬编码在源码、提交到 git 的配置或聊天/智能体日志里。
+- **最小权限** —— 只签发覆盖这些技能所需只读端点的 Key，不要复用更大权限的生产 Key。
+- **轮换** —— 按固定周期轮换，有访问权限的成员离职时也应轮换；保持轮换窗口尽量短。
+- **泄漏检测** —— 监控 TronGrid 用量是否出现异常调用量或非预期来源 IP，并用密钥扫描器扫描仓库历史排查误提交。
+- **吊销** —— 一旦 Key 泄漏，立即在 TronGrid 控制台吊销并签发新 Key，再恢复流量。
+
 ### 网络支持
 
 | 网络 | 地址 | 用途 |
@@ -426,11 +452,14 @@ export TRON_NETWORK="mainnet"    # 或 "shasta" / "nile"
 
 ### 内置代币快捷符号
 
+> 权威来源：[reference/networks — 常用代币合约（SSOT）](../reference/networks.md#ssot)。下方快捷符号已对齐该 SSOT。`tron_api.mjs` 实际内置可识别的符号为 TRX、USDT、USDC、WTRX、BTT、JST、SUN、WIN；USDD 为与 SSOT 保持一致而一并列出——请显式传入其合约地址使用。
+
 | 符号 | 合约地址 |
 |------|----------|
 | TRX | 原生代币（无合约） |
 | USDT | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
 | USDC | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
+| USDD | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
 | WTRX | TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR |
 | BTT | TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4 |
 | JST | TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9 |
@@ -495,6 +524,18 @@ tronlink-skills/
 | 无需密钥 | 仅可选 TRONGRID_API_KEY 用于提高请求频率 |
 | 频率限制 | 公共 TronGrid API；使用 TRONGRID_API_KEY 获取更高限额 |
 | 错误处理 | 失败均为查询类错误：限流（可重试,需退避）、网络错误（可重试）、地址/参数非法（不可重试——修正输入）。如需执行交易（转账、兑换、质押）,请使用 [signer SDK](tronlink-signer.md) 或 [MCP Server TronLink](mcp-server-tronlink.md)——这些技能本身从不签名或广播 |
+
+---
+
+## 故障排查
+
+| 现象 | 原因 | 处理方式 |
+|------|------|----------|
+| 智能体不识别某个技能 | 技能包未被发现、命令名错误，或 host 未重新加载 | 确认技能包已安装/软链（重新执行 `install.sh`，或检查 host 发现路径下的软链——如 Codex 的 `~/.agents/skills/tronlink-skills`）；对照 [6 大技能详解](#6) / [Skill ↔ MCP 工具映射](#skill--mcp) 核对准确名称；再重启智能体/host 以重新扫描 `SKILL.md`。 |
+| TronGrid 限流（HTTP 429） | 未配置 API Key，或轮询过于频繁 | 设置 `TRONGRID_API_KEY`（见[配置说明](#_1)）以获得更高限额；降低轮询频率；对 429/5xx 增加指数退避重试（这类是可重试的查询错误）。 |
+| 仅 CLI 可用的命令被通过 MCP 调用 | 33 个命令中有 8 个未暴露为 MCP 工具（`contract-info`、`trade-history`、`dex-volume`、`large-transfers`、`pool-info`、`swap-route`、`estimate-bandwidth`、`energy-rental`） | 查阅 [Skill ↔ MCP 工具映射](#skill--mcp)：标注 _(仅 CLI)_ 的行没有对应 `tron_*` MCP 工具。请改用方式一（skill 提示词）或方式三（直接 CLI：`node scripts/tron_api.mjs <command> ...`），不要走 `tools/call`。 |
+| `install.sh` 失败 | 网络被拦截、目标目录不可写，或缺少运行时 | 确认 Node.js >= 18 与 `git`/`curl` 在 `PATH` 中；在对发现目录（`~/.cursor`、`~/.agents/skills` 等）有写权限的环境下重试；若某步被权限拦截，参照方式四 —— Codex CLI 手动建立软链，再用 `codex skills list | grep tron` 验证。 |
+| 多 host 命令名冲突 | 同一技能/工具名被多个 MCP host 注册（如 `tronlink` 与 `tronlink-skills` 都暴露 `tron_*`） | 在智能体配置中为每个 host 取不同的名字（`mcpServers` 的 key / `claude mcp add <name>`），使工具名按 host 命名空间化；或停用重复的 host，使每个 `tron_*` 名仅保留一个有效注册。 |
 
 ---
 

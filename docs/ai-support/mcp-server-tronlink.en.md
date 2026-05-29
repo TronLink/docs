@@ -156,7 +156,9 @@ Runtime wallet management via `@bankofai/agent-wallet` (encrypted `local_secure`
 - `tl_wallet_set_active` — Switch the active wallet by ID (hot-swaps into all capabilities)
 
 If no wallet exists at startup, the server prompts two paths: call `tl_wallet_create` to auto-generate one, or create one manually via CLI and set `AGENT_WALLET_PASSWORD`.
-The auto-create path generates a random password, saves it to `~/.agent-wallet/runtime_secrets.json`, creates an encrypted `main` wallet, and enables the running session to use it.
+
+!!! warning "Auto-create writes the password to disk in plaintext — test/dev only"
+    The auto-create path generates a random password and saves it **in plaintext** to `~/.agent-wallet/runtime_secrets.json`, then creates an encrypted `main` wallet and lets the running session use it. Anyone with read access to that file controls the wallet. For production, use the manual path: create the wallet out-of-band and inject `AGENT_WALLET_PASSWORD` from a secret manager — never rely on the on-disk plaintext password.
 
 ### 6. TRON Cryptography Utils
 
@@ -179,44 +181,44 @@ Uses `@noble/curves` (secp256k1 ECDSA) and `@noble/hashes` (Keccak-256, SHA256).
 Pre-configured multi-step workflows with dependency checks and parameter templates.
 
 ### Playwright Flows
-| Flow | Description |
-|------|-------------|
-| `switchNetworkFlow` | Switch to Mainnet/Nile/Shasta |
-| `enableTestNetworksFlow` | Enable testnet visibility |
-| `transferTrxFlow` | TRX transfer via UI |
-| `transferTokenFlow` | Token transfer via UI |
+| Flow | Description | Source File |
+|------|-------------|-------------|
+| `switchNetworkFlow` | Switch to Mainnet/Nile/Shasta | `src/flows/switch-network.ts` |
+| `enableTestNetworksFlow` | Enable testnet visibility | `src/flows/switch-network.ts` |
+| `transferTrxFlow` | TRX transfer via UI | `src/flows/transfer-trx.ts` |
+| `transferTokenFlow` | Token transfer via UI | `src/flows/transfer-trx.ts` |
 
 ### On-Chain Flows (11)
-| Flow | Description |
-|------|-------------|
-| `chainCheckBalanceFlow` | Query balance |
-| `chainTransferTrxFlow` | TRX transfer with pre-checks |
-| `chainTransferTrc20Flow` | TRC20 transfer with pre-checks |
-| `chainStakeFlow` | Stake TRX |
-| `chainUnstakeFlow` | Unstake TRX |
-| `chainGetStakingFlow` | Query staking info |
-| `chainDelegateResourceFlow` | Delegate bandwidth/energy |
-| `chainUndelegateResourceFlow` | Undelegate resources |
-| `chainSetupMultisigFlow` | Setup multi-sig permissions |
-| `chainCreateMultisigTxFlow` | Create unsigned multi-sig tx |
-| `chainSwapV3Flow` | SunSwap V3 token swap |
+| Flow | Description | Source File |
+|------|-------------|-------------|
+| `chainCheckBalanceFlow` | Query balance | `src/flows/onchain.ts` |
+| `chainTransferTrxFlow` | TRX transfer with pre-checks | `src/flows/onchain.ts` |
+| `chainTransferTrc20Flow` | TRC20 transfer with pre-checks | `src/flows/onchain.ts` |
+| `chainStakeFlow` | Stake TRX | `src/flows/onchain.ts` |
+| `chainUnstakeFlow` | Unstake TRX | `src/flows/onchain.ts` |
+| `chainGetStakingFlow` | Query staking info | `src/flows/onchain.ts` |
+| `chainDelegateResourceFlow` | Delegate bandwidth/energy | `src/flows/onchain.ts` |
+| `chainUndelegateResourceFlow` | Undelegate resources | `src/flows/onchain.ts` |
+| `chainSetupMultisigFlow` | Setup multi-sig permissions | `src/flows/onchain.ts` |
+| `chainCreateMultisigTxFlow` | Create unsigned multi-sig tx | `src/flows/onchain.ts` |
+| `chainSwapV3Flow` | SunSwap V3 token swap | `src/flows/onchain.ts` |
 
 ### Multi-Sig Flows (6)
-| Flow | Description |
-|------|-------------|
-| `multisigQueryAuthFlow` | Query permissions |
-| `multisigListTransactionsFlow` | List pending transactions |
-| `multisigMonitorFlow` | WebSocket real-time monitoring |
-| `multisigStopMonitorFlow` | Stop monitoring |
-| `multisigSubmitTxFlow` | Submit signed transaction |
-| `multisigCheckFlow` | Full status check |
+| Flow | Description | Source File |
+|------|-------------|-------------|
+| `multisigQueryAuthFlow` | Query permissions | `src/flows/multisig.ts` |
+| `multisigListTransactionsFlow` | List pending transactions | `src/flows/multisig.ts` |
+| `multisigMonitorFlow` | WebSocket real-time monitoring | `src/flows/multisig.ts` |
+| `multisigStopMonitorFlow` | Stop monitoring | `src/flows/multisig.ts` |
+| `multisigSubmitTxFlow` | Submit signed transaction | `src/flows/multisig.ts` |
+| `multisigCheckFlow` | Full status check | `src/flows/multisig.ts` |
 
 ### GasFree Flows (3)
-| Flow | Description |
-|------|-------------|
-| `gasfreeCheckAccountFlow` | Query eligibility |
-| `gasfreeTransactionHistoryFlow` | Query history |
-| `gasfreeSendFlow` | Gas-free TRC20 transfer |
+| Flow | Description | Source File |
+|------|-------------|-------------|
+| `gasfreeCheckAccountFlow` | Query eligibility | `src/flows/gasfree.ts` |
+| `gasfreeTransactionHistoryFlow` | Query history | `src/flows/gasfree.ts` |
+| `gasfreeSendFlow` | Gas-free TRC20 transfer | `src/flows/gasfree.ts` |
 
 ---
 
@@ -420,8 +422,10 @@ Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bump
 | `@noble/hashes` | ^2.0.1 | Keccak-256, SHA256 |
 | `@tronlink/tronlink-mcp-core` | ^0.1.0 | Core MCP server framework |
 | `playwright` | ^1.49.0 | Browser automation |
-| `@bankofai/agent-wallet` | ^2.3.0 | Encrypted local wallet management (`local_secure`) — pinned, not `latest`, to keep wallet behavior reproducible |
+| `@bankofai/agent-wallet` | 2.3.0 | Encrypted local wallet management (`local_secure`) — pinned, not `latest`, to keep wallet behavior reproducible |
 | `ws` | ^8.18.0 | WebSocket (multi-sig monitoring) |
+
+> **About @bankofai/agent-wallet:** Pinned to exact 2.3.0 (no caret, to avoid silently picking up 2.4.0 on npm). The package's GitHub repo is currently not public (HTTP 404); source transparency comes from the npm publish — audit it via `npm pack @bankofai/agent-wallet@2.3.0`. Upgrading to 2.4.0 should be evaluated against its changelog first.
 
 ---
 
@@ -700,6 +704,20 @@ The Direct-API path signs with a local encrypted wallet managed by `@bankofai/ag
 5. **Gas-Free Operations** — TRC20 transfers without TRX balance requirements
 6. **Infrastructure Testing** — Contract deployment, fixture management, mock servers
 
+### End-to-end example: swap 100 TRX for USDT on SunSwap V3
+
+A realistic agent turn, showing the tool-call sequence. The agent reads first, gets a fresh quote, surfaces it for human approval, then executes — never auto-executing a Remote Write off a read.
+
+> **User:** "Swap 100 TRX for USDT on SunSwap V3, max 0.5% slippage."
+
+1. `tl_chain_get_account` (Network Read) — confirm the active wallet holds ≥ 100 TRX plus enough for fees.
+2. `tl_chain_swap_v3` with `action=estimate` (Network Read) — `from_token="TRX"`, `to_token="<USDT contract>"`, `amount="100"`, `fee_tier=3000`, `slippage=0.5`. Returns the quoted output and route.
+3. Agent surfaces the quote to the user and waits for confirmation (HITL — this is a Remote Write).
+4. `tl_chain_swap_v3` with `action=execute` and the **same** explicit `slippage=0.5` — signs with the local `agent-wallet` and broadcasts. Returns `txId`.
+5. `tl_chain_get_tx` (Network Read) with the returned `txId` — confirm on-chain success before reporting back.
+
+> If step 4 returns an uncertain/failed result, do **not** auto-retry: `TL_CHAIN_SWAP_FAILED` is not retryable — re-check the chain with `tl_chain_get_tx` first (see Swap safety).
+
 ---
 
 ## Quick Start
@@ -713,14 +731,25 @@ npm install && npm run build
 #   TL_TRONGRID_URL=https://nile.trongrid.io
 #
 # 3. If no wallet exists, choose one path:
-#   Option A: call tl_wallet_create after startup
-#   Option B: create one locally, then set AGENT_WALLET_PASSWORD
+#   Option A (manual): create one locally, then set AGENT_WALLET_PASSWORD
+#   Option B (auto-create): call tl_wallet_create after startup
 
 # 4. Use with Claude Code
 # "Check my TRX balance"
 # "Send 10 TRX to TAddress..."
 # "Swap 100 TRX for USDT on SunSwap V3"
 ```
+
+**Which path? (scenario → path)**
+
+| Scenario | Recommended path | Why |
+|----------|------------------|-----|
+| Production (real funds) | A — manual + secret manager | Path B writes the password in plaintext to `~/.agent-wallet/runtime_secrets.json` |
+| CI / automation (testnet) | A — manual + env injection | Same — keep the password out of an on-disk file |
+| Local dev (one-off) | B — auto-create | No pre-config; the password is generated automatically |
+| Temp demo | B + tmpfs directory | Point `AGENT_WALLET_DIR` at a tmpfs path destroyed at job end |
+
+> Path B (auto-create) writes the generated password in plaintext to `~/.agent-wallet/runtime_secrets.json` so a restart can reuse the wallet. See [Wallet Secret Storage](#wallet-secret-storage) for the full Path A / Path B comparison and how to enforce Path A.
 
 ## Version & License
 

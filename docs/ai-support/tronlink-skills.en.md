@@ -264,6 +264,22 @@ tron-wallet (check balance) → tron-staking (staking info) → tron-staking (AP
 tron-resource (check status) → tron-resource (estimate cost) → tron-resource (optimize-cost)
 ```
 
+### End-to-end examples
+
+**"Is swapping 100 TRX for USDT worth it right now?"**
+
+1. `token-price` (`tron-market`) — fetch current TRX and USDT prices to establish the reference value of 100 TRX.
+2. `kline` (`tron-market`) — pull recent candlesticks to judge whether TRX is trending up or down (timing).
+3. `resource-info` (`tron-resource`) — check the account's Energy/Bandwidth so the agent can estimate whether the swap will have to burn TRX for fees.
+4. `swap-quote` (`tron-swap`) — request an actual quote for 100 TRX → USDT, including expected output and price impact.
+5. The agent compares the quote's effective rate against the spot price from step 1, factors in the resource cost from step 3, and answers whether the swap is favorable. These steps are **read-only** — to actually execute, route to `mcp-server-tronlink` `tl_chain_swap_v3` (Remote Write, HITL, set `minOut`) or the [signer SDK](tronlink-signer.md).
+
+**"Did my last USDT transfer go through, and what's my balance now?"**
+
+1. `tx-status` (`tron-swap`) — look up the most recent transfer's status and confirmations.
+2. `account-info` (`tron-wallet`) — confirm the current balances after that transfer settled.
+3. `resource-info` (`tron-resource`) — verify enough Energy/Bandwidth remains for a follow-up transfer (otherwise it would burn TRX). Sending the next transfer is a Remote Write — route to the [signer SDK](tronlink-signer.md) `sendTrc20` or `mcp-server-tronlink` `tl_chain_send`.
+
 ---
 
 ## TRON Resource Model Reference
@@ -416,6 +432,16 @@ export TRONGRID_API_KEY="your-api-key"
 export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
 ```
 
+#### TronGrid API key — credential management
+
+`TRONGRID_API_KEY` is optional (read-only, higher rate limits), but if you set one, manage it across these five dimensions:
+
+- **Storage** — keep it in an environment variable or a secrets manager. Never hardcode it in source, in config committed to git, or in chat/agent logs.
+- **Least-privilege** — provision a key scoped only to the read endpoints these skills call; don't reuse a broader production key.
+- **Rotation** — rotate on a fixed schedule, and whenever someone with access leaves; keep the rotation window short.
+- **Leak-detection** — monitor TronGrid usage for anomalous call volume or unexpected source IPs, and scan repository history with a secret scanner for accidental commits.
+- **Revocation** — if a key leaks, revoke it immediately in the TronGrid dashboard and issue a fresh one before resuming traffic.
+
 ### Network Support
 
 | Network | URL | Use Case |
@@ -426,11 +452,14 @@ export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
 
 ### Built-In Token Shortcuts
 
+> Authoritative source: [reference/networks — Common token contracts (SSOT)](../reference/networks.md#common-token-contracts-ssot). The shortcuts below are reconciled to that SSOT. The symbols recognized by `tron_api.mjs` are TRX, USDT, USDC, WTRX, BTT, JST, SUN, WIN; USDD is included below for consistency with the SSOT — pass its contract address explicitly.
+
 | Symbol | Contract Address |
 |--------|------------------|
 | TRX | Native (no contract) |
 | USDT | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
 | USDC | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
+| USDD | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
 | WTRX | TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR |
 | BTT | TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4 |
 | JST | TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9 |
@@ -495,6 +524,18 @@ tronlink-skills/
 | No secrets required | Only optional TRONGRID_API_KEY for higher rate limits |
 | Rate limits | Public TronGrid API; use TRONGRID_API_KEY for higher limits |
 | Error handling | Failures are query errors: rate limit (retryable, back off), network errors (retryable), invalid address/parameters (not retryable — fix the input). To execute a transaction (transfer, swap, stake), use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md) — these skills never sign or broadcast |
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | What to do |
+|---------|-------|------------|
+| Agent doesn't recognize a skill | Skill bundle not discovered, wrong command name, or host not reloaded | Confirm the bundle is installed/symlinked (re-run `install.sh`, or check the symlink under the host's discovery path — e.g. `~/.agents/skills/tronlink-skills` for Codex); verify the exact name against [The 6 Skills](#the-6-skills) / [Skill ↔ MCP Tool Map](#skill--mcp-tool-map); then restart the agent/host so it re-scans `SKILL.md`. |
+| TronGrid rate limiting (HTTP 429) | No API key, or polling too aggressively | Set `TRONGRID_API_KEY` (see [Configuration](#environment-variables)) for higher limits; reduce polling frequency; add exponential backoff and retry on 429/5xx (these are retryable query errors). |
+| A CLI-only command invoked via MCP | 8 of the 33 commands are not exposed as MCP tools (`contract-info`, `trade-history`, `dex-volume`, `large-transfers`, `pool-info`, `swap-route`, `estimate-bandwidth`, `energy-rental`) | Check the [Skill ↔ MCP Tool Map](#skill--mcp-tool-map): rows marked _(CLI only)_ have no `tron_*` MCP tool. Reach them via Method 1 (skill prompt) or Method 3 (direct CLI: `node scripts/tron_api.mjs <command> ...`) instead of `tools/call`. |
+| `install.sh` fails | Network blocked, target dir not writable, or missing runtime | Ensure Node.js >= 18 and `git`/`curl` are on `PATH`; re-run with write access to the discovery dirs (`~/.cursor`, `~/.agents/skills`, etc.); if a step is permission-blocked, perform the symlink manually (see Method 4 — Codex CLI) and re-run `codex skills list | grep tron` to verify. |
+| Multi-host command-name collision | The same skill/tool name is registered by more than one MCP host (e.g. both `tronlink` and `tronlink-skills` expose `tron_*`) | Give each host a distinct name in the agent config (`mcpServers` key / `claude mcp add <name>`), so tool names are namespaced per host; or disable the duplicate host so only one registration of each `tron_*` name is active. |
 
 ---
 

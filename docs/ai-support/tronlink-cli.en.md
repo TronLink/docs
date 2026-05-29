@@ -435,11 +435,13 @@ tronlink reward --json
 
 ### Common Token Contracts
 
-| Token | Network | Contract                            |
-| ----- | ------- | ----------------------------------- |
-| USDT  | mainnet | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
-| USDD  | mainnet | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
-| USDC  | mainnet | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
+> Authoritative source: [reference/networks — Common token contracts (SSOT)](../reference/networks.md#common-token-contracts-ssot). The table below is a subset reconciled to that SSOT.
+
+| Token | Network | Contract                            | Decimals |
+| ----- | ------- | ----------------------------------- | -------- |
+| USDT  | mainnet | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t | 6 |
+| USDC  | mainnet | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 | 6 |
+| USDD  | mainnet | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz | 18 |
 
 ### Example: AI Transfer Flow
 
