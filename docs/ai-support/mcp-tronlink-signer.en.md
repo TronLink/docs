@@ -4,7 +4,7 @@
 
 MCP Server that exposes [tronlink-signer](https://github.com/TronLink/mcp-tronlink-signer/tree/main/packages/tronlink-signer) as MCP tools for Claude and other AI clients. Sign TRON transactions via TronLink browser wallet with user approval — private keys never leave the wallet.
 
-> **Relationship to `tronlink-signer`.** This server is a thin MCP wrapper around the [`tronlink-signer`](tronlink-signer.md) SDK — it exposes the SDK's browser-based HITL signing flow as MCP tools. The two ship from the same monorepo and are released together (this page documents `mcp-tronlink-signer` v0.1.4, co-released with the matching `tronlink-signer` 0.1.x; see [Version & License](#version--license)). To embed signing directly in your own code rather than over MCP, use the [`tronlink-signer`](tronlink-signer.md) SDK.
+> **Relationship to `tronlink-signer`.** This server is a thin MCP wrapper around the [`tronlink-signer`](tronlink-signer.md) SDK — it exposes the SDK's browser-based HITL signing flow as MCP tools. The two ship from the same monorepo and are released together (this page documents `mcp-tronlink-signer` v0.1.4, co-released with the matching `tronlink-signer` 0.1.x; see [Version & License](#version-license)). To embed signing directly in your own code rather than over MCP, use the [`tronlink-signer`](tronlink-signer.md) SDK.
 
 ## Which to use
 

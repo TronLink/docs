@@ -438,7 +438,7 @@ mcp-server-tronlink/
 - **人工确认（HITL）：** 写操作工具使用加密的本地 `agent-wallet` 签名；浏览器模式下由用户在 TronLink UI 审批。生产环境应将每个「远程写」工具视为需要确认。
 - **重试：** 只读工具可安全重试；「远程写」工具除非证明幂等，否则不得自动重试。
 
-### 精选工具 schema（文档侧镜像）
+### 精选工具 schema（文档侧镜像） { #selected-tool-schemas-inline-mirror }
 
 以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）以及 `meta.schemaVersion`。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**镜像全部 52 个工具——以 core 仓库为 SSOT。
 
@@ -627,7 +627,7 @@ mcp-server-tronlink/
 
 重启后用 `list_tools` 验证：`tl_evaluate` 应当不再出现。同一套模式也适用于 `tl_seed_contract` / `tl_seed_contracts`（仅 e2e 的合约部署工具）。
 
-### 钱包密钥存储
+### 钱包密钥存储 { #wallet-secret-storage }
 
 Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签名。解锁这把钱包有两条路径，请按目的明确选择。
 
@@ -742,7 +742,7 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 | 本地开发（一次性体验） | B — 自动创建 | 无需预配置，密码自动生成 |
 | 临时 demo 演示 | B + tmpfs 目录 | 把 `AGENT_WALLET_DIR` 指到任务结束即销毁的 tmpfs |
 
-> 路径 B（自动创建）会把生成的密码以明文写入 `~/.agent-wallet/runtime_secrets.json`，以便重启后复用同一钱包。完整的路径 A / 路径 B 对比及如何强制路径 A，见[钱包密钥存储](#钱包密钥存储)。
+> 路径 B（自动创建）会把生成的密码以明文写入 `~/.agent-wallet/runtime_secrets.json`，以便重启后复用同一钱包。完整的路径 A / 路径 B 对比及如何强制路径 A，见[钱包密钥存储](#wallet-secret-storage)。
 
 ## 版本与许可证
 

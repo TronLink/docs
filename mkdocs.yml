@@ -125,6 +125,7 @@ plugins:
 # Markdown 扩展（开启 mermaid 图表渲染）
 markdown_extensions:
   - admonition
+  - attr_list
   - pymdownx.details
   - pymdownx.superfences:
       custom_fences:
