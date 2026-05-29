@@ -192,7 +192,7 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 
 ## 错误
 
-server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `retryable`，便于 agent 在不解析自然语言的前提下做分支。框架层错误码统一以 [TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码) 为准；signer 特有错误如下：
+server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `retryable`，便于 agent 在不解析自然语言的前提下做分支。框架层错误码统一以 [TronLink MCP Core 错误码](tronlink-mcp-core.md#error-codes) 为准；signer 特有错误如下：
 
 | 条件 | Retryable | 何时发生 |
 | --- | :---: | --- |

@@ -423,7 +423,7 @@ mcp-server-tronlink/
 
 ## 工具契约与副作用
 
-**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md#错误码) 的 SSOT 错误码表（`code` / `retryable` / `hint` / 典型触发）。每个响应均带 `meta.schemaVersion`，major 版本内字段含义稳定。Agent 应基于 `error.code` 与 `error.retryable` 分支，**不要**解析人类可读的 `message`。
+**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md#error-codes) 的 SSOT 错误码表（`code` / `retryable` / `hint` / 典型触发）。每个响应均带 `meta.schemaVersion`，major 版本内字段含义稳定。Agent 应基于 `error.code` 与 `error.retryable` 分支，**不要**解析人类可读的 `message`。
 
 **逐工具输入 schema 可在运行时发现。** 每个工具的参数都由 core 用 Zod 校验,并通过 MCP `list_tools` 方法以 JSON `inputSchema` 形式暴露,因此客户端无需阅读本页即可枚举参数名、类型和必填项。下方表格按能力归纳工具;`list_tools` 才是权威的机器可读来源。
 
@@ -755,7 +755,7 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 - **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema、`error.code` 值或 `meta.schemaVersion` 语义。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
     - 工具名（`tl_chain_send`、`tl_chain_swap_v3`、`tl_multisig_*`、`tl_gasfree_*`、`tl_evaluate` 等）
-    - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码)）
+    - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#error-codes)）
     - `error.retryable` 语义
     - `meta.schemaVersion` 的 major 分量
     - 必需环境变量名（`TL_TRONGRID_URL`、`TL_MULTISIG_SECRET_KEY`、`AGENT_WALLET_PASSWORD` 等）
