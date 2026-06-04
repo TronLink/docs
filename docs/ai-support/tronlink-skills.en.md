@@ -452,14 +452,13 @@ export TRON_NETWORK="mainnet"    # or "shasta" / "nile"
 
 ### Built-In Token Shortcuts
 
-> Authoritative source: [reference/networks — Common token contracts (SSOT)](../reference/networks.md#common-token-contracts-ssot). The shortcuts below are reconciled to that SSOT. The symbols recognized by `tron_api.mjs` are TRX, USDT, USDC, WTRX, BTT, JST, SUN, WIN; USDD is included below for consistency with the SSOT — pass its contract address explicitly.
+> The symbols below are the ones `tron_api.mjs` recognizes as shortcuts for their contract addresses. For any token not listed here (e.g. USDD), look up its address in [reference/networks — Common token contracts (SSOT)](../reference/networks.md#common-token-contracts-ssot) and pass it explicitly.
 
 | Symbol | Contract Address |
 |--------|------------------|
 | TRX | Native (no contract) |
 | USDT | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
 | USDC | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
-| USDD | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
 | WTRX | TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR |
 | BTT | TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4 |
 | JST | TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9 |

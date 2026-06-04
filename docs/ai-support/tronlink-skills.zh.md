@@ -452,14 +452,13 @@ export TRON_NETWORK="mainnet"    # 或 "shasta" / "nile"
 
 ### 内置代币快捷符号
 
-> 权威来源：[reference/networks — 常用代币合约（SSOT）](../reference/networks.md#ssot)。下方快捷符号已对齐该 SSOT。`tron_api.mjs` 实际内置可识别的符号为 TRX、USDT、USDC、WTRX、BTT、JST、SUN、WIN；USDD 为与 SSOT 保持一致而一并列出——请显式传入其合约地址使用。
+> 下表为 `tron_api.mjs` 内置、可直接用符号名代替合约地址的代币。未列出的代币（如 USDD）请在 [reference/networks — 常用代币合约（SSOT）](../reference/networks.md#ssot) 查询地址并显式传入。
 
 | 符号 | 合约地址 |
 |------|----------|
 | TRX | 原生代币（无合约） |
 | USDT | TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t |
 | USDC | TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8 |
-| USDD | TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz |
 | WTRX | TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR |
 | BTT | TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4 |
 | JST | TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9 |
