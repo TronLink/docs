@@ -420,7 +420,7 @@ bash uninstall.sh
 
 ---
 
-## 配置说明
+## 配置说明 { #configuration }
 
 ### 环境变量
 
@@ -532,7 +532,7 @@ tronlink-skills/
 | 现象 | 原因 | 处理方式 |
 |------|------|----------|
 | 智能体不识别某个技能 | 技能包未被发现、命令名错误，或 host 未重新加载 | 确认技能包已安装/软链（重新执行 `install.sh`，或检查 host 发现路径下的软链——如 Codex 的 `~/.agents/skills/tronlink-skills`）；对照 [6 大技能详解](#the-6-skills) / [Skill ↔ MCP 工具映射](#skill-mcp-tool-map) 核对准确名称；再重启智能体/host 以重新扫描 `SKILL.md`。 |
-| TronGrid 限流（HTTP 429） | 未配置 API Key，或轮询过于频繁 | 设置 `TRONGRID_API_KEY`（见[配置说明](#_1)）以获得更高限额；降低轮询频率；对 429/5xx 增加指数退避重试（这类是可重试的查询错误）。 |
+| TronGrid 限流（HTTP 429） | 未配置 API Key，或轮询过于频繁 | 设置 `TRONGRID_API_KEY`（见[配置说明](#configuration)）以获得更高限额；降低轮询频率；对 429/5xx 增加指数退避重试（这类是可重试的查询错误）。 |
 | 仅 CLI 可用的命令被通过 MCP 调用 | 33 个命令中有 8 个未暴露为 MCP 工具（`contract-info`、`trade-history`、`dex-volume`、`large-transfers`、`pool-info`、`swap-route`、`estimate-bandwidth`、`energy-rental`） | 查阅 [Skill ↔ MCP 工具映射](#skill-mcp-tool-map)：标注 _(仅 CLI)_ 的行没有对应 `tron_*` MCP 工具。请改用方式一（skill 提示词）或方式三（直接 CLI：`node scripts/tron_api.mjs <command> ...`），不要走 `tools/call`。 |
 | `install.sh` 失败 | 网络被拦截、目标目录不可写，或缺少运行时 | 确认 Node.js >= 18 与 `git`/`curl` 在 `PATH` 中；在对发现目录（`~/.cursor`、`~/.agents/skills` 等）有写权限的环境下重试；若某步被权限拦截，参照方式四 —— Codex CLI 手动建立软链，再用 `codex skills list | grep tron` 验证。 |
 | 多 host 命令名冲突 | 同一技能/工具名被多个 MCP host 注册（如 `tronlink` 与 `tronlink-skills` 都暴露 `tron_*`） | 在智能体配置中为每个 host 取不同的名字（`mcpServers` 的 key / `claude mcp add <name>`），使工具名按 host 命名空间化；或停用重复的 host，使每个 `tron_*` 名仅保留一个有效注册。 |
