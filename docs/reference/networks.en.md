@@ -31,10 +31,20 @@ TRON addresses have two interchangeable encodings:
 
 - `1 TRX = 1,000,000 SUN`. Amounts in `tronWeb` transaction builders (e.g. `sendTrx`) are expressed in **SUN**.
 
-## Common token contracts (Mainnet)
+## Common token contracts (SSOT)
 
-| Token | Standard | Contract address |
-|---|---|---|
-| USDT | TRC-20 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` |
+This is the single source of truth (SSOT) for common mainnet token contract addresses. Other pages — [TronLink CLI](../ai-support/tronlink-cli.md) and [TronLink Skills](../ai-support/tronlink-skills.md) — reconcile to this table; when an address changes, update it here first.
+
+| Token | Standard | Mainnet contract address | Decimals | Notes |
+|---|---|---|---|---|
+| TRX | native | — | 6 | Native coin, no TRC-20 contract |
+| USDT | TRC-20 | `TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t` | 6 | |
+| USDC | TRC-20 | `TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8` | 6 | |
+| USDD | TRC-20 | `TXDk8mbtRbXeYuMNS83CfKPaYYT8XWv9Hz` | 18 | |
+| WTRX | TRC-20 | `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR` | 6 | Wrapped TRX |
+| BTT | TRC-20 | `TAFjULxiVgT4qWk6UZwjqwZXTSaGaqnVp4` | 18 | |
+| JST | TRC-20 | `TCFLL5dx5ZJdKnWuesXxi1VPwjLVmWZZy9` | 18 | |
+| SUN | TRC-20 | `TSSMHYeV2uE9qYH95DqyoCuNCzEL1NvU3S` | 18 | |
+| WIN | TRC-20 | `TLa2f6VPqDgRE67v1736s7bJ8Ray5wYjU7` | 6 | |
 
 For any other token, look up its contract address on [TronScan](https://tronscan.org/#/tokens). Always verify a token's contract address before integrating — addresses differ per network.

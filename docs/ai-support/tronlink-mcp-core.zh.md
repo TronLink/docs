@@ -60,6 +60,18 @@ flowchart TD
 
 **mcp-server-tronlink 是 tronlink-mcp-core 的使用者。** 核心库定义了工具"是什么"；服务器提供了工具"怎么工作"。
 
+### 该选哪个？
+
+按场景用下面的决策矩阵在两个包之间做选择：
+
+| 场景 | 选 tronlink-mcp-core | 选 mcp-server-tronlink |
+|------|:---:|:---:|
+| 构建嵌入自有业务逻辑的自定义 MCP 服务器 | ✅ | |
+| 直接把一个开箱即用的服务器交给 agent 使用 | | ✅ |
+| 通过自定义 `Capability` 实现扩展能力 | ✅ | |
+| 用可注入的 fixture / mock server 做测试或 mock | ✅ | |
+| 学习 MCP 框架（接口、工具、响应格式）的工作原理 | ✅ | |
+
 ---
 
 ## ISessionManager 接口
@@ -247,7 +259,7 @@ interface GasFreeCapability {
 
 所有工具使用 `tl_` 前缀，分为 13 个类别：
 
-> **Schema SSOT。** 每个工具的 `inputSchema` 都由 [`src/mcp-server/schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) 中的 Zod schema 生成，运行时通过 `list_tools` 暴露。下方表格只列**工具名 + 一句话描述**；参数类型、必填字段、枚举值和默认值请对运行中的 server 调用 `list_tools`，或直接读 Zod 源码。下游 [`mcp-server-tronlink` 页面](mcp-server-tronlink.md#精选工具-schema文档侧镜像) 为 7 个高影响工具（`tl_chain_send`、`tl_chain_swap_v3`、`tl_chain_stake`、`tl_multisig_submit_tx`、`tl_gasfree_send`、`tl_chain_get_account`、`tl_evaluate`）镜像了 JSON Schema——便于 agent 在没打开 MCP 会话时写调用站点。SSOT 仍然是本包。
+> **Schema SSOT。** 每个工具的 `inputSchema` 都由 [`src/mcp-server/schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts) 中的 Zod schema 生成，运行时通过 `list_tools` 暴露。下方表格只列**工具名 + 一句话描述**；参数类型、必填字段、枚举值和默认值请对运行中的 server 调用 `list_tools`，或直接读 Zod 源码。下游 [`mcp-server-tronlink` 页面](mcp-server-tronlink.md#selected-tool-schemas-inline-mirror) 为 7 个高影响工具（`tl_chain_send`、`tl_chain_swap_v3`、`tl_chain_stake`、`tl_multisig_submit_tx`、`tl_gasfree_send`、`tl_chain_get_account`、`tl_evaluate`）镜像了 JSON Schema——便于 agent 在没打开 MCP 会话时写调用站点。SSOT 仍然是本包。
 
 ### 1. 会话管理（2 个）
 | 工具 | 说明 |
@@ -385,7 +397,7 @@ interface GasFreeCapability {
 }
 ```
 
-### 错误码
+### 错误码 (Error Codes)
 
 这是本框架所有工具返回错误码的**唯一数据源**（SSOT）。下游 server（`mcp-server-tronlink`、`mcp-tronlink-signer`）继承这些错误码并可扩展自有错误码。`retryable` 反映框架层面的安全性，agent 仍**必须**叠加调用工具的副作用分级——无论 `retryable` 为何，**结果未确认的 Remote Write 绝不能自动重试**。
 

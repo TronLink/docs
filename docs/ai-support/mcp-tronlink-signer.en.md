@@ -4,6 +4,22 @@
 
 MCP Server that exposes [tronlink-signer](https://github.com/TronLink/mcp-tronlink-signer/tree/main/packages/tronlink-signer) as MCP tools for Claude and other AI clients. Sign TRON transactions via TronLink browser wallet with user approval — private keys never leave the wallet.
 
+> **Relationship to `tronlink-signer`.** This server is a thin MCP wrapper around the [`tronlink-signer`](tronlink-signer.md) SDK — it exposes the SDK's browser-based HITL signing flow as MCP tools. The two ship from the same monorepo and are released together (this page documents `mcp-tronlink-signer` v0.1.4, co-released with the matching `tronlink-signer` 0.1.x; see [Version & License](#version-license)). To embed signing directly in your own code rather than over MCP, use the [`tronlink-signer`](tronlink-signer.md) SDK.
+
+## Which to use
+
+TronLink ships three ways to let an AI agent act on Tron. Pick based on whether a human must approve each transaction and where the agent runs.
+
+| | `mcp-tronlink-signer` (this server) | `mcp-server-tronlink` (Direct-API mode) | `tronlink-cli` |
+| --- | --- | --- | --- |
+| Approval | HITL — user approves every transaction in the browser | No HITL — signs automatically | HITL — user approves in the browser |
+| Credentials on host | None (keys stay in the TronLink extension) | Uses `AGENT_WALLET_PASSWORD` to unlock a local wallet | None (keys stay in the TronLink extension) |
+| Interface | MCP server | MCP server | Shell / command line |
+| Best for | Agents that should never move funds without explicit human sign-off | Automated, unattended flows: CI, testnet scripting | Interactive terminal use with human sign-off |
+| Private-key exposure | Lowest | Higher (credential on host) | Lowest |
+
+If unsure, prefer `mcp-tronlink-signer` (safest default).
+
 ## Setup
 
 ### Claude Code
@@ -55,6 +71,55 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 All tools support an optional `network` parameter (`mainnet` / `nile` / `shasta`), defaulting to `mainnet`.
 
 **Human-in-the-loop.** Every tool that signs (`send_trx`, `send_trc20`, `sign_message`, `sign_typed_data`, `sign_transaction`) opens the TronLink approval page in the browser. The AI agent **cannot** sign without the user clicking Approve. Treat Remote Write tools as requiring confirmation in production.
+
+### Selected tool schemas (inline mirror)
+
+Docs-side mirrors of the core write tools' inputs, derived from the tool parameters documented in the table above — useful when an agent is writing a tool-call site without an MCP session open. Field names and the required set are mirrored here; runtime `list_tools` remains the authoritative source for the full input schemas (exact field types, defaults, and any Zod metadata).
+
+`send_trx`:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "to": { "description": "Recipient TRON address (T-prefix base58)" },
+    "amount": { "description": "Amount of TRX to send" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["to", "amount"]
+}
+```
+
+`send_trc20`:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "contractAddress": { "description": "TRC20 contract address (T-prefix base58)" },
+    "to": { "description": "Recipient TRON address (T-prefix base58)" },
+    "amount": { "description": "Token amount to send" },
+    "decimals": { "description": "Optional token decimals" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["contractAddress", "to", "amount"]
+}
+```
+
+`sign_typed_data`:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "typedData": { "description": "EIP-712 typed-data object to sign" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["typedData"]
+}
+```
+
+> Field types above are intentionally left unspecified where they could not be confirmed against the upstream Zod definitions; consult `list_tools` for the exact types. `sign_message` (`message`, `network?`) and `sign_transaction` (`transaction`, `broadcast`, `network?`) follow the same parameter shapes shown in the tool table.
 
 ## MCP Resources
 
@@ -171,6 +236,8 @@ The server returns errors in the standard MCP shape. Each error carries a stable
 ### Inline changelog
 
 This page mirrors a downstream README; for the source of truth see the GitHub releases above and the `CHANGELOG.md` in each package. Entries below cover the **MCP-visible** surface (tools, schema, security boundaries) — internal refactors are omitted.
+
+> **Sync policy.** This inline changelog mirrors the package `CHANGELOG.md` / README; the project's **GitHub releases are the authoritative source**. This page may lag a release by a short window until the docs are updated, so verify against the GitHub releases (and `list_tools`) when an exact version matters.
 
 #### v0.1.4 _(npm-only, not GitHub-tagged at time of writing)_
 

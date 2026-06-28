@@ -4,6 +4,22 @@
 
 将 [tronlink-signer](https://github.com/TronLink/mcp-tronlink-signer/tree/main/packages/tronlink-signer) 封装为 MCP 工具的服务器，供 Claude 及其他 AI 客户端使用。通过 TronLink 浏览器钱包对 TRON 交易进行签名，需用户在浏览器中授权确认 — 私钥始终留在钱包中，不会对外暴露。
 
+> **与 `tronlink-signer` 的关系。** 本服务器是对 [`tronlink-signer`](tronlink-signer.md) SDK 的轻量 MCP 封装 —— 它将该 SDK 基于浏览器的 HITL 签名流程以 MCP 工具的形式暴露出来。两者来自同一 monorepo，同步发布（本页文档对应 `mcp-tronlink-signer` v0.1.4，与之配套的是同期 `tronlink-signer` 0.1.x；见 [版本与许可证](#version-license)）。若希望将签名直接嵌入你自己的代码、而非经由 MCP 使用，请使用 [`tronlink-signer`](tronlink-signer.md) SDK。
+
+## 该用哪个
+
+TronLink 提供了三种方式让 AI 智能体在 Tron 上执行操作。请根据是否需要人工审批每一笔交易、以及智能体运行在何处来选择。
+
+| | `mcp-tronlink-signer`（本服务器） | `mcp-server-tronlink`（Direct-API 模式） | `tronlink-cli` |
+| --- | --- | --- | --- |
+| 审批 | HITL —— 用户在浏览器中审批每一笔交易 | 无 HITL —— 自动签名 | HITL —— 用户在浏览器中审批 |
+| 主机上的凭证 | 无（私钥保留在 TronLink 扩展内） | 使用 `AGENT_WALLET_PASSWORD` 解锁本地钱包 | 无（私钥保留在 TronLink 扩展内） |
+| 接口形态 | MCP 服务器 | MCP 服务器 | Shell / 命令行 |
+| 适用场景 | 任何资金转移都必须经人工显式签字确认的智能体 | 自动化、无人值守流程：CI、测试网脚本 | 需要人工签字确认的交互式终端使用 |
+| 私钥暴露风险 | 最低 | 较高（凭证位于主机上） | 最低 |
+
+如果不确定，优先选择 `mcp-tronlink-signer`（最安全的默认选项）。
+
 ## 配置
 
 ### Claude Code
@@ -55,6 +71,55 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 所有工具均支持可选的 `network` 参数（`mainnet` / `nile` / `shasta`），默认使用 `mainnet`。
 
 **人工确认（HITL）。** 所有涉及签名的工具（`send_trx`、`send_trc20`、`sign_message`、`sign_typed_data`、`sign_transaction`）都会打开 TronLink 浏览器审批页。AI agent **无法**在用户点击 Approve 之前签名。生产环境必须把 Remote Write 工具视为需要确认。
+
+### 部分工具 Schema（内联镜像）
+
+以下是核心写操作工具入参的文档侧镜像，依据上方工具表中记录的参数整理而成 —— 在没有 MCP 会话时，便于智能体离线编写工具调用。这里镜像的是字段名与 required 集合；运行时 `list_tools` 仍是完整输入 schema（精确字段类型、默认值及 Zod 元数据）的权威来源。
+
+`send_trx`：
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "to": { "description": "Recipient TRON address (T-prefix base58)" },
+    "amount": { "description": "Amount of TRX to send" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["to", "amount"]
+}
+```
+
+`send_trc20`：
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "contractAddress": { "description": "TRC20 contract address (T-prefix base58)" },
+    "to": { "description": "Recipient TRON address (T-prefix base58)" },
+    "amount": { "description": "Token amount to send" },
+    "decimals": { "description": "Optional token decimals" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["contractAddress", "to", "amount"]
+}
+```
+
+`sign_typed_data`：
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "typedData": { "description": "EIP-712 typed-data object to sign" },
+    "network": { "enum": ["mainnet", "nile", "shasta"], "description": "Optional; defaults to mainnet" }
+  },
+  "required": ["typedData"]
+}
+```
+
+> 凡无法对照上游 Zod 定义确认的字段类型，上面均有意留空；精确类型请查 `list_tools`。`sign_message`（`message`、`network?`）与 `sign_transaction`（`transaction`、`broadcast`、`network?`）遵循工具表中所示的同样参数形态。
 
 ## MCP 资源
 
@@ -115,7 +180,7 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 
 > 「已发送 5 TRX——链上已确认（交易 `0a1b2c…`）。」
 
-> 请基于 `status` / `error.code` 分支,不要解析自然语言。`status: "pending"` 表示广播成功但确认超时——应用 `get_balance` 或浏览器查询对账,而不是重发(见[错误](#错误)）。
+> 请基于 `status` / `error.code` 分支,不要解析自然语言。`status: "pending"` 表示广播成功但确认超时——应用 `get_balance` 或浏览器查询对账,而不是重发(见[错误](#errors)）。
 
 ## 取消
 
@@ -125,9 +190,9 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 
 当调用 `sign_transaction` 且 `broadcast: true` 时，服务器会在广播后自动轮询链上确认状态，并返回执行结果（`success` 或 `pending`）。如果交易在链上失败（如 `OUT_OF_ENERGY`、Solidity revert），错误信息会连同解码后的原因一并返回给 AI 智能体。
 
-## 错误
+## 错误 { #errors }
 
-server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `retryable`，便于 agent 在不解析自然语言的前提下做分支。框架层错误码统一以 [TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码) 为准；signer 特有错误如下：
+server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `retryable`，便于 agent 在不解析自然语言的前提下做分支。框架层错误码统一以 [TronLink MCP Core 错误码](tronlink-mcp-core.md#error-codes) 为准；signer 特有错误如下：
 
 | 条件 | Retryable | 何时发生 |
 | --- | :---: | --- |
@@ -148,13 +213,13 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 |---|---|---|
 | **Prompt 注入** | 工具输入按原始值作为调用参数，server 不会再次提交给 LLM。TronLink 审批页渲染的是解析后的交易字段，不是 agent 的自由文本。 | 链上拿到的字符串（备注、revert 原因）视为不可信；分支应基于 `txId` / `status` / `code`，而非 prose。 |
 | **本地 HTTP listener** | 本地审批 server **仅绑定 `127.0.0.1`**（端口 `TRON_HTTP_PORT`，默认 3386，被占用时自增），永远不接受跨主机连接。每个 server session 有唯一 ID，前一次 session 的浏览器标签会被自动失效。 | 不要把 3386 端口转发到外网。同一台机器不要用相同 `TRON_HTTP_PORT` 跑两份。 |
-| **出站 host 白名单（SSRF）** | signer 只与 [Networks](#环境变量) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
+| **出站 host 白名单（SSRF）** | signer 只与 [Networks](#environment-variables) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
 | **API key 处理（token passthrough）** | `TRON_API_KEY` 仅在启动时从 env 读取，仅用于到 TronGrid 的出站；**不**会出现在任何工具响应、错误 `details` 或 MCP resource 中。server 不接受 MCP 客户端传入的 Authorization header 并转发到上游。 | API key 放进 MCP host 的 secret manager，不要写进会提交 git 的 `mcpServers` 配置。 |
 | **签名必须 HITL** | 所有签名工具（`send_trx`、`send_trc20`、`sign_message`、`sign_typed_data`、`sign_transaction`）都会打开 TronLink 审批页，**不存在程序化绕过**。私钥始终留在 TronLink。 | 不需要运维额外强制 HITL——这是结构性保证。不要试图通过移除浏览器层来"加固"。 |
 | **浏览器标签劫持** | 审批页基于 server session ID 验证每次请求，过期的标签会被忽略；心跳检测会在断连时关闭 session。 | 同一用户跑多个 agent 时，请让每个 agent 启动自己的 signer 实例；跨实例的请求串扰由 session ID 屏蔽，但 UI 层混淆不防。 |
 | **Confused deputy** | signer 以已连接的 TronLink 账户身份执行，没有来自 MCP 客户端的逐次授权 scope。 | 一个 signer 实例 = 一个 TronLink 账户，不要把多个终端用户复用到同一个实例。 |
 
-## 环境变量
+## 环境变量 { #environment-variables }
 
 | 变量名 | 说明 | 默认值 |
 | ------ | ---- | ------ |
@@ -162,15 +227,17 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 | `TRON_HTTP_PORT` | 本地 HTTP 服务端口 | `3386` |
 | `TRON_API_KEY` | TronGrid API Key（可选） | - |
 
-## 版本与许可证
+## 版本与许可证 { #version-license }
 
 - **包：** `mcp-tronlink-signer` v0.1.4
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
 
-### 内联 changelog
+### 内联 changelog { #inline-changelog }
 
 本页是下游 README 镜像；以 GitHub releases 与各包 `CHANGELOG.md` 为准。下方条目只覆盖 **MCP 可见面**（工具、schema、安全边界），内部重构不列。
+
+> **同步策略。** 此内联 changelog 镜像软件包的 `CHANGELOG.md` / README；项目的 **GitHub releases 为权威来源**。在文档更新之前，本页可能比某个发布版本短暂滞后，因此当需要精确版本号时，请以 GitHub releases（以及 `list_tools`）为准核对。
 
 #### v0.1.4 _(仅 npm，截至本文写就尚未在 GitHub 打 tag)_
 
@@ -190,7 +257,7 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 - **改进** —— 单页审批流：一个常驻浏览器标签 + 心跳检测；server 重启后旧标签自动失效。
 - **改进** —— TRC20 金额校验改用 BigInt 小数转换（处理 0 位小数、>18 位小数等边界）。
 - **改进** —— `send_trx`、`sign_transaction` 在提交失败时返回真实的 broadcast 错误，不再是空消息。
-- **迁移** —— 若你已经基于 `error.code` / `status` 分支，无需迁移；如有解析 message 文本，请立即切换（见 [错误](#错误)）。
+- **迁移** —— 若你已经基于 `error.code` / `status` 分支，无需迁移；如有解析 message 文本，请立即切换（见 [错误](#errors)）。
 
 #### v0.1.1 — 2026-04-15
 

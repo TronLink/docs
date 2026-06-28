@@ -136,6 +136,21 @@ def page_url(rel: str, lang: str) -> str:
     return f"{slug}/"
 
 
+# Strips a trailing id-only attr_list block (e.g. ` { #errors }`) from an
+# ATX heading. We add these to CJK headings so MkDocs emits a stable anchor
+# (the default slugify drops CJK); they're build-time syntax, not prose, so
+# the plain-text bundles shouldn't carry them. Deliberately narrow: only an
+# `#id` block at end-of-line, so headings like `Promise<{ ... }>` are untouched.
+HEADING_ATTR_ID_RE = re.compile(r"^(#{1,6}\s.*?)\s*\{:?\s*#[\w-]+\s*\}\s*$")
+
+
+def strip_heading_anchor_ids(md: str) -> str:
+    """Drop ` { #id }` attr_list suffixes from heading lines in `md`."""
+    return "\n".join(
+        (HEADING_ATTR_ID_RE.sub(r"\1", line) for line in md.splitlines())
+    )
+
+
 def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> tuple[str, int, list[str]]:
     """Return (full_text, page_count, missing) for one language."""
     body_parts: list[str] = []
@@ -149,7 +164,7 @@ def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> t
         body_parts.append("")
         body_parts.append(f"<!-- source: docs/{rel} | url: {page_url(rel, lang)} -->")
         body_parts.append("")
-        body_parts.append(path.read_text(encoding="utf-8").rstrip())
+        body_parts.append(strip_heading_anchor_ids(path.read_text(encoding="utf-8").rstrip()))
         body_parts.append("")
 
     body = "\n".join(body_parts)
