@@ -42,6 +42,6 @@ TronLink 会规范化 Ledger 签名的末尾字节（`01`→`1c`，`00`→`1b`�
 
 可使用 MCP 服务、智能体技能集、签名 SDK 或 CLI。从 [AI 支持](../ai-support/ai-llms.md)开始。
 
-## TronLink 会收集使用数据吗？
+## TronLink 会收集我的钱包地址吗？
 
-为了持续改进产品体验，TronLink 会收集一些使用统计信息。这些数据在设计上不可识别个人：不包含你的私钥、助记词、钱包地址或交易哈希，并且会先在你的设备上汇总后再发送。钱包只以本地生成的随机标识来表示，TronLink 无法将其关联回你的地址。这些数据只用于改进 TronLink，绝不会出售。该统计模块已开源，参见 tronlink-extension-core 中的 [Anonymous Analytics Module](https://github.com/TronLink/tronlink-extension-core/blob/main/README.md#anonymous-analytics-module) 一节。
+不会。为了改进产品，TronLink 会统计一些使用数据，但其中不包含你的钱包地址、私钥、助记词或交易哈希。统计规则是开源的，也很简单。上报的数据里不会出现钱包地址，只会用一个随机生成的编号代替。这个编号在你的设备上生成，跟地址没有任何关系，TronLink 也无法用它反查出你的地址。金额只记录所在区间，不记录具体数值。数据在你的设备上按天汇总后才会上报，不会逐笔发送。这些数据只用于改进 TronLink，绝不会出售。统计规则见 tronlink-extension-core 中的 [Anonymous Analytics Module](https://github.com/TronLink/tronlink-extension-core/blob/main/README.md#anonymous-analytics-module) 一节。
