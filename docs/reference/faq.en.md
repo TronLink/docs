@@ -41,3 +41,7 @@ Use the DeepLink (`tronlinkoutside://`) scheme to launch the TronLink app for lo
 ## How do I build an AI agent that uses TronLink?
 
 Use the MCP servers, the agent skill set, the signer SDK, or the CLI. Start at [AI Support](../ai-support/ai-llms.md).
+
+## Does TronLink collect usage data?
+
+To keep improving the product experience, TronLink collects some usage statistics. This data is designed to be non-identifying: it does not contain your private keys, mnemonic phrase, wallet address, or transaction hashes, and it is summarized on your device before anything is sent. Wallets are referred to only by a random identifier generated locally, which TronLink cannot link back to your address. The data is used only to improve TronLink and is never sold. The statistics module is open source — see the [Anonymous Analytics Module](https://github.com/TronLink/tronlink-extension-core/blob/main/README.md#anonymous-analytics-module) section of tronlink-extension-core.

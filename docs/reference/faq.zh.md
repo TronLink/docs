@@ -41,3 +41,7 @@ TronLink 会规范化 Ledger 签名的末尾字节（`01`→`1c`，`00`→`1b`�
 ## 如何构建使用 TronLink 的 AI 智能体？
 
 可使用 MCP 服务、智能体技能集、签名 SDK 或 CLI。从 [AI 支持](../ai-support/ai-llms.md)开始。
+
+## TronLink 会收集使用数据吗？
+
+为了持续改进产品体验，TronLink 会收集一些使用统计信息。这些数据在设计上不可识别个人：不包含你的私钥、助记词、钱包地址或交易哈希，并且会先在你的设备上汇总后再发送。钱包只以本地生成的随机标识来表示，TronLink 无法将其关联回你的地址。这些数据只用于改进 TronLink，绝不会出售。该统计模块已开源，参见 tronlink-extension-core 中的 [Anonymous Analytics Module](https://github.com/TronLink/tronlink-extension-core/blob/main/README.md#anonymous-analytics-module) 一节。
