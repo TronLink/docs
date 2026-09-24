@@ -240,8 +240,8 @@ hexToAddress()             0x41... → T 地址
 |------|------|
 | `TL_TRONGRID_URL` | 全节点 API 地址 |
 | `TL_TRONGRID_API_KEY` | API 密钥（主网必需）。免费档约 100k 请求/日 + ~5 QPS；付费档提高 QPS、日配额并按用量计费。具体配额与响应 header 会变——请查 [TronGrid Pricing](https://www.trongrid.io/pricing) 与控制台当前值，并在运行时读 `X-Ratelimit-*` header。触发限流返回 HTTP 429（映射到 `TL_CHAIN_QUERY_FAILED`，可重试）。长期跑批的 agent 请在 50% / 80% / 95% 设置消费告警。 |
-| `TL_SUNSWAP_ROUTER` | SunSwap V2 路由地址。**没有内置默认**——请钉到当前 router；下方示例中的值**截至 2026-05** 适用于主网。来源：[docs.sun.io](https://docs.sun.io)。SunSwap 升级新 router 时，请直接在此 env 改值，不要等文档/代码同步。 |
-| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 智能路由地址。规则同 V2。 |
+| `TL_SUNSWAP_ROUTER` | SunSwap V2 路由地址。**覆盖内置默认值**（0.1.1 内置主网 `TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax`、nile `TMn1qrmYUMSTXo9babrJLzepKZoPC7M6Sy`）——不配置不会禁用 V2 兑换。请钉到当前 router；下方示例中的值**截至 2026-05** 适用于主网。来源：[docs.sun.io](https://docs.sun.io)。SunSwap 升级新 router 时，请直接在此 env 改值，不要等文档/代码同步。 |
+| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 智能路由地址。**覆盖内置默认值**（0.1.1 中主网与 nile 均为 `TQAvWQpT9H916GckwWDJNhYZvQMkuRL7PN`）；不配置不会禁用 V3 兑换。内置默认已与 2026-05 的示例值不同——务必显式钉死（见「兑换安全」的「钉死 router」）。 |
 | `TL_WTRX_ADDRESS` | WTRX 合约地址。主网 WTRX 为 `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`。数据截至 2026-05。 |
 
 **钱包（agent-wallet）：**
@@ -315,8 +315,6 @@ Claude Code 自动检测：
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
         "AGENT_WALLET_PASSWORD": "your-wallet-password",
-        "TL_SUNSWAP_ROUTER": "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
-        "TL_SUNSWAP_V3_ROUTER": "TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
         "TL_MULTISIG_SECRET_ID": "TEST",
         "TL_MULTISIG_SECRET_KEY": "TESTTESTTEST",
@@ -417,11 +415,11 @@ mcp-server-tronlink/
 
 ---
 
-## 工具契约与副作用
+## 工具契约与副作用 {#tool-contract-side-effects}
 
-**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md#错误码) 的 SSOT 错误码表（`code` / `retryable` / `hint` / 典型触发）。每个响应均带 `meta.schemaVersion`，major 版本内字段含义稳定。Agent 应基于 `error.code` 与 `error.retryable` 分支，**不要**解析人类可读的 `message`。
+**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md#error-codes) 的 SSOT 错误码表（`code` / `retryable` / `hint` / 典型触发；其中 **Retryable** 列是对照表的归类，不是线上字段）。0.1.1 的线上响应没有 schema 版本标记——请钉定 npm 版本并依赖 doc↔schema parity CI。Agent 应基于 `error.code` 加[错误码对照表](../reference/error-code-map.md)的 retryable 归类分支，**不要**解析人类可读的 `message`。
 
-**逐工具输入 schema 可在运行时发现。** 每个工具的参数都由 core 用 Zod 校验,并通过 MCP `list_tools` 方法以 JSON `inputSchema` 形式暴露,因此客户端无需阅读本页即可枚举参数名、类型和必填项。下方表格按能力归纳工具;`list_tools` 才是权威的机器可读来源。
+**逐工具输入 schema 可在运行时发现。** 每个工具的参数都由 core 用 Zod 校验，并通过 MCP `list_tools` 方法以 JSON `inputSchema` 形式暴露，因此客户端无需阅读本页即可枚举参数名、类型和必填项。下方表格按能力归纳工具;`list_tools` 才是权威的机器可读来源。
 
 **副作用分级。** 调用前先分类；对结果未知的写操作绝不自动重试。
 
@@ -433,12 +431,16 @@ mcp-server-tronlink/
 - **预检查：** 所有交易类工具在执行前会校验（余额、回滚、资源消耗）。
 - **人工确认（HITL）：** 写操作工具使用加密的本地 `agent-wallet` 签名；浏览器模式下由用户在 TronLink UI 审批。生产环境应将每个「远程写」工具视为需要确认。
 - **重试：** 只读工具可安全重试；「远程写」工具除非证明幂等，否则不得自动重试。
+- **广播 ≠ 执行成功 ≠ 最终。** 返回交易 id（`tx_id`）只代表交易被接受广播。合约调用仍可能在链上失败（`REVERT`、`OUT_OF_ENERGY`）——用 `tl_chain_get_tx` 核对 `ret[0].contractRet === "SUCCESS"`；区块需约 19 个 SR 确认（≈ 57 秒）后才不可逆。见[交易生命周期](security-model.md#transaction-lifecycle-finality)。
+- **固定链上成本：** `tl_chain_setup_multisig`（accountPermissionUpdate）固定燃烧 **100 TRX** 网络费。server 内部设定的 `fee_limit` 上限为：TRC20 转账与自动授权各 **100 TRX**、V2 兑换（`tl_chain_swap`）**150 TRX**、V3 兑换（`tl_chain_swap_v3`）**200 TRX**——代币入金的首次兑换最坏情况是授权 + 兑换两笔上限相加。执行前先纳入预算。
 
-### 精选工具 schema（文档侧镜像）
+### 精选工具 schema（文档侧镜像） {#selected-tool-schemas-inline-mirror}
 
-以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）以及 `meta.schemaVersion`。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**镜像全部 52 个工具——以 core 仓库为 SSOT。
+以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**内联镜像全部工具——需要一次抓取全部工具契约（本 server + signer）时，请取 [/reference/mcp-tools.json](../../../reference/mcp-tools.json)，它由 `scripts/dump_mcp_tools.py` 从 npm 已发布包重新生成；SSOT 仍是 core 仓库。
 
-> **平价由 CI 强制。** `scripts/check_doc_schema_parity.py`（在 push、PR 及每日定时通过 [`check-doc-schema-parity.yml`](https://github.com/xueyuanying/docs/blob/main/.github/workflows/check-doc-schema-parity.yml) 触发）会对下方每个块的顶层字段集 + required 标记与上游 `schemas.ts` 做 diff——上游改名或 required ↔ optional 漂移都会让 CI 失败。
+**响应字段（写工具）。** 目前尚无逐工具 outputSchema；写工具在标准 `{ ok, result, meta }` 信封内返回 `ChainTxResult`：`{ success: boolean, tx_id: string, message?: string }`。注意字段名是 **`tx_id`**（snake_case）而非 `txId`，且 `success: true` 只代表广播被接受——执行结果请用 `tl_chain_get_tx` 核对（见上方生命周期条目）。
+
+> **平价由 CI 强制。** `scripts/check_doc_schema_parity.py`（在 push、PR 及每日定时通过 [`check-doc-schema-parity.yml`](https://github.com/TronLink/docs/blob/main/.github/workflows/check-doc-schema-parity.yml) 触发）会对下方每个块的顶层字段集 + required 标记与上游 `schemas.ts` 做 diff——上游改名或 required ↔ optional 漂移都会让 CI 失败。
 
 #### `tl_chain_send` —— **Remote Write**
 
@@ -448,7 +450,7 @@ mcp-server-tronlink/
   "required": ["to", "amount"],
   "properties": {
     "to":               { "type": "string", "description": "收款方 TRON 地址（T 开头、34 字符）" },
-    "amount":           { "type": "string", "description": "金额（如 TRX 用 \"1.5\"，代币用字符串数量）" },
+    "amount":           { "type": "string", "description": "TRX：人类单位（如 \"1.5\" TRX，内部换算为 SUN）。TRC10/TRC20：代币**最小单位**的整数字符串，不做 decimals 换算（6 位小数的 USDT 传 \"10\" = 0.00001 USDT；带小数点会被拒绝）。调用前先按代币 decimals（可从 tl_chain_get_tokens 获取）换算。" },
     "token_type":       { "type": "string", "enum": ["TRX", "TRC10", "TRC20"], "description": "默认: TRX" },
     "token_id":         { "type": "string", "description": "TRC10 token ID（token_type=TRC10 时必填）" },
     "contract_address": { "type": "string", "description": "TRC20 合约地址（token_type=TRC20 时必填）" },
@@ -456,6 +458,8 @@ mcp-server-tronlink/
   }
 }
 ```
+
+> **单位陷阱。** `amount` 的含义随 `token_type` 切换：`TRX` 是人类单位,`TRC10`/`TRC20` 是**裸最小单位**。这是 agent 用此工具最昂贵的一类错误——对 18 位小数代币(USDD、JST),按人类单位传值会差 10¹⁸ 倍。务必先取 `decimals` 再传换算后的整数字符串。另注意同一 server 内的不对称:`tl_gasfree_send` 声明的是**人类**单位(`"10.5"`),而 `tl_chain_send` 与 `tl_chain_swap_v3` 用裸最小单位——不要把一种约定推广到另一个工具。
 
 #### `tl_chain_swap_v3` —— **Remote Write**（`action=execute` 时）
 
@@ -467,9 +471,9 @@ mcp-server-tronlink/
     "action":           { "type": "string", "enum": ["estimate", "execute"], "description": "estimate = 仅报价（Network Read）；execute = 签名 + 广播（Remote Write）" },
     "from_token":       { "type": "string", "description": "源代币地址，或 'TRX' 表示原生 TRX" },
     "to_token":         { "type": "string", "description": "目标代币地址，或 'TRX'" },
-    "amount":           { "type": "string", "description": "输入金额（代币单位）" },
-    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "池费率 bps：500=0.05%、3000=0.3%、10000=1%（默认 3000）" },
-    "slippage":         { "type": "number", "description": "滑点容忍百分比（默认 0.5）。详见上方“兑换安全”——生产环境绝不允许未声明默认值。" },
+    "amount":           { "type": "string", "description": "输入金额：源代币**最小单位**的整数字符串（from_token 为 TRX 时即 SUN），不做 decimals 换算。警告：0.1.1 中 TRX 入金兑换不可用——见「兑换安全」的已知 bug 说明" },
+    "fee_tier":         { "type": "number", "description": "池费率，单位为百分之一 bip（1e-6 / ppm）——SunSwap V3 有效池：500（0.05%）、3000（0.3%）、10000（1%），默认 3000。运行时 schema 未做 enum 约束：非法费率不会被入参拦截，只会在池查找时失败" },
+    "slippage":         { "type": "number", "description": "滑点容忍百分比（默认 0.5）。这是**唯一**的产出下限控制——schema 中不存在 minimum-output 参数；见下方「兑换安全」" },
     "sqrt_price_limit": { "type": "string", "description": "可选 partial-fill 价格上限（进阶）" }
   }
 }
@@ -499,12 +503,12 @@ mcp-server-tronlink/
     "address":           { "type": "string", "description": "提交此交易的签名方地址" },
     "function_selector": { "type": "string", "description": "如 'transfer(address,uint256)'（可选）" },
     "expire_time":       { "type": "number", "description": "过期时间戳，毫秒（默认: 当前时间 + 24h）" },
-    "transaction":       { "type": "object", "description": "已签名交易 { raw_data, signature[] }；contract 条目可携带 Permission_id" }
+    "transaction":       { "type": "object", "description": "已签名交易 { raw_data, signature[] }；contract 条目可携带 Permission_id：0 = owner 权限，active 权限从 2 起；必须与产生 signature[] 的权限一致，否则权重校验失败" }
   }
 }
 ```
 
-完整 `transaction` 结构（raw_data → contract[] → parameter 等）见 [`tronlink-mcp-core` `schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts)——过长不在此处镜像。
+完整 `transaction` 结构（raw_data → contract[] → parameter 等）见 [`tronlink-mcp-core` `schemas.ts`](https://github.com/TronLink/tronlink-mcp-core/blob/main/src/mcp-server/schemas.ts)——过长不在此处镜像。两个运行时 schema 未表达的字段说明：`raw_data.fee_limit` 为**必填**但目前在运行时 schema 中无类型——它是以 **SUN** 计的数字（1 TRX = 1,000,000 SUN；`100000000` = 最多燃烧 100 TRX）；`raw_data.expiration` 是毫秒级 unix 时间戳。
 
 #### `tl_gasfree_send` —— **Remote Write**
 
@@ -548,7 +552,7 @@ mcp-server-tronlink/
 
 ---
 
-## 安全模型
+## 安全模型 {#security-model}
 
 | 方面 | 实现方式 |
 |------|----------|
@@ -559,12 +563,12 @@ mcp-server-tronlink/
 | Git 安全 | 配置文件在 `.gitignore` 中防止意外提交 |
 | 默认网络 | Nile 测试网，安全默认值 |
 
-### 安全边界
+### 安全边界 {#security-boundaries}
 
 | 边界 | 保证 | Agent / 运维方义务 |
 |---|---|---|
-| **Prompt 注入** | 工具输入按原始值作为调用参数使用，server 不会把工具输入拼接进任何向 LLM 二次提交的 prompt。**但**从链上或第三方 API 拿回来的字符串（账户备注、合约 revert 原因、交易 note 等）**可能含攻击者控制内容**，必须视为不可信。 | 不要让 agent 基于 read 工具返回的 prose 自动路由到 Remote Write。分支必须基于结构化字段（`txId`、`code`、`retryable`）。 |
-| **出站 host 白名单（SSRF）** | server 只向 4 个配置端点发起 HTTPS：`TL_TRONGRID_URL`、`TL_MULTISIG_BASE_URL`、`TL_GASFREE_BASE_URL`，以及通过 TronWeb 访问的 SunSwap router。工具不接收会被原样请求的用户 URL。 | 生产环境把这些 env 钉死到已知 host；禁止 LLM 输入回填任何 `*_BASE_URL`。 |
+| **Prompt 注入** | 工具输入按原始值作为调用参数使用，server 不会把工具输入拼接进任何向 LLM 二次提交的 prompt。**但**从链上或第三方 API 拿回来的字符串（账户备注、合约 revert 原因、交易 note 等）**可能含攻击者控制内容**，必须视为不可信。 | 不要让 agent 基于 read 工具返回的 prose 自动路由到 Remote Write。分支必须基于结构化字段（`tx_id`、`code`，以及错误码对照表的 retryable 归类）。 |
+| **出站 host 白名单（SSRF）** | 链上/API 能力只向配置端点发起 HTTPS：`TL_TRONGRID_URL`、`TL_MULTISIG_BASE_URL`、`TL_GASFREE_BASE_URL`，以及通过 TronWeb 访问的 SunSwap router——没有任何 API 工具会抓取调用方 URL。**例外：** 浏览器工具（`tl_navigate`）会在受控钱包浏览器中打开调用方给出的任意 URL，该浏览器可达 `localhost` 与内网。 | 把 env 钉死到已知 host；绝不让 LLM 输入回填 `*_BASE_URL` 或导航目标；不需要浏览器工具的部署直接禁用它们。 |
 | **API key 处理（token passthrough）** | `TL_TRONGRID_API_KEY`、`TL_MULTISIG_SECRET_KEY`、`TL_GASFREE_API_SECRET` 仅在启动时从 env 读取，仅用于出站；**不**会出现在任何工具响应、错误 `details` 或 Knowledge Store 记录中。server 不接受 MCP 客户端传入的 Authorization header 并转发到上游。 | 审计 MCP host 配置对 env 的捕获（部分 host 会落日志）；secret 放进 host 的 secret manager，不要写进会提交 git 的 `.mcp.json`。 |
 | **浏览器 JS 执行** | `tl_evaluate` 会在受控 Playwright 浏览器上下文中执行任意 JS。这是 **High-risk / Destructive** 原语——可读 DOM、点击隐藏元素、外泄状态、绕过 UI 上的 HITL。 | 严格不需要时，从 MCP host 的工具白名单中禁用 `tl_evaluate`。绝不要把它暴露给远程/多用户 MCP 部署。 |
 | **HITL 绕过** | Direct-API 工具（`tl_chain_send`、`tl_chain_swap_v3` 等）使用本地加密 `agent-wallet` 签名并直接广播，**不**经过 TronLink 浏览器审批。`agent-wallet` 密码是唯一屏障。 | 把 `AGENT_WALLET_PASSWORD` 保管在 agent 不可达处。生产环境涉及资金转移的工具，优先用 `mcp-tronlink-signer`（浏览器审批），而非 Direct-API。 |
@@ -575,9 +579,11 @@ mcp-server-tronlink/
 
 兑换属于 **远程写**，且对接公开 DEX 路由器，因此暴露在 **价格滑点** 与 **三明治攻击 / MEV** 之下：在报价和执行之间池子价格变动时，实际成交可能比报价更差。
 
-- **必须设置 minOut / 滑点上限。** 通过 `list_tools` 查看 `tl_chain_swap_v3` 的输入 schema（`SwapV3Params`），核对实际的 minimum-output / 滑点字段名；**不要**依赖未声明的默认值，缺省或 0 的 minOut 一律视为不安全。
-- **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或同等接口）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
-- **钉死 router。** `TL_SUNSWAP_V3_ROUTER` 没有内置默认值；过期或错误的 router 会把资金路由到非预期目标。请按当前 SunSwap V3 router 地址设置（见环境变量）。
+- **已知上游 BUG——0.1.1（core 0.1.0）中 TRX 入金兑换不可用。** 余额预检查把 `amount` 乘以 1e6 后按整 TRX 比较，而执行层按 SUN 原样使用。把 1 TRX 传成 `"1000000"` 会被预检查以 `Insufficient TRX balance` 拦下（除非钱包里有 100 万 TRX）；传 `"1"` 能过预检查，但实际只兑换 **1 SUN**。上游修复落地前，不要用 `from_token: "TRX"` 调用 `tl_chain_swap` / `tl_chain_swap_v3`——改用 TRC20 作为源代币（代币入金的金额在两层均为一致的裸最小单位）。
+- **`slippage` 是唯一的产出下限——每次都要显式传入。** schema 中**不存在 minimum-output 参数**（`sqrt_price_limit` 是 V3 的 partial-fill 价格上限，不是最小产出保证）。默认容忍度 0.5% 虽有声明，但对低流动性交易对**不安全**——按交易对选定容忍度，每次 `execute` 显式传入。
+- **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或 `action=estimate`）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
+- **首次兑换某代币会自动给 router 无限额度授权。** 源代币 allowance 不足时，工具会先静默提交一笔 `approve(router, MAX_UINT256)` 交易（独立收费,fee_limit 上限 100 TRX）再执行兑换。无限授权意味着被攻破或配错的 router 可以掏空该代币——务必钉死 router（见下条），更换 router 后撤销旧授权。
+- **钉死 router。** `TL_SUNSWAP_V3_ROUTER` 只是**覆盖**内置默认值（0.1.1 中主网与 nile 均为 `TQAvWQpT9H916GckwWDJNhYZvQMkuRL7PN`）——不配置**不会**禁用 V3 兑换，兑换会直接对内置地址执行，且上一条授予的无限额度也会给到它。内置默认可能过期（它已经与示例配置里 2026-05 的 router 不同），务必显式钉到当前 SunSwap V3 router（见环境变量），并在更换 router 后撤销旧授权。
 - **不可自动重试。** swap 失败或结果未知都属于远程写——先在链上确认再决定是否重发（`TL_CHAIN_SWAP_FAILED` 不可重试）。
 
 #### 多签凭证管理（`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`）
@@ -590,7 +596,7 @@ mcp-server-tronlink/
 - **撤销。** 一旦怀疑泄漏，先在服务侧吊销该凭证，再轮换到新值后再开始下一次签名会话——曝光的凭证可让攻击者直接向多签队列提交交易。
 - **最小权限。** 每条凭证只授予所需的 channel / project；不要在多个无关 agent 间共享同一凭证。
 
-#### 禁用 `tl_evaluate`
+#### 禁用 `tl_evaluate` {#disabling-tl_evaluate}
 
 如果你的工作流不需要在受控浏览器里执行任意 JS，请显式从工具面上撤下。各 host 的配置 key 不同：
 
@@ -712,8 +718,17 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 # 配置好 .mcp.json 后自然语言使用：
 # "查看我的 TRX 余额"
 # "给 TAddress... 转 10 个 TRX"
-# "在 SunSwap V3 上用 100 TRX 兑换 USDT"
+# "在 SunSwap V3 上用 100 USDT 兑换 TRX"
+#   （TRX 入金兑换受 0.1.1 已知 bug 影响不可用——见「兑换安全」）
 ```
+
+## 排错 {#troubleshooting}
+
+- **server 启动了但链上工具报 "Wallet not available"**——尚未配置 `agent-wallet`。按文档两条路径之一处理：调用 `tl_wallet_create`，或手动创建后设置 `AGENT_WALLET_PASSWORD` 并重启 host。
+- **Playwright 工具启动失败**——`TRONLINK_EXTENSION_PATH` 缺失或路径错误（启动时 server 会向 stderr 打 `WARNING`）；指向已构建的 TronLink 扩展目录。headless 主机需 `TL_HEADLESS=true`，且依然无法完成 UI 审批。
+- **主网上 `TL_CHAIN_QUERY_FAILED` 密集出现**——TronGrid HTTP 429。指数退避，配置 `TL_TRONGRID_API_KEY`，并关注 `X-Ratelimit-*` 响应头（见环境变量）。
+- **多签调用报 `TL_MULTISIG_QUERY_FAILED` / `TL_MULTISIG_SUBMIT_FAILED`**——先查凭证：核对四个 `TL_MULTISIG_*` 环境变量及其环境（主网 vs Nile）。注意凭证错误目前也落在这两个码下（`TL_MULTISIG_QUERY_FAILED` 标记为可重试，`TL_MULTISIG_SUBMIT_FAILED` 不可重试）——都不要无限循环。
+- **验证安装**——`list_tools` 应返回 **55 个工具**。可与静态快照 [/reference/mcp-tools.json](../../../reference/mcp-tools.json) 对照。（0.1.1 的响应不带 `meta.schemaVersion`；响应 `meta` 为 `{timestamp, sessionId, durationMs}`——不要以版本字段作为安装判据。）
 
 ## 版本与许可证
 
@@ -723,16 +738,15 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 
 ### 兼容性与迁移策略
 
-- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema、`error.code` 值或 `meta.schemaVersion` 语义。1.0 之后：标准 semver，仅 major 允许破坏。
+- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema 或 `error.code` 值。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
     - 工具名（`tl_chain_send`、`tl_chain_swap_v3`、`tl_multisig_*`、`tl_gasfree_*`、`tl_evaluate` 等）
-    - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码)）
+    - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#error-codes)）
     - `error.retryable` 语义
-    - `meta.schemaVersion` 的 major 分量
     - 必需环境变量名（`TL_TRONGRID_URL`、`TL_MULTISIG_SECRET_KEY`、`AGENT_WALLET_PASSWORD` 等）
 - **不稳定契约**（随时可能变化）：
     - `message` 自然语言文本、日志行格式、stderr 输出
     - 内部 Knowledge Store key（消费者不应解析）
     - 预检查的错误 detail 文本（分支用 `code`，别用 `details.reason`）
 - **废弃窗口。** 工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，`list_tools` 会带 `meta.deprecated` 标记；移除最早在再下一周期。
-- **升级后校验。** 重新 `list_tools` 确认依赖的工具名 + `inputSchema` 仍在，再继续工作流；将 `meta.schemaVersion` 与会话开始时缓存的值对比。
+- **升级后校验。** 重新 `list_tools` 确认依赖的工具名 + `inputSchema` 仍在，再继续工作流；0.1.1 线上没有 schema 版本标记——请核对钉定的 npm 版本。

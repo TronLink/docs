@@ -47,14 +47,22 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 | `send_trx` | Send TRX to an address | `to`, `amount`, `network?` | **Remote Write** | **No** — verify on-chain before re-issuing |
 | `send_trc20` | Send TRC20 tokens | `contractAddress`, `to`, `amount`, `decimals?`, `network?` | **Remote Write** | **No** — same as `send_trx` |
 | `sign_message` | Sign a message | `message`, `network?` | Local Write (signs only; no broadcast) | Yes — re-prompts the user |
-| `sign_typed_data` | Sign EIP-712 typed data | `typedData`, `network?` | Local Write (signs only) | Yes — re-prompts the user |
+| `sign_typed_data` | Sign TIP-712 typed data (TRON's EIP-712 adaptation) | `typedData`, `network?` | Local Write (signs only) | Yes — re-prompts the user |
 | `sign_transaction` (`broadcast=false`) | Sign a raw transaction | `transaction`, `broadcast=false`, `network?` | Local Write | Yes — re-prompts the user |
 | `sign_transaction` (`broadcast=true`) | Sign + broadcast | `transaction`, `broadcast=true`, `network?` | **Remote Write** | **No** — verify on-chain before re-issuing |
 | `get_balance` | Get TRX balance | `address`, `network?` | Network Read | Yes |
 
 All tools support an optional `network` parameter (`mainnet` / `nile` / `shasta`), defaulting to `mainnet`.
 
+> **Typed-data caution.** `typedData` is passed through opaquely — the schema does not validate `domain` / `types` / `message` structure. Before calling, verify yourself that `typedData.domain.chainId` matches the `network` parameter (mainnet `728126428`, Nile `3448148188`, Shasta `2494104990`) and that `verifyingContract` is the contract you intend — a mismatched domain enables cross-network replay of the signature.
+
+> **Raw-transaction expiry.** A pre-built `transaction` for `sign_transaction` carries `raw_data.expiration` (TronWeb default ≈ 60 s from build time), while the approval window is up to 5 minutes. If the user approves after the tx expired, the broadcast fails with an expired-transaction error — build the raw tx immediately before calling, or extend its expiration deliberately. Re-broadcasting the **same** signed payload is idempotent (same txId, nodes deduplicate); rebuilding + re-signing creates a **new** transaction — that is the double-spend path to avoid.
+
 **Human-in-the-loop.** Every tool that signs (`send_trx`, `send_trc20`, `sign_message`, `sign_typed_data`, `sign_transaction`) opens the TronLink approval page in the browser. The AI agent **cannot** sign without the user clicking Approve. Treat Remote Write tools as requiring confirmation in production.
+
+**No unattended path.** Signing requires a live browser and a human click — in headless CI or on a server, only `get_balance` works; there is no service-account signing mode.
+
+**Review the approval carefully.** Address-poisoning attacks rely on look-alike addresses with matching first/last characters — verify the **full** base58 recipient address on the approval page, not just its ends, and confirm the network label and amount before clicking Approve.
 
 ## MCP Resources
 
@@ -115,7 +123,7 @@ A typical `send_trx` flow, from the user's prompt to the on-chain result:
 
 > "Sent 5 TRX — confirmed on-chain (tx `0a1b2c…`)."
 
-> Branch on `status` / `error.code`, never on prose. `status: "pending"` means the broadcast succeeded but confirmation timed out — reconcile with `get_balance` or an explorer lookup rather than resending (see [Errors](#errors)).
+> Branch on `status` and the message markers above — a structured `error.code` field is not implemented in v0.1.x. `status: "pending"` means the broadcast succeeded but confirmation timed out — reconcile with `get_balance` or an explorer lookup rather than resending (see [Errors](#errors)).
 
 ## Cancellation
 
@@ -127,20 +135,27 @@ When `sign_transaction` is called with `broadcast: true`, the server automatical
 
 ## Errors
 
-The server returns errors in the standard MCP shape. Each error carries a stable `code` and a `retryable` hint so an agent can branch without parsing prose. Framework-level codes follow the SSOT table in [TronLink MCP Core — Error Codes](tronlink-mcp-core.md#error-codes). Server-specific conditions are:
+On the wire (v0.1.x), a signing tool returns the serialized `BroadcastResult` as its text content — with the MCP `isError` flag set when `status` is `"failed"`:
+
+```json
+{ "txId": "0abc…", "status": "failed", "error": "REVERT: …" }
+```
+
+Unexpected failures return a plain `Error: <message>` text with `isError: true`. There is **no structured `error.code` / `retryable` field yet** — the condition names in the table below are this documentation's taxonomy for classifying failures. Only `USER_REJECTED` and `CANCELLED_BY_CALLER` appear verbatim in the wire text (plus the phrase `timed out after 5 minutes` for approval timeouts); classify other conditions from `status` plus the message. Do not script against `error.code`.
+ The **Retryable** column below is agent guidance keyed to the condition, not a wire field. Framework-level `TL_*` codes (used by `mcp-server-tronlink`, not this server) follow the SSOT table in [TronLink MCP Core — Error Codes](tronlink-mcp-core.md#error-codes). Server-specific conditions are:
 
 | Condition | Retryable | When |
 | --- | :---: | --- |
 | `USER_REJECTED` | No | User clicked Reject on the TronLink approval page. |
-| `TIMEOUT` | Yes | No approval within the request timeout (default 5 min). Re-issuing re-opens the prompt; do **not** auto-retry a broadcast that may already be in flight. |
-| `BROWSER_DISCONNECTED` | Yes (signing only) | Approval page was closed or lost heartbeat. Reconnect by re-issuing the call. Never re-issue a broadcast that may have already landed. |
+| `TIMEOUT` | Reconcile first | No completion within the 5-minute window (hardcoded in 0.1.4 — not configurable). Usually the user never approved and nothing was signed — but the timer wraps the **whole** round trip and is not cancelled when the user clicks Approve, so a near-deadline approval can still sign and broadcast while the caller receives `TIMEOUT` (the late result is dropped). Treat it like `BROWSER_DISCONNECTED`: confirm on-chain before re-issuing any write. |
+| `BROWSER_DISCONNECTED` | Reconcile first | Approval page was closed or lost heartbeat. If it dropped **before** the user approved, nothing was signed and re-issuing is safe; if it dropped **after** approval, the signed tx may already have been broadcast. The agent cannot distinguish the two from this code alone — confirm on-chain (`get_balance` / explorer) before re-issuing any write. |
 | `NETWORK_ERROR` | Yes | A TronGrid / RPC request failed. Transient. |
 | `BROADCAST_FAILED` | No | Signing succeeded but submission was rejected by the node. Inspect the message; **do not** auto-retry — the signature may already have been accepted by another node. |
-| `ON_CHAIN_FAILED` | No | Broadcast OK but on-chain execution failed (`OUT_OF_ENERGY`, Solidity revert, `FAILED`). The transaction is final; address the root cause and submit a new tx. |
+| `ON_CHAIN_FAILED` | No | Broadcast OK but on-chain execution failed (`OUT_OF_ENERGY`, Solidity revert, `FAILED`). The transaction is final; address the root cause and submit a new tx. This is the MCP-layer surfacing of the SDK's `status: "failed"` — at this layer `status` is only ever `success` / `pending`. |
 | `INVALID_INPUT` | No | The tool input failed validation. Fix the payload. |
-| `CANCELLED` | No | The MCP client cancelled the call (e.g., user pressed Ctrl+C). |
+| `CANCELLED_BY_CALLER` | No | The MCP client cancelled the call (e.g., user pressed Ctrl+C). Appears verbatim in the error text. |
 
-**Retry policy.** Read calls (`get_balance`) and pre-sign failures (`USER_REJECTED`, `INVALID_INPUT`, `CANCELLED`) are agent-safe to re-issue with corrected input. For any sign + broadcast path, treat the outcome as unknown the moment the request leaves the server — confirm with `get_balance` or an explorer lookup before re-issuing.
+**Retry policy.** Read calls (`get_balance`) and pre-sign failures (`USER_REJECTED`, `INVALID_INPUT`, `CANCELLED_BY_CALLER`) are agent-safe to re-issue with corrected input. For any sign + broadcast path, treat the outcome as unknown the moment the request leaves the server — confirm with `get_balance` or an explorer lookup before re-issuing.
 
 ## Security Boundaries
 
@@ -161,6 +176,14 @@ The server returns errors in the standard MCP shape. Each error carries a stable
 | `TRON_NETWORK` | Default network (mainnet/nile/shasta) | `mainnet` |
 | `TRON_HTTP_PORT` | Local HTTP server port | `3386` |
 | `TRON_API_KEY` | TronGrid API key (optional) | - |
+
+## Troubleshooting
+
+- **Approval page never opens** — the server opens the system default browser; if the port is taken it auto-increments, so re-issue the tool call rather than assuming a fixed port. Check that a desktop browser is available (headless hosts cannot sign).
+- **`BROWSER_DISCONNECTED`** — the approval tab was closed. Re-issuing reopens it; for any write, reconcile on-chain first (see [Errors](#errors)).
+- **`TIMEOUT` after 5 minutes** — most often the approval was never given; but a near-deadline Approve can still have broadcast (see the Errors table), so query the chain for the transaction before re-issuing a write. The 5-minute window is hardcoded in 0.1.4; there is no option or env var to raise it.
+- **Approve clicked but the tx fails** — wallet locked, wrong `network` parameter, or an expired pre-built transaction (see the raw-transaction expiry note above). Unlock TronLink, verify `network`, rebuild the raw tx just before calling.
+- **Verify the install** — `list_tools` must return the 7 tools in the table above. (Responses carry no `meta.schemaVersion` or other meta field in 0.1.4 — do not gate install checks on one.)
 
 ## Version & License
 
@@ -190,7 +213,7 @@ Co-released with `tronlink-signer@0.1.2`. **Major UX overhaul** on the approval 
 - **Improved** — Single-page approval flow: one persistent browser tab with heartbeat-based liveness; stale tabs across server restarts are invalidated automatically.
 - **Improved** — TRC20 amount validation now uses BigInt-based decimal conversion (handles 0-decimal and >18-decimal edge cases).
 - **Improved** — `send_trx` and `sign_transaction` return real broadcast errors instead of empty messages on submission failure.
-- **Migration** — None required if you were already branching on `error.code` / `status`; if you parsed message prose, switch now (see [Errors](#errors)).
+- **Migration** — None required if you branch on `status` and the documented message markers; a structured `error.code` field, when introduced, will be additive (see [Errors](#errors)).
 
 #### v0.1.1 — 2026-04-15
 
@@ -201,8 +224,8 @@ Co-released with `tronlink-signer@0.1.2`. **Major UX overhaul** on the approval 
 
 ### Compatibility & migration policy
 
-- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** bump (0.1.x → 0.1.y) will not change MCP tool names, input schemas, or `error.code` values. Post-1.0: standard semver — major-only breaking changes.
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** bump (0.1.x → 0.1.y) will not change MCP tool names, input schemas, or `status` values. Post-1.0: standard semver — major-only breaking changes.
 - **Deprecation window.** When a tool or input field is deprecated, the next minor release retains the old form alongside the new one for at least one minor cycle, with a `meta.deprecated` flag in the schema; removal lands no earlier than the cycle after that.
-- **Stable contracts.** Tool names, the `error.code` enum, and `status` values (`success` / `pending`) are part of the public surface — they don't change in a patch.
+- **Stable contracts.** Tool names, the `status` values (`success` / `pending`), and the verbatim markers `USER_REJECTED` / `CANCELLED_BY_CALLER` are the public surface — they don't change in a patch.
 - **Volatile contracts.** Prose `message` text, log line formats, and the layout of the browser approval page are **not** part of the public surface and may change at any time.
 - **Verifying after upgrade.** Re-call `list_tools` and confirm the names + schemas you depend on are still present before resuming a workflow.

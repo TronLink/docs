@@ -49,6 +49,7 @@ PAGES_EN = [
     "hd-wallets.en.md",
     "dapp/getting-started.en.md",
     "ai-support/ai-llms.en.md",
+    "ai-support/security-model.en.md",
     "mobile/asset-management.en.md",
     "mobile/deeplink.en.md",
     "mobile/dapp-support.en.md",
@@ -67,6 +68,7 @@ PAGES_EN = [
     "dapp/stake2.en.md",
     "reference/networks.en.md",
     "reference/glossary.en.md",
+    "reference/error-code-map.en.md",
     "reference/faq.en.md",
 ]
 
@@ -76,6 +78,7 @@ PAGES_ZH = [
     "hd-wallets.zh.md",
     "dapp/getting-started.zh.md",
     "ai-support/ai-llms.zh.md",
+    "ai-support/security-model.zh.md",
     "mobile/asset-management.zh.md",
     "mobile/deeplink.zh.md",
     "mobile/dapp-support.zh.md",
@@ -94,6 +97,7 @@ PAGES_ZH = [
     "dapp/stake2.zh.md",
     "reference/networks.zh.md",
     "reference/glossary.zh.md",
+    "reference/error-code-map.zh.md",
     "reference/faq.zh.md",
 ]
 
@@ -263,20 +267,63 @@ def http_status(url: str, timeout: float = 10.0) -> int:
         return 0
 
 
-def verify_live(base_url: str, sample_size: int = 5) -> int:
+def check_security_txt_expiry(min_days: int = 30) -> int:
+    """Fail when docs/security.txt lacks an Expires field or the field is
+    within `min_days` of lapsing — RFC 9116 consumers treat an expired
+    security.txt as invalid, so this forces a refresh before it rots.
+    Returns 0 when healthy, 1 otherwise.
+    """
+    path = DOCS / "security.txt"
+    if not path.exists():
+        print(f"Missing {path}", file=sys.stderr)
+        return 1
+    m = re.search(r"^Expires:\s*(\S+)", path.read_text(encoding="utf-8"), re.MULTILINE)
+    if not m:
+        print("security.txt has no Expires field", file=sys.stderr)
+        return 1
+    try:
+        expires = datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+    except ValueError:
+        print(f"security.txt Expires is not ISO 8601: {m.group(1)}", file=sys.stderr)
+        return 1
+    if expires.tzinfo is None:
+        # RFC 9116 requires an offset; tolerate a missing one as UTC rather
+        # than crashing on naive-vs-aware datetime arithmetic below.
+        print(f"security.txt Expires lacks a timezone offset ({m.group(1)}); assuming UTC", file=sys.stderr)
+        expires = expires.replace(tzinfo=timezone.utc)
+    days_left = (expires - datetime.now(timezone.utc)).days
+    if days_left < min_days:
+        print(
+            f"security.txt Expires {m.group(1)} is {days_left} days away "
+            f"(< {min_days}) — bump the date in docs/security.txt",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"security.txt Expires OK ({days_left} days left)")
+    return 0
+
+
+def verify_live(base_url: str, sample_size: int = 15) -> int:
     """Sample-check curated index links against `base_url`.
 
-    Always probes the four bundle endpoints (`/llms.txt`, `/zh/llms.txt`,
-    `/llms-full.txt`, `/zh/llms-full.txt`); then picks `sample_size`
-    additional random link targets from each curated index and probes
-    those too. Returns 0 if every probe returns 200, 1 otherwise.
+    Always probes the fixed endpoints (the four llms bundles, the
+    agent-entry files, and the security.txt pointer); then picks
+    `sample_size` additional random link targets from each curated index
+    and probes those too. Returns 0 if every probe returns 200, 1 otherwise.
     """
+    if check_security_txt_expiry():
+        return 1
     base = base_url.rstrip("/") + "/"
     probes: list[tuple[str, str]] = [
         ("endpoint", urljoin(base, "llms.txt")),
         ("endpoint", urljoin(base, "zh/llms.txt")),
         ("endpoint", urljoin(base, "llms-full.txt")),
         ("endpoint", urljoin(base, "zh/llms-full.txt")),
+        ("endpoint", urljoin(base, "AGENTS.txt")),
+        ("endpoint", urljoin(base, "AGENTS.md")),
+        ("endpoint", urljoin(base, "CLAUDE.md")),
+        ("endpoint", urljoin(base, ".well-known/security.txt")),
+        ("endpoint", urljoin(base, "security.txt")),
     ]
     for label, index_path, deploy_url in [
         ("en-sample", DOCS / "llms.txt", urljoin(base, "llms.txt")),
@@ -358,11 +405,18 @@ def main() -> None:
     parser.add_argument(
         "--sample-size",
         type=int,
-        default=5,
-        help="Random links per locale to probe in --verify mode (default: 5).",
+        default=15,
+        help="Random links per locale to probe in --verify mode (default: 15).",
+    )
+    parser.add_argument(
+        "--check-security-expiry",
+        action="store_true",
+        help="Only check that docs/security.txt Expires is not about to lapse.",
     )
     args = parser.parse_args()
 
+    if args.check_security_expiry:
+        sys.exit(check_security_txt_expiry())
     if args.verify:
         sys.exit(verify_live(args.verify, sample_size=args.sample_size))
     generate_bundles()
