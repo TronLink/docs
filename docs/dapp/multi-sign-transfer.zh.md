@@ -47,9 +47,11 @@ try {
 
 ## 错误码
 
+**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
-| `4001` | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
+| (抛出；结构取决于版本) | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
 | (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
 | (抛出) | 签名权重广播后仍低于 `threshold` | `sendRawTransaction` | 否——再凑签名(每个 co-signer 一次 `multiSign`) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |

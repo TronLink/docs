@@ -297,7 +297,7 @@ If no wallet exists yet, startup shows two paths:
 
 If you choose auto-create, the server generates a random password, saves it to `~/.agent-wallet/runtime_secrets.json`, creates an encrypted `main` wallet, and continues with the current session.
 
-For a ready-to-use Nile setup with the common fields already filled, you can extend the config like this:
+The following is a Nile configuration template, **not a verified swap configuration**. Router environment variables are omitted. This omission is not a guarantee that swaps are disabled or that default routes are usable. Supported Nile V2/V3 deployments and router compatibility still need verification; do not copy Mainnet router addresses into this configuration. Treat Nile swaps as unverified until the corresponding deployment and router compatibility are confirmed. If you set `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`, verify each address against the network of `TL_TRONGRID_URL`:
 
 ```json
 {
@@ -312,8 +312,6 @@ For a ready-to-use Nile setup with the common fields already filled, you can ext
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
         "AGENT_WALLET_PASSWORD": "your-wallet-password",
-        "TL_SUNSWAP_ROUTER": "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
-        "TL_SUNSWAP_V3_ROUTER": "TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
         "TL_MULTISIG_SECRET_ID": "TEST",
         "TL_MULTISIG_SECRET_KEY": "TESTTESTTEST",
@@ -476,7 +474,7 @@ These are **docs-side mirrors** of the most critical tool inputs — useful when
     "from_token":       { "type": "string", "description": "Source token address or 'TRX' for native" },
     "to_token":         { "type": "string", "description": "Target token address or 'TRX' for native" },
     "amount":           { "type": "string", "description": "Input amount in token units" },
-    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in bps: 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in parts per million (ppm): 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
     "slippage":         { "type": "number", "description": "Slippage tolerance percent (default: 0.5). See 'Swap safety' above — never accept an unstated default for production execution." },
     "sqrt_price_limit": { "type": "string", "description": "Optional price limit for partial fills (advanced)" }
   }

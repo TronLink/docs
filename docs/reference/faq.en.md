@@ -32,7 +32,7 @@ On-chain operations consume **Energy** (contract execution) and **Bandwidth** (t
 
 ## Ledger signatures look different (the `v` byte)
 
-TronLink normalizes the trailing byte of Ledger signatures (`01`→`1c`, `00`→`1b`) so Ledger and regular account signatures match. See [Ledger v-field Compatibility](../plugin-wallet/ledger-signing-update.md).
+The [Ledger v-field Compatibility](../plugin-wallet/ledger-signing-update.md) guide describes normalization of the trailing byte (two hexadecimal characters: `01`→`1c`, `00`→`1b`). Its effective TronLink version, release date, and wallet/DApp responsibilities still need confirmation; do not assume every version applies this normalization.
 
 ## How do I integrate with the mobile app?
 

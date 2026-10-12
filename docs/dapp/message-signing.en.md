@@ -2,7 +2,7 @@
 
 ## Overview
 
-DApp requires users to sign a hex message. The signed message will be forwarded to the back-end to verify whether a user's login is legitimate.
+A DApp can ask users to sign a message for login verification. The signed message will be forwarded to the back-end to verify whether a user's login is legitimate.
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
@@ -13,13 +13,15 @@ DApp requires users to sign a hex message. The signed message will be forwarded 
 ```javascript
 const tronweb = window.tron.tronWeb;
 try {
-  const message = "0x1e"; // any hex string
+  const message = "0x1e"; // UTF-8 text, not raw hex bytes
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
 ### Parameters
 
-`window.tron.tronWeb.trx.signMessageV2` accepts a hexadecimal string as the parameter. The string represents the content to be signed.
+This example uses a hex-looking **string**. In TronWeb's `signMessageV2`, strings are encoded as UTF-8: `"0x1234"` represents six text characters (bytes `30 78 31 32 33 34`), not the two raw bytes `12 34`. Signing and verification must use the same message representation; use `verifyMessageV2` for a V2 signature. See [TronWeb: Sign and Verify Message](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/).
+
+The input types accepted by TronLink's injected wallet bridge must be checked against the TronLink and TronWeb versions you support. This example does not establish support for arbitrary UTF-8 text, number arrays, or `Uint8Array` through that bridge.
 
 ### Returns
 
@@ -46,10 +48,12 @@ If the user chooses “Reject” in the pop-up window, an exception will be thro
 
 ## Errors
 
+**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
-| `4001` | User clicked **Reject** in the signing popup | `tronWeb.trx.signMessageV2(message)` | No — user declined |
-| (thrown) | `Invalid transaction provided` / non-hex input | `signMessageV2(...)` argument validation | No — pass a valid hex string |
+| (thrown; version-dependent shape) | User clicked **Reject** in the signing popup | `tronWeb.trx.signMessageV2(message)` | No — user declined |
+| (thrown) | Invalid input, such as `Invalid transaction provided` | `signMessageV2(...)` / wallet bridge validation | No — check the input rules for your supported versions |
 | (thrown) | Provider not injected / wallet not authorized | `window.tron.tronWeb` undefined | No — connect first via `eth_requestAccounts` |
 
 For cross-surface translation (DApp ↔ DeepLink ↔ MCP ↔ CLI) see the [Error Code Map](../reference/error-code-map.md).

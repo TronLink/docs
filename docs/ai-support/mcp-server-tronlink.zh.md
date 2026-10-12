@@ -300,7 +300,7 @@ Claude Code 自动检测：
 
 如果选择自动创建，服务会生成随机密码，把密码保存到 `~/.agent-wallet/runtime_secrets.json`，创建一个加密的 `main` 钱包，并继续当前会话。
 
-如果你想直接照着一个更完整的 Nile 示例来配，可以在这个最小示例的基础上补成下面这样：
+下面是 Nile 配置模板，**不是已验证可兑换的配置**。示例省略了路由环境变量；这不构成兑换已禁用或默认路由可用的保证。支持的 Nile V2/V3 部署及路由兼容性仍待验证，请勿照搬主网路由地址。在对应部署和路由兼容性确认前，Nile 兑换应视为未验证。如果设置 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`，需分别验证地址与 `TL_TRONGRID_URL` 所指网络一致：
 
 ```json
 {
@@ -315,8 +315,6 @@ Claude Code 自动检测：
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
         "AGENT_WALLET_PASSWORD": "your-wallet-password",
-        "TL_SUNSWAP_ROUTER": "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
-        "TL_SUNSWAP_V3_ROUTER": "TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
         "TL_MULTISIG_SECRET_ID": "TEST",
         "TL_MULTISIG_SECRET_KEY": "TESTTESTTEST",
@@ -468,7 +466,7 @@ mcp-server-tronlink/
     "from_token":       { "type": "string", "description": "源代币地址，或 'TRX' 表示原生 TRX" },
     "to_token":         { "type": "string", "description": "目标代币地址，或 'TRX'" },
     "amount":           { "type": "string", "description": "输入金额（代币单位）" },
-    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "池费率 bps：500=0.05%、3000=0.3%、10000=1%（默认 3000）" },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "池费率（百万分率，ppm）：500=0.05%、3000=0.3%、10000=1%（默认 3000）" },
     "slippage":         { "type": "number", "description": "滑点容忍百分比（默认 0.5）。详见上方“兑换安全”——生产环境绝不允许未声明默认值。" },
     "sqrt_price_limit": { "type": "string", "description": "可选 partial-fill 价格上限（进阶）" }
   }

@@ -310,8 +310,8 @@ SDK 与 MCP 封装层共用版本线、共同发布。
 
 - **语义化版本。** 1.0 之前：**minor**（0.x → 0.y）允许破坏性变更；**patch**（0.1.x → 0.1.y）不变更导出类型、函数签名或 `error.code`。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
-    - 导出函数名（`connect`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
-    - `BroadcastResult` 结构（`status: 'success' | 'pending'`、`txId`、`error?`）。
+    - 导出函数名（`connectWallet`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
+    - `BroadcastResult` 结构（`status: 'success' | 'pending' | 'failed'`、`txId`、`error?`）。
     - `error.code` 枚举值与 `error.retryable` 语义。
     - HITL（浏览器审批）强制要求——patch 永远不会引入程序化绕过。
 - **不稳定契约**（随时可能变化）：

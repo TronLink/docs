@@ -2,11 +2,13 @@
 
 TronLink agents traverse three or four error-code dialects when a single user request crosses the DApp provider → DeepLink → MCP → CLI surfaces. This page is a single horizontal join keyed by **business meaning**; use it to translate a code from one dialect to its peers and to decide whether retrying is safe.
 
-> The per-surface tables linked in the column headers remain the SSOT. This page is a navigation aid — when in doubt, branch on the structured field of the surface you actually called (`error.code` for MCP / CLI / `--json`; the JS error `code` for the provider; the callback `code` for DeepLink).
+> The per-surface tables linked in the column headers remain the SSOT. This page is a navigation aid — when in doubt, branch on the structured field of the surface you actually called (`error.code` for MCP; exit status + the stderr `error` string for CLI; the JS error `code` for the provider; the callback `code` for DeepLink).
+
+**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
 
 | Business meaning | DApp provider ([EIP-1474][provider]) | DeepLink ([5-digit][deeplink]) | MCP ([`TL_*`][mcp]) | CLI ([exit code][cli]) | Retryable? |
 | --- | :---: | :---: | :---: | :---: | :---: |
-| **User rejected** the signing or connection prompt | `4001` | `300` (Transaction canceled) | — (HITL — re-prompt only on a fresh tool call) | `2` | **No** |
+| **User rejected** the signing or connection prompt | `4001` for provider requests; `trx` signing exceptions may omit a code | `300` (Transaction canceled) | — (HITL — re-prompt only on a fresh tool call) | `2` | **No** |
 | **Invalid input** / malformed params | thrown by `tronWeb` builder | `10001`–`10020`, `10024`, `10025` | `TL_INVALID_INPUT` | `1` | **No** — fix the payload |
 | **Method / capability not supported** | `4200` | `10003`, `10008`, `10009`, `10011`, `10023` | `TL_CAPABILITY_NOT_AVAILABLE` | — | **No** |
 | **Wallet authorization mismatch** (initiator ≠ current wallet) | provider returns empty `accounts[]` | `10021`, `10022` | — | — | **No** — re-authorize |
@@ -29,7 +31,7 @@ TronLink agents traverse three or four error-code dialects when a single user re
     - **No** — auto-retry will fail or do harm. The most dangerous case is "On-chain execution failed", where the tx is already final on-chain.
     - **Yes** — transient; back off (exponential, max 3 retries) and retry the original call.
     - **Maybe** — read-only retry is OK; **never auto-retry writes** without first reconciling with on-chain state.
-3. The DeepLink and CLI columns have many gaps because those surfaces only cover a slice of the lifecycle — DeepLink is mobile-only and lives on a separate trust boundary; CLI exit codes collapse many MCP `TL_*` codes into a single class. Use the most specific surface available.
+3. The DeepLink and CLI columns have many gaps because those surfaces only cover a slice of the lifecycle — DeepLink is mobile-only and lives on a separate trust boundary; CLI v1.0.1 uses exit status `0`/`1`; failures have a string `error` on stderr. Use the most specific surface available.
 
 ## Notes for downstream MCP servers
 

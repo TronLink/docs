@@ -288,32 +288,19 @@ Read commands return the queried data (balances, resources, etc.) under the same
 
 ## Exit Codes
 
-The CLI exits with one of these stable codes so an automation script can branch on failure class without parsing prose. In `--json` mode the same classification appears in the output as well.
+CLI v1.0.1 uses `0` for success and `1` for any failure. There are no per-class exit codes; do not use the exit status alone to distinguish validation errors, user rejection, timeout, on-chain failure, or network failure.
 
-| Exit code | Class | Meaning | Retryable |
-| :---: | --- | --- | :---: |
-| `0` | Success | Query returned, or transaction signed and broadcast | n/a |
-| `1` | Invalid input | Validation failed before any wallet interaction (see [Input Validation](#input-validation)) | No — fix the input |
-| `2` | User rejected | User clicked Reject on the TronLink approval page | No — user declined |
-| `3` | Signing timeout | No approval within `--timeout <ms>` (default 5 min) | Yes — but **not** for a broadcast that may already be in flight |
-| `4` | On-chain failure | Broadcast succeeded but execution failed (`OUT_OF_ENERGY`, `REVERT`, `FAILED`) | No — the tx is final; address the root cause |
-| `5` | Network error | TronGrid / RPC request failed (transient) | Yes — transient; for write commands, confirm the previous tx didn't land first |
-
-> **Retry policy.** Read commands (any `balance` / `resource` / `--constant trigger`) are always safe to retry. For write/signing commands (transfer, stake, delegate, vote, writeable trigger), do **not** auto-retry after a submitted-but-uncertain result — re-issuing re-opens the signing prompt and may double-submit. Re-issue only after confirming the previous tx did not land (via explorer or `balance`).
+> **Retry policy.** Read commands may be retried. Do not automatically retry write/signing commands after a failure or uncertain result; first confirm whether the previous transaction reached the chain.
 
 ## Errors
 
-The error class an agent should branch on is given by the exit code above. The table below maps the conditions the CLI surfaces (in stderr and in `--json` output) to that class:
+In `--json` mode, v1.0.1 writes failures to **stderr** and exits with `1`:
 
-| Condition | Exit code |
-| --- | :---: |
-| Argument parse / type / range failure | `1` |
-| User clicks Reject in TronLink | `2` |
-| `--timeout` elapsed without an approval | `3` |
-| `OUT_OF_ENERGY` returned by the node | `4` |
-| `REVERT` (Solidity revert) | `4` |
-| `FAILED` (other on-chain failure) | `4` |
-| TronGrid / RPC unreachable, 5xx, timeout | `5` |
+```json
+{ "status": "error", "error": "Transaction cancelled by user in TronLink" }
+```
+
+`error` is a string describing the failure, not an object. There are no structured `error.code` or `error.retryable` fields in this version. Capture stderr separately from the successful JSON on stdout.
 
 ## Safety & Side Effects
 
@@ -474,13 +461,12 @@ The CLI is at **v1.0.x**, so standard semver applies — only **major** bumps ma
 
 - **Stable contracts** (won't change in a minor or patch):
     - Subcommand names and their required positional / flag arguments.
-    - **Exit codes** — every code in the [Exit Codes](#exit-codes) table is part of the public surface. Adding a new code for a previously generic failure is allowed in a minor; reassigning an existing number is major.
-    - **`--json` output keys** — top-level keys (`ok`, `error.code`, `error.retryable`, `txid`, etc.) and the shape under `error`. New optional fields can be added in a minor; renames / removals are major.
-    - The `error.code` enum (shared SSOT with [TronLink MCP Core](tronlink-mcp-core.md#error-codes)).
+    - **Exit status** — v1.0.1 uses `0` for success and `1` for failure.
+    - **`--json` output keys** — v1.0.1 success keys include `Status`, `TxID`, `Explorer`, and per-command data keys; failures use `status` / `error` on stderr, with `error` as a string. New optional fields can be added in a minor; renames / removals are major.
 - **Volatile contracts** (may change at any time):
     - Human-readable stdout text without `--json`.
     - The exact wording of prompts, banner output, color codes.
     - Log line formats on stderr (parse `--json` instead).
 - **`--json` is the automation contract.** If you are scripting against this CLI, always pass `--json` and branch on structured fields. Plain-text output is for humans and will drift across minor releases.
 - **Deprecation window.** Deprecated subcommands / flags are kept for at least one minor cycle alongside their replacement; the CLI prints `[DEPRECATED]` to stderr when they are used. Removal lands no earlier than the next major.
-- **Verifying after upgrade.** Re-run `tronlink-cli --help` and any subcommand `--help` you depend on; spot-check the `--json` schema for one read and one preview-only write before resuming automation.
+- **Verifying after upgrade.** For v1.0.1, re-run `tronlink --help` and any subcommand `--help` you depend on; spot-check the `--json` schema for one read and one preview-only write before resuming automation.

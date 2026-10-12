@@ -176,19 +176,21 @@ try {
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见上方 [连接网站 TIP-1102](#tip-1102)）。
 
 ### 简介
-DApp 需要用户对一个 hex 消息签名，签名后消息转发给后端进行验签，以此判断用户合法登录。
+DApp 可以请求用户对消息签名，再将消息与签名转发给后端验签，以此验证用户登录。
 
 ### 技术规范
 #### 代码示例
 ```typescript
 const tronweb = window.tron.tronWeb;
 try {
-  const message = "0x01EF"; // any hex string
+  const message = "0x01EF"; // UTF-8 文本，不是原始 hex 字节
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
 #### 参数
-`window.tron.tronWeb.trx.signMessageV2` 接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容。
+本例使用的是外观类似 hex 的**字符串**。TronWeb 的 `signMessageV2` 会将字符串按 UTF-8 编码：`"0x1234"` 表示六个文本字符（字节为 `30 78 31 32 33 34`），不等于两个原始字节 `12 34`。签名与验签必须使用相同的消息表示；V2 签名应使用 `verifyMessageV2` 验签。参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
+
+TronLink 注入的钱包桥接接口允许哪些输入类型，需要按所支持的 TronLink 与 TronWeb 版本验证。本例不构成钱包桥接支持任意 UTF-8 文本、数字数组或 `Uint8Array` 的承诺。
 
 #### 返回值
 如果用户在弹窗中选择签名，DApp 可以得到签名后的十六进制字符串，比如：
@@ -511,7 +513,7 @@ interface SwitchTronChainParameter {
 }
 ```
 
-用户拒绝时抛出 `Error("Confirmation declined by user")`（无数字 code）。
+用户拒签可能表现为 `Error("Confirmation declined by user")` 等异常，不要假定一定包含数字 `code`。具体结构需按所支持的钱包版本验证。
 
 ### `tronweb.trx.multiSign(transaction, privateKey?, permissionId)` —— 多签签名
 
@@ -519,7 +521,7 @@ interface SwitchTronChainParameter {
 
 ### `tronweb.trx.signMessageV2(message)` —— TIP-191 消息签名
 
-**参数**——字符串（纯 UTF-8 或带 `0x` 前缀的 hex）：
+**参数**——本例传入字符串。`0x` 前缀不会使 TronWeb V2 字符串变成原始字节；编码区别及钱包版本限制见[消息签名](#signmessagev2)。
 
 ```json
 { "type": "string" }
@@ -531,7 +533,9 @@ interface SwitchTronChainParameter {
 { "type": "string", "pattern": "^0x[0-9a-fA-F]{130}$" }
 ```
 
-用户拒绝时抛出 `Error("Invalid transaction provided")` / `Error("user rejected request")` —— try/catch 捕获即可；无 `code` 字段。
+**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+
+异常消息可能包括 `Invalid transaction provided` 或 `user rejected request`。没有对应版本的证据时，不要将 `Invalid transaction provided` 这类通用校验错误判定为用户拒绝。
 
 ### TIP-6963（provider 发现）
 
@@ -676,7 +680,7 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    const message = "0x01EF"; // any hex string
+    const message = "0x01EF"; // UTF-8 文本，不是原始 hex 字节
     const signedString = await tronweb.trx.signMessageV2(message);
   } catch (e) {}
 }

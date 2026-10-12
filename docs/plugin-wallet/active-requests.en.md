@@ -195,7 +195,7 @@ Rejecting triggers an exception; signing returns the signed transaction for broa
 
 ### Overview
 
-A DApp may require users to sign a hex message.
+A DApp can ask users to sign a message for login verification.
 The signed message is then sent to the backend for verification to authenticate user login.
 
 ### Technical Specification
@@ -213,7 +213,9 @@ try {
 
 #### Parameter
 
-`window.tron.tronWeb.trx.signMessageV2` accepts a hexadecimal string representing the message to sign.
+This example uses a hex-looking **string**. In TronWeb's `signMessageV2`, strings are encoded as UTF-8: `"0x1234"` represents six text characters (bytes `30 78 31 32 33 34`), not the two raw bytes `12 34`. Signing and verification must use the same message representation; use `verifyMessageV2` for a V2 signature. See [TronWeb: Sign and Verify Message](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/).
+
+The input types accepted by TronLink's injected wallet bridge must be checked against the TronLink and TronWeb versions you support. This example does not establish support for arbitrary UTF-8 text, number arrays, or `Uint8Array` through that bridge.
 
 #### Return Value
 
@@ -541,7 +543,7 @@ All RPC-style methods below are invoked via `window.tron.request({ method, param
 }
 ```
 
-Rejection throws `Error("Confirmation declined by user")` (no numeric code).
+Signing rejection can surface as an exception such as `Error("Confirmation declined by user")`; do not assume a numeric `code` is present. The exact shape must be verified for your supported wallet versions.
 
 ### `tronweb.trx.multiSign(transaction, privateKey?, permissionId)` — multi-sig signing
 
@@ -549,7 +551,7 @@ Same input/output shape as `sign`. `permissionId` is an integer; `2` typically c
 
 ### `tronweb.trx.signMessageV2(message)` — TIP-191 message signing
 
-**Argument** — a string (plain UTF-8 or `0x`-prefixed hex):
+**Argument** — the example passes a string. A `0x` prefix does not make a TronWeb V2 string raw bytes; see the encoding and wallet-version limitations in [Message Signing](#message-signing).
 
 ```json
 { "type": "string" }
@@ -561,7 +563,9 @@ Same input/output shape as `sign`. `permissionId` is an integer; `2` typically c
 { "type": "string", "pattern": "^0x[0-9a-fA-F]{130}$" }
 ```
 
-Rejection throws `Error("Invalid transaction provided")` / `Error("user rejected request")` — branch on the thrown exception (try / catch); there is no `code` field.
+**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+
+Exceptions may include `Invalid transaction provided` or `user rejected request`. Do not classify a generic validation error such as `Invalid transaction provided` as user rejection without version-specific evidence.
 
 ### TIP-6963 (provider discovery)
 

@@ -310,8 +310,8 @@ The SDK and the MCP wrapper share a version line and are released together.
 
 - **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** (0.1.x → 0.1.y) will not change exported types, function signatures, or `error.code` values. Post-1.0: standard semver — major-only.
 - **Stable contracts** (won't change in a patch):
-    - Exported function names (`connect`, `sendTrx`, `sendTrc20`, `signMessage`, `signTypedData`, `signTransaction`).
-    - The `BroadcastResult` shape (`status: 'success' | 'pending'`, `txId`, `error?`).
+    - Exported function names (`connectWallet`, `sendTrx`, `sendTrc20`, `signMessage`, `signTypedData`, `signTransaction`).
+    - The `BroadcastResult` shape (`status: 'success' | 'pending' | 'failed'`, `txId`, `error?`).
     - `error.code` enum values and `error.retryable` semantics.
     - The HITL (browser approval) requirement — no programmatic bypass will ever be added in a patch.
 - **Volatile contracts** (may change at any time):

@@ -2,11 +2,13 @@
 
 TronLink 智能体在一次用户请求里跨 DApp provider → DeepLink → MCP → CLI 时,会先后碰到三四套错误码方言。本页是以**业务含义**为主轴的横向对照,用来把任一方言里的错误码翻译到其他方言,并判断重试是否安全。
 
-> 各列表头链接的"每个 surface 自己的错误表"仍然是 SSOT,本页只是导航工具——遇到歧义时,以**你实际调用的那个 surface 的结构化字段**为准(MCP / CLI / `--json` 看 `error.code`;provider 看 JS Error 的 `code`;DeepLink 看回调里的 `code`)。
+> 各列表头链接的"每个 surface 自己的错误表"仍然是 SSOT,本页只是导航工具——遇到歧义时,以**你实际调用的那个 surface 的结构化字段**为准(MCP 看 `error.code`;CLI 看退出状态和 stderr 的 `error` 字符串;provider 看 JS Error 的 `code`;DeepLink 看回调里的 `code`)。
+
+**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
 
 | 业务含义 | DApp provider([EIP-1474][provider]) | DeepLink([5 位码][deeplink]) | MCP([`TL_*`][mcp]) | CLI([exit code][cli]) | 可重试? |
 | --- | :---: | :---: | :---: | :---: | :---: |
-| **用户拒绝**签名或连接弹窗 | `4001` | `300`(交易取消) | —(HITL——只能在新的 tool 调用里再次唤起) | `2` | **否** |
+| **用户拒绝**签名或连接弹窗 | provider 请求为 `4001`；`trx` 签名异常可能无 code | `300`(交易取消) | —(HITL——只能在新的 tool 调用里再次唤起) | `2` | **否** |
 | **参数非法** / payload 错 | `tronWeb` 构造器抛错 | `10001`–`10020`、`10024`、`10025` | `TL_INVALID_INPUT` | `1` | **否**——修参数 |
 | **方法 / capability 不支持** | `4200` | `10003`、`10008`、`10009`、`10011`、`10023` | `TL_CAPABILITY_NOT_AVAILABLE` | — | **否** |
 | **钱包授权不匹配**(发起地址 ≠ 当前钱包) | provider 返回空 `accounts[]` | `10021`、`10022` | — | — | **否**——重新授权 |
@@ -29,7 +31,7 @@ TronLink 智能体在一次用户请求里跨 DApp provider → DeepLink → MCP
     - **否**——自动重试会失败甚至有害。最危险的是"链上执行失败",此时交易已上链,无法撤回。
     - **是**——临时性问题,退避(指数,最多 3 次)后重试原调用。
     - **视情况**——读操作可以重试;**写操作不要在没对账的情况下自动重试**。
-3. DeepLink 和 CLI 两列有很多空白,是因为这两个 surface 只覆盖了生命周期的一段——DeepLink 仅限移动端且跨信任边界;CLI 的 exit code 把 MCP 的多个 `TL_*` 折成一类。**用得到哪个 surface 就以哪个 surface 为准**。
+3. DeepLink 和 CLI 两列有很多空白,是因为这两个 surface 只覆盖了生命周期的一段——DeepLink 仅限移动端且跨信任边界;CLI v1.0.1 使用退出状态 `0`/`1`，失败时 stderr 的 `error` 为字符串。**用得到哪个 surface 就以哪个 surface 为准**。
 
 ## 给下游 MCP 服务的约束
 

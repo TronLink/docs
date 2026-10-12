@@ -2,7 +2,7 @@
 
 ## 简介
 
-DApp 需要用户对一个 hex 消息签名，签名后消息转发给后端进行验签，以此判断用户合法登录。
+DApp 可以请求用户对消息签名，再将消息与签名转发给后端验签，以此验证用户登录。
 
 > **前提条件：** 已通过 `eth_requestAccounts` 完成 DApp 连接授权（参见[开始开发](getting-started.md)）。
 
@@ -13,14 +13,16 @@ DApp 需要用户对一个 hex 消息签名，签名后消息转发给后端进�
 ```javascript
 const tronweb = window.tron.tronWeb;
 try {
-  const message = "0x01EF"; // any hex string
+  const message = "0x01EF"; // UTF-8 文本，不是原始 hex 字节
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
 
 ### 参数
 
-`window.tron.tronWeb.trx.signMessageV2` 接收一个十六进制的字符串作为参数，该字符串表示当前待签名的内容。
+本例使用的是外观类似 hex 的**字符串**。TronWeb 的 `signMessageV2` 会将字符串按 UTF-8 编码：`"0x1234"` 表示六个文本字符（字节为 `30 78 31 32 33 34`），不等于两个原始字节 `12 34`。签名与验签必须使用相同的消息表示；V2 签名应使用 `verifyMessageV2` 验签。参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
+
+TronLink 注入的钱包桥接接口允许哪些输入类型，需要按所支持的 TronLink 与 TronWeb 版本验证。本例不构成钱包桥接支持任意 UTF-8 文本、数字数组或 `Uint8Array` 的承诺。
 
 ### 返回值
 
@@ -46,10 +48,12 @@ try {
 
 ## 错误码
 
+**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
-| `4001` | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.signMessageV2(message)` | 否——用户拒绝 |
-| (抛出) | `Invalid transaction provided` / 非 hex 输入 | `signMessageV2(...)` 参数校验 | 否——传合法的 hex 字符串 |
+| (抛出；结构取决于版本) | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.signMessageV2(message)` | 否——用户拒绝 |
+| (抛出) | 输入非法，例如 `Invalid transaction provided` | `signMessageV2(...)` / 钱包桥接校验 | 否——核对所支持版本的输入规则 |
 | (抛出) | provider 未注入 / 钱包未授权 | `window.tron.tronWeb` 未定义 | 否——先通过 `eth_requestAccounts` 连接 |
 
 跨 surface 的码对照见[错误码对照表](../reference/error-code-map.md)。

@@ -4,7 +4,7 @@
 
 DApp 生成质押2.0交易的时候，对于`DelegateResourceContract` 或者`UnDelegateResourceContract` 类型的交易，想要在签名时使用 tronlink 插件展示预估结果，需要向交易体添加 __options 字段。
 
-__options 内部有两个值 `estimatedBandwidth，estimatedEnergy` ，分别对应代理和回收预估的能量和带宽。
+`__options` 内部的 `estimatedBandwidth` 表示委托或取消委托预估的带宽，`estimatedEnergy` 表示预估的能量。
 
 通过非 tronlink 插件注入的 tronweb 生成质押2.0交易的时候，对于`DelegateResourceContract` 或者`UnDelegateResourceContract` 类型的交易想要在签名时使用 tronlink 插件展示资源对应的类型，需要向交易体添加 resource 字段。(添加 resource 仅针对非 tronlink 插件注入的 tronweb ，使用 tronlink 插件注入的 tronweb 不需要添加)。
 
@@ -16,6 +16,8 @@ img {
   max-width: 100%!important;
 }
 </style>
+> **资源字段兼容性待验证：** 英文正文提到 `__resource`，本页正文写 `resource`，现有示例则写入 `raw_data.contract[0].parameter.value.resource`。签名 UI 实际读取的字段及适用插件版本尚未在此确认，这些路径不能视为可互换。请保持构造器生成的协议数据、`raw_data_hex` 与 `txID` 一致，并在确认 UI 元数据路径后再调整示例。
+
 代码示例：
 
 ```javascript
@@ -28,10 +30,11 @@ estimatedEnergy estimatedBandwidth 的具体计算逻辑见![Stake 2.0 资源份
 
 ## 错误码
 
+**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
-| `4001` | 用户在签名弹窗里点【拒绝】 | 委托/取消委托交易的 `tronWeb.trx.sign(tx)` | 否——用户拒绝 |
-| (抛出) | 缺 `__options` 或 `__resource`——签名页无法渲染预估 | `tronWeb.trx.sign(tx)` | 否——按上文规则补全两个字段 |
+| (抛出；结构取决于版本) | 用户在签名弹窗里点【拒绝】 | 委托/取消委托交易的 `tronWeb.trx.sign(tx)` | 否——用户拒绝 |
 | (抛出) | 质押的 TRX 不足 / 无可取消的代理 | `delegateResource` / `undelegateResource` 构造器 | 否——先修链上状态 |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `sendRawTransaction` 返回或 `getTransactionInfo` | **否——交易已 final,永远不要自动重试** |
 

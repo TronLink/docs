@@ -1,9 +1,11 @@
 
 # Upcoming implementation: compatibility adaptation for the v field in the signature returned after Ledger signing
 
+> **Release status pending confirmation:** The rollout wording below does not identify an effective version or date. Confirm both, and the wallet/DApp responsibilities, before relying on normalization in a supported release.
+
 For Ledger signing (including all transaction signatures, message signatures, and EIP-712 signatures), a new technical measure will be rolled out in the coming months. The trailing `01` in the `signature` field will be replaced with `1c`, and `00` will be replaced with `1b`.
 
-This change ensures that the last two bytes of Ledger account signatures are consistent with those of regular account signatures.
+This change ensures that the final byte (two hexadecimal characters) of Ledger account signatures is consistent with those of regular account signatures.
 
 ### Transaction Signing
 
