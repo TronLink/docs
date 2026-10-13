@@ -2,15 +2,14 @@
 
 > **Prerequisite:** The DApp connection has been authorized via `eth_requestAccounts` (see [Start Developing](getting-started.md#request-authorization)).
 
-When generating stake 2.0 transactions for DApps, for transactions of the `DelegateResourceContract` or `UnDelegateResourceContract` type, in order to display the estimated results during signature using the Tronlink extension, it is necessary to add the "__options" field to the transaction body.
+When a DApp asks TronLink to sign a `DelegateResourceContract` or `UnDelegateResourceContract` transaction, the signing popup shows the resource type and an estimated resource amount:
 
-Inside `__options`, `estimatedBandwidth` is the estimated bandwidth and `estimatedEnergy` is the estimated energy for delegation or undelegation.
+- **Resource type** — read from `raw_data.contract[0].parameter.value.resource`. `tronWeb.transactionBuilder.delegateResource` / `undelegateResource` already set this field to `"ENERGY"` for energy. For bandwidth the field is omitted (it is the protobuf default), and TronLink (4.1.4 and later) treats a missing value as `"BANDWIDTH"`. You do not need to add it yourself.
+- **Estimated amount** — read from a top-level `__options` object that you add to the transaction: `estimatedBandwidth` is the estimated bandwidth, `estimatedEnergy` is the estimated energy. Only the value matching the resource type is shown. If `__options` is missing, the popup shows `0`; signing still works.
 
-When generating stake 2.0 transactions using a non-tronlink extension injected tronweb, in order to display the corresponding type of resource for `DelegateResourceContract` or `UnDelegateResourceContract` type transactions during signature, the "__resource" field needs to be added to the transaction body. (Adding “resource” is only necessary for tronWeb that is not injected by a tronlink extension. TronWeb that is injected by tronlink extension does not require.)
+`__options` sits outside `raw_data`, so adding it does not change `txID` or `raw_data_hex`. In contrast, `parameter.value.resource` is part of the signed protocol data. Do not change it after building: a modified value no longer matches `raw_data_hex` / `txID`. `trx.sign` rejects such a transaction (`'Invalid transaction provided'`), and `trx.multiSign` recomputes `txID` from the modified data, so the signed transaction differs from the one you built. To change the resource type, rebuild the transaction.
 
-The "__resource" field corresponds to the values "BANDWIDTH" and "ENERGY".
-
-![Stake 2.0 delegate / undelegate signing UI annotated with the __resource ("BANDWIDTH" or "ENERGY") and __options.estimatedBandwidth / estimatedEnergy fields that TronLink reads to render the resource type at signing time](../images/dapp_stake2.0_img_0.jpg)
+![Delegate transaction object with raw_data.contract[0].parameter.value.resource and the top-level __options.estimatedBandwidth highlighted](../images/dapp_stake2.0_img_0.jpg)
 
 <style>
 img {
@@ -18,25 +17,31 @@ img {
 }
 </style>
 
-> **Resource-field compatibility pending verification:** The prose above refers to `__resource`, while the existing example writes `raw_data.contract[0].parameter.value.resource`. The field read by the signing UI and the applicable extension versions have not been confirmed here. Do not treat these paths as interchangeable. Preserve the builder-generated protocol data, `raw_data_hex`, and `txID` consistency; verify the UI metadata path before adapting this example.
-
 For example:
 
 ```javascript
-    const transaction = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'BANDWIDTH', 'ownerAddress', false);
-    transaction.raw_data.contract[0].parameter.value.resource = "BANDWIDTH"
-    transaction.__options = {"estimatedBandwidth": 1}
+// ENERGY — tronWeb sets parameter.value.resource = "ENERGY"
+const energyTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'ENERGY', 'ownerAddress', false);
+energyTx.__options = { estimatedEnergy: 65000 };
+
+// BANDWIDTH — resource is omitted and displayed as BANDWIDTH
+const bandwidthTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'BANDWIDTH', 'ownerAddress', false);
+bandwidthTx.__options = { estimatedBandwidth: 3000 };
+
+const signed = await tronWeb.trx.sign(energyTx);
 ```
+
+`undelegateResource` transactions use the same `__options` fields.
 
 The specific calculation logic of estimatedEnergy and estimatedBandwidth can be found in the last chapter of the "[<a class="tooltip" href="https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606" data-tooltip="https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606">Stake 2.0 Adaptation FAQ</a>](https://coredevs.medium.com/stake-2-0-adaption-faq-66bafdf53606)": "How to convert resource share to amount?"
 
 ## Errors
 
-**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+**Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](../reference/error-code-map.md#handling-rejections). Do not automatically retry signing.
 
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
-| (thrown; version-dependent shape) | User clicked **Reject** in the signing popup | `tronWeb.trx.sign(tx)` for the delegate / undelegate tx | No — user declined |
+| `'Confirmation declined by user'` (string) | User clicked **Reject** in the signing popup | `tronWeb.trx.sign(tx)` for the delegate / undelegate tx | No — user declined |
 | (thrown) | Insufficient TRX staked / nothing to undelegate | `delegateResource` / `undelegateResource` builder | No — fix the on-chain state first |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | Broadcast succeeded but execution failed on-chain | `sendRawTransaction` result or `getTransactionInfo` | **No — the tx is final; never auto-retry** |
 

@@ -45,11 +45,11 @@ Note that the broadcast only collects one signature in this call — a fully sig
 
 ## Errors
 
-**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+**Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](../reference/error-code-map.md#handling-rejections). Do not automatically retry signing.
 
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
-| (thrown; version-dependent shape) | User clicked **Reject** in the signing popup | `tronWeb.trx.multiSign(...)` | No — user declined |
+| `'Confirmation declined by user'` (string) | User clicked **Reject** in the signing popup | `tronWeb.trx.multiSign(...)` | No — user declined |
 | (thrown) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})` — wrong or revoked permission | No — re-query `getAccount(...).active_permission` |
 | (thrown) | Signature weight below `threshold` after broadcast | `sendRawTransaction` | No — collect more signatures (one `multiSign` call per co-signer) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | Broadcast succeeded but execution failed on-chain | `getTransactionInfo(txid)` | **No — the tx is final; never auto-retry** |

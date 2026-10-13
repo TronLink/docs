@@ -553,7 +553,7 @@ Skills are at **v1.0.x**, so standard semver applies — only **major** bumps ma
 
 - **Stable contracts** (won't change in a minor or patch):
     - The 33 CLI command names and their required / optional flags (`tron_api.mjs <command> [...]`).
-    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill--mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
+    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill-mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
     - Exit codes: `0` success, `1` query error / invalid input, `2` unsupported / unknown command.
     - The `Network Read` side-effect classification — no command will ever become a Remote Write without a major bump.
 - **Volatile contracts** (may change in a minor):

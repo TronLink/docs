@@ -43,11 +43,11 @@ If the user chooses “Sign” in the pop-up window, the DApp receives and broad
 
 ## Errors
 
-**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+**Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](../reference/error-code-map.md#handling-rejections). Do not automatically retry signing.
 
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
-| (thrown; version-dependent shape) | User clicked **Reject** in the signing popup | `tronWeb.trx.sign(tx)` | No — user declined |
+| `'Confirmation declined by user'` (string) | User clicked **Reject** in the signing popup | `tronWeb.trx.sign(tx)` | No — user declined |
 | (thrown) | `Invalid address` / `Invalid amount` / etc. | `transactionBuilder.sendTrx(...)` before any wallet interaction | No — fix the input |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | Broadcast succeeded but execution failed on-chain | `sendRawTransaction` result or `tronWeb.trx.getTransactionInfo(txid)` | **No — the tx is final; never auto-retry** |
 | (network error) | TronGrid / RPC transient failure | `sendRawTransaction` HTTP layer | Yes — back off and retry |

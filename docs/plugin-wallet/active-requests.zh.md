@@ -40,6 +40,8 @@ try {
 > **旧版用法（不推荐）：** [兼容用法：tron_requestAccounts](#tron_requestaccounts)
 
 
+<a id="get-tronlink-provider-via-tip-6963"></a>
+
 ## 获取TronLink的provider TIP-6963
 
 ### 简介
@@ -183,14 +185,23 @@ DApp 可以请求用户对消息签名，再将消息与签名转发给后端验
 ```typescript
 const tronweb = window.tron.tronWeb;
 try {
-  const message = "0x01EF"; // UTF-8 文本，不是原始 hex 字节
+  const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
 #### 参数
-本例使用的是外观类似 hex 的**字符串**。TronWeb 的 `signMessageV2` 会将字符串按 UTF-8 编码：`"0x1234"` 表示六个文本字符（字节为 `30 78 31 32 33 34`），不等于两个原始字节 `12 34`。签名与验签必须使用相同的消息表示；V2 签名应使用 `verifyMessageV2` 验签。参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
+消息须为非空**字符串**。TronLink 对该字符串的 UTF-8 字节签名，并加上 TIP-191 前缀 `"\x19TRON Signed Message:\n" + <字节长度>`。外观类似 hex 的字符串**不会**被解码：`"0x1234"` 按六个文本字符（字节为 `30 78 31 32 33 34`）签名，而不是两个原始字节 `12 34`。
 
-TronLink 注入的钱包桥接接口允许哪些输入类型，需要按所支持的 TronLink 与 TronWeb 版本验证。本例不构成钱包桥接支持任意 UTF-8 文本、数字数组或 `Uint8Array` 的承诺。
+通过 TronLink 注入的 `tronWeb` 只支持字符串（TronLink 插件 4.0.0 起）。TronWeb 本身还接受 `Uint8Array` / `number[]` 来签原始字节，但 TronLink 会拒绝这些类型，因此 DApp 无法通过 `signMessageV2` 让 TronLink 对任意原始字节签名。
+
+验签时把**同一个字符串**传给 `verifyMessageV2`。它返回恢复出的 base58 地址，地址不匹配时不会抛错——需要自行比对：
+
+```javascript
+const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
+const ok = recovered === tronweb.defaultAddress.base58;
+```
+
+参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
 
 #### 返回值
 如果用户在弹窗中选择签名，DApp 可以得到签名后的十六进制字符串，比如：
@@ -205,9 +216,9 @@ Uncaught (in promise) Invalid transaction provided
 
 ### 交互流程
 
-当代码执行到 `await tronweb.trx.signMessageV2(message);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图，其中消息内容会以 hex 的方式展示：
+当代码执行到 `await tronweb.trx.signMessageV2(message);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图。弹窗以文本形式展示消息内容：
 
-![TronLink 消息签名审批弹窗，以 hex 形式展示待签消息以及"拒绝"/"签名"按钮](../images/zh_plugin-wallet_sign_message.png)
+![TronLink 消息签名审批弹窗，展示待签消息内容以及"拒绝"/"签名"按钮](../images/zh_plugin-wallet_sign_message.png)
 
 如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
 
@@ -513,7 +524,7 @@ interface SwitchTronChainParameter {
 }
 ```
 
-用户拒签可能表现为 `Error("Confirmation declined by user")` 等异常，不要假定一定包含数字 `code`。具体结构需按所支持的钱包版本验证。
+用户拒绝时，Promise 以纯字符串 `'Confirmation declined by user'` reject（不是 `Error`，没有数字 `code`）。参见[处理拒签](../reference/error-code-map.md#handling-rejections)。
 
 ### `tronweb.trx.multiSign(transaction, privateKey?, permissionId)` —— 多签签名
 
@@ -521,7 +532,7 @@ interface SwitchTronChainParameter {
 
 ### `tronweb.trx.signMessageV2(message)` —— TIP-191 消息签名
 
-**参数**——本例传入字符串。`0x` 前缀不会使 TronWeb V2 字符串变成原始字节；编码区别及钱包版本限制见[消息签名](#signmessagev2)。
+**参数**——非空字符串，按 UTF-8 文本签名。`0x` 前缀不会使其变成原始字节，TronLink 会拒绝非字符串输入；详见[消息签名](#signmessagev2)。
 
 ```json
 { "type": "string" }
@@ -533,13 +544,13 @@ interface SwitchTronChainParameter {
 { "type": "string", "pattern": "^0x[0-9a-fA-F]{130}$" }
 ```
 
-**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+**错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](../reference/error-code-map.md#handling-rejections)。不要自动重试签名。
 
-异常消息可能包括 `Invalid transaction provided` 或 `user rejected request`。没有对应版本的证据时，不要将 `Invalid transaction provided` 这类通用校验错误判定为用户拒绝。
+其他 reject 字符串包括：`'Invalid transaction provided'`（消息为空或签名失败）、`'Transaction integrity check failed'`（非字符串消息；4.11.1 起，更早版本返回 `'Invalid transaction provided'`）、`'User has not unlocked wallet'`。这些都不是用户拒绝。
 
 ### TIP-6963（provider 发现）
 
-事件机制，**不是** `request` 方法。结构定义见上方 [获取TronLink的provider TIP-6963](#trontip-6963) 的 TypeScript 接口；线上格式是两个 `CustomEvent`：
+事件机制，**不是** `request` 方法。结构定义见上方 [获取TronLink的provider TIP-6963](#get-tronlink-provider-via-tip-6963) 的 TypeScript 接口；线上格式是两个 `CustomEvent`：
 
 - `TIP6963:requestProvider` —— 由 DApp 派发，无 payload。
 - `TIP6963:announceProvider` —— 由已安装的每个钱包派发，`detail = { info: { uuid, name, icon, rdns }, provider }`。TronLink 的 `rdns = "org.tronlink.www"`、`name = "TronLink"`。
@@ -680,7 +691,7 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    const message = "0x01EF"; // UTF-8 文本，不是原始 hex 字节
+    const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
     const signedString = await tronweb.trx.signMessageV2(message);
   } catch (e) {}
 }

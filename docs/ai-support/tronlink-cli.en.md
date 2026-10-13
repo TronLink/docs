@@ -246,7 +246,7 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 
 **The two paths are mutually exclusive, not redundant.** Setting `--local-broadcast` tells the signer to return the signed transaction **without** broadcasting; the CLI then sends it once via its own TronWeb. The same signed payload is never submitted twice from this CLI in a single command.
 
-If a network race causes the CLI's local broadcast and a stale signer broadcast to both reach the network (e.g. flapping connectivity, two CLI invocations against the same nonce), the second submission is rejected by the node — TRON nodes deduplicate by transaction id, so you will see one block-inclusion plus one `DUP_TRANSACTION_ERROR`-class failure, not two on-chain effects. Treat any such error after a confirmed first inclusion as benign; treat it before confirmation as you would any `5` exit (network) — reconcile with an explorer before retrying.
+If a network race causes the CLI's local broadcast and a stale signer broadcast to both reach the network (e.g. flapping connectivity, two CLI invocations against the same nonce), the second submission is rejected by the node — TRON nodes deduplicate by transaction id, so you will see one block-inclusion plus one `DUP_TRANSACTION_ERROR`-class failure, not two on-chain effects. Treat any such error after a confirmed first inclusion as benign; treat it before confirmation as an uncertain network failure (the CLI exits `1`) — reconcile with an explorer before retrying.
 
 ## Input Validation
 
@@ -300,7 +300,7 @@ In `--json` mode, v1.0.1 writes failures to **stderr** and exits with `1`:
 { "status": "error", "error": "Transaction cancelled by user in TronLink" }
 ```
 
-`error` is a string describing the failure, not an object. There are no structured `error.code` or `error.retryable` fields in this version. Capture stderr separately from the successful JSON on stdout.
+`error` is a string describing the failure, not an object. There are no structured `error.code` or `error.retryable` fields in this version. The text is not a stable contract — for example, a rejection in the TronLink extension popup is passed through as `Confirmation declined by user`. Capture stderr separately from the successful JSON on stdout.
 
 ## Safety & Side Effects
 
@@ -462,7 +462,7 @@ The CLI is at **v1.0.x**, so standard semver applies — only **major** bumps ma
 - **Stable contracts** (won't change in a minor or patch):
     - Subcommand names and their required positional / flag arguments.
     - **Exit status** — v1.0.1 uses `0` for success and `1` for failure.
-    - **`--json` output keys** — v1.0.1 success keys include `Status`, `TxID`, `Explorer`, and per-command data keys; failures use `status` / `error` on stderr, with `error` as a string. New optional fields can be added in a minor; renames / removals are major.
+    - **`--json` output keys** — in v1.0.1, write commands return `Status`, `TxID`, and `Explorer` (plus per-command keys); read commands such as `balance` return their data keys; failures use `status` / `error` on stderr, with `error` as a string. New optional fields can be added in a minor; renames / removals are major.
 - **Volatile contracts** (may change at any time):
     - Human-readable stdout text without `--json`.
     - The exact wording of prompts, banner output, color codes.

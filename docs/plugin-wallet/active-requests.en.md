@@ -206,16 +206,25 @@ The signed message is then sent to the backend for verification to authenticate 
 const tronweb = window.tron.tronWeb;
 
 try {
-  const message = "0x01EF";
+  const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
   const signedString = await tronweb.trx.signMessageV2(message);
 } catch (e) {}
 ```
 
 #### Parameter
 
-This example uses a hex-looking **string**. In TronWeb's `signMessageV2`, strings are encoded as UTF-8: `"0x1234"` represents six text characters (bytes `30 78 31 32 33 34`), not the two raw bytes `12 34`. Signing and verification must use the same message representation; use `verifyMessageV2` for a V2 signature. See [TronWeb: Sign and Verify Message](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/).
+Pass the message as a non-empty **string**. TronLink signs the UTF-8 bytes of that string with the TIP-191 prefix `"\x19TRON Signed Message:\n" + <byte length>`. A hex-looking string is **not** decoded: `"0x1234"` is signed as six text characters (bytes `30 78 31 32 33 34`), not as the two raw bytes `12 34`.
 
-The input types accepted by TronLink's injected wallet bridge must be checked against the TronLink and TronWeb versions you support. This example does not establish support for arbitrary UTF-8 text, number arrays, or `Uint8Array` through that bridge.
+Through the TronLink-injected `tronWeb`, only strings are supported (TronLink extension 4.0.0 and later). TronWeb itself also accepts `Uint8Array` / `number[]` for raw bytes, but TronLink rejects those types, so a DApp cannot ask TronLink to sign arbitrary raw bytes with `signMessageV2`.
+
+To verify, pass the **same string** to `verifyMessageV2`. It returns the recovered base58 address and does not throw on a mismatch — compare the address yourself:
+
+```javascript
+const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
+const ok = recovered === tronweb.defaultAddress.base58;
+```
+
+See [TronWeb: Sign and Verify Message](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/).
 
 #### Return Value
 
@@ -233,9 +242,9 @@ Uncaught (in promise) Invalid transaction provided
 
 ### Interaction Flow
 
-When executing signing, TronLink shows a confirmation popup with the hex message.
+When executing signing, TronLink shows a confirmation popup with the message string.
 
-![TronLink message-signing approval popup showing the hex payload to be signed and Reject / Sign buttons](../images/plugin-wallet_sign_message.jpg)
+![TronLink message-signing approval popup showing the message content and Reject / Sign buttons](../images/plugin-wallet_sign_message.jpg)
 
 Reject → exception.
 Sign → signed message returned.
@@ -543,7 +552,7 @@ All RPC-style methods below are invoked via `window.tron.request({ method, param
 }
 ```
 
-Signing rejection can surface as an exception such as `Error("Confirmation declined by user")`; do not assume a numeric `code` is present. The exact shape must be verified for your supported wallet versions.
+When the user rejects, the promise rejects with the plain string `'Confirmation declined by user'` (not an `Error`, no numeric `code`). See [Handling rejections](../reference/error-code-map.md#handling-rejections).
 
 ### `tronweb.trx.multiSign(transaction, privateKey?, permissionId)` — multi-sig signing
 
@@ -551,7 +560,7 @@ Same input/output shape as `sign`. `permissionId` is an integer; `2` typically c
 
 ### `tronweb.trx.signMessageV2(message)` — TIP-191 message signing
 
-**Argument** — the example passes a string. A `0x` prefix does not make a TronWeb V2 string raw bytes; see the encoding and wallet-version limitations in [Message Signing](#message-signing).
+**Argument** — a non-empty string, signed as UTF-8 text. A `0x` prefix does not make it raw bytes, and TronLink rejects non-string input; see [Message Signing](#message-signing).
 
 ```json
 { "type": "string" }
@@ -563,9 +572,9 @@ Same input/output shape as `sign`. `permissionId` is an integer; `2` typically c
 { "type": "string", "pattern": "^0x[0-9a-fA-F]{130}$" }
 ```
 
-**Interface distinction:** Codes documented for `provider.request(...)`, such as `4001` for user rejection, are not a universal contract for `tronWeb.trx.sign`, `multiSign`, or `signMessageV2`. Catch signing exceptions; a numeric `code` may be absent. Confirm the error shape for the TronLink/TronWeb versions you support before classifying it. An unrecognized exception is not proof of user rejection. Do not automatically retry signing.
+**Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](../reference/error-code-map.md#handling-rejections). Do not automatically retry signing.
 
-Exceptions may include `Invalid transaction provided` or `user rejected request`. Do not classify a generic validation error such as `Invalid transaction provided` as user rejection without version-specific evidence.
+Other rejection strings include `'Invalid transaction provided'` (empty message or signing failure), `'Transaction integrity check failed'` (non-string message; 4.11.1 and later, earlier versions return `'Invalid transaction provided'`), and `'User has not unlocked wallet'`. None of these is a user rejection.
 
 ### TIP-6963 (provider discovery)
 
@@ -720,7 +729,7 @@ if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
 
   try {
-    const message = "0x01EF";
+    const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
     const signedString = await tronweb.trx.signMessageV2(message);
   } catch (e) {}
 }

@@ -43,11 +43,11 @@ try {
 
 ## 错误码
 
-**接口区别：** `provider.request(...)` 文档中的错误码（例如用户拒绝时的 `4001`）不是 `tronWeb.trx.sign`、`multiSign` 或 `signMessageV2` 的通用契约。请捕获签名异常，数字 `code` 可能不存在。分类前应验证所支持的 TronLink/TronWeb 版本的异常结构；未知异常不能直接认定为用户拒绝。不要自动重试签名。
+**错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](../reference/error-code-map.md#handling-rejections)。不要自动重试签名。
 
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
-| (抛出；结构取决于版本) | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.sign(tx)` | 否——用户拒绝 |
+| `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.sign(tx)` | 否——用户拒绝 |
 | (抛出) | `Invalid address` / `Invalid amount` 等 | `transactionBuilder.sendTrx(...)` 在钱包交互前 | 否——修参数 |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `sendRawTransaction` 返回或 `tronWeb.trx.getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
 | (network error) | TronGrid / RPC 抖动 | `sendRawTransaction` HTTP 层 | 是——退避后重试 |
