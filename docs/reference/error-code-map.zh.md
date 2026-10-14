@@ -2,7 +2,7 @@
 
 TronLink 智能体在一次用户请求里跨 DApp provider → DeepLink → MCP → CLI 时,会先后碰到三四套错误码方言。本页是以**业务含义**为主轴的横向对照,用来把任一方言里的错误码翻译到其他方言,并判断重试是否安全。
 
-> 各列表头链接的"每个 surface 自己的错误表"仍然是 SSOT,本页只是导航工具——遇到歧义时,以**你实际调用的那个 surface 的结构化字段**为准(MCP 看 `error.code`;CLI 看退出状态和 stderr 的 `error` 字符串;`window.tron.request` 看 `code` 字段(`tronWeb.trx.*` 签名看拒签字符串);DeepLink 看回调里的 `code`)。
+> 各列表头链接的"每个 surface 自己的错误表"仍然是 SSOT,本页只是导航工具——遇到歧义时,以**你实际调用的那个 surface 的结构化字段**为准(MCP Server TronLink 看 `error.code`;MCP TronLink Signer 看 `Error: <message>` 文本;CLI 看退出状态和 stderr 的 `error` 字符串;`window.tron.request` 看 `code` 字段(`tronWeb.trx.*` 签名看拒签字符串);DeepLink 看回调里的 `code`)。
 
 **错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](#handling-rejections)。不要自动重试签名。
 
@@ -28,7 +28,7 @@ TronLink 智能体在一次用户请求里跨 DApp provider → DeepLink → MCP
 
 ## 处理拒签
 
-除上文所述的用户拒绝值外，签名方法还可能返回：`'User has not unlocked wallet'`（钱包未解锁，或 DApp 未连接）、`'Invalid transaction provided'`（载荷非法，或钱包内部签名失败）、`'Transaction integrity check failed'`（4.11.1 起；载荷未通过 TronLink 完整性校验，如非字符串消息——在用户关闭 TronLink 警告弹窗后返回）、`{ code: 4100, message: 'Watch accounts cannot sign' }`（观察钱包；4.10.0 起）。无法识别的值应按意外错误处理，不要当作用户拒绝。
+除上文所述的用户拒绝值外，签名方法还可能返回：`'User has not unlocked wallet'`（钱包未解锁，或 DApp 授权后已断开连接）、`'Invalid transaction provided'`（载荷非法，或钱包内部签名失败）、`'Transaction integrity check failed'`（4.11.1 起；载荷未通过 TronLink 完整性校验，如非字符串消息——在用户关闭 TronLink 警告弹窗后返回）、`{ code: 4100, message: 'Watch accounts cannot sign' }`（观察钱包；4.10.0 起）。无法识别的值应按意外错误处理，不要当作用户拒绝。
 
 ```javascript
 function isUserRejection(err) {
@@ -54,8 +54,8 @@ try {
     - **否**——自动重试会失败甚至有害。最危险的是"链上执行失败",此时交易已上链,无法撤回。
     - **是**——临时性问题,退避(指数,最多 3 次)后重试原调用。
     - **视情况**——读操作可以重试;**写操作不要在没对账的情况下自动重试**。
-3. DeepLink 和 CLI 两列有很多空白,是因为这两个 surface 只覆盖了生命周期的一段——DeepLink 仅限移动端且跨信任边界;CLI v1.0.1 所有失败都退出 `1`，该列无法区分失败类别，请改读 stderr 中的 `error` 字符串（`—` 表示 CLI 不涉及该情况）。**用得到哪个 surface 就以哪个 surface 为准**。
+3. DeepLink 和 CLI 两列有很多空白,是因为这两个 surface 只覆盖了生命周期的一段——DeepLink 仅限移动端且跨信任边界;CLI v1.0.1 所有失败都退出 `1`，该列无法区分失败类别，请改读 stderr 中的 `error` 字符串（`—` 表示 CLI 没有对应的专门情况，任何失败仍退出 `1`）。CLI 写命令退出 `1` 时，即使该行标为**是**也不能自动重试——先在链上确认。**用得到哪个 surface 就以哪个 surface 为准**。
 
 ## 给下游 MCP 服务的约束
 
-下游 MCP 服务(TronLink Signer、自定义 Skills)**必须复用**本表里的 `TL_*` 码,不要自创新字符串。如果出现了新的业务含义,先在本页加行 + 在 `tronlink-mcp-core`(SSOT)加新的 `TL_*` 常量,再在消费端引用——**不要在消费端临时造码**。
+基于 TronLink MCP Core 的下游 MCP 服务(如自定义 Skills)**必须复用**本表里的 `TL_*` 码,不要自创新字符串。如果出现了新的业务含义,先在本页加行 + 在 `tronlink-mcp-core`(SSOT)加新的 `TL_*` 常量,再在消费端引用——**不要在消费端临时造码**。

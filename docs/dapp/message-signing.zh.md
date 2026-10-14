@@ -12,9 +12,12 @@ DApp 可以请求用户对消息签名，再将消息与签名转发给后端验
 
 ```javascript
 const tronweb = window.tron.tronWeb;
+const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
 try {
-  const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
   const signedString = await tronweb.trx.signMessageV2(message);
+  // 用同一个字符串验签，返回签名者的 base58 地址
+  const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
+  const ok = recovered === tronweb.defaultAddress.base58;
 } catch (e) {}
 ```
 
@@ -24,12 +27,7 @@ try {
 
 通过 TronLink 注入的 `tronWeb` 只支持字符串（TronLink 插件 4.0.0 起）。TronWeb 本身还接受 `Uint8Array` / `number[]` 来签原始字节，但 TronLink 会拒绝这些类型，因此 DApp 无法通过 `signMessageV2` 让 TronLink 对任意原始字节签名。
 
-验签时把**同一个字符串**传给 `verifyMessageV2`。它返回恢复出的 base58 地址，地址不匹配时不会抛错——需要自行比对：
-
-```javascript
-const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
-const ok = recovered === tronweb.defaultAddress.base58;
-```
+验签时把**同一个字符串**传给 `verifyMessageV2`（见上方示例）。它返回恢复出的 base58 地址，地址不匹配时不会抛错——需要自行比对。
 
 参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
 
@@ -64,7 +62,7 @@ const ok = recovered === tronweb.defaultAddress.base58;
 | `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.signMessageV2(message)` | 否——用户拒绝 |
 | `'Invalid transaction provided'`（字符串） | 消息为空，或钱包内部签名失败 | `signMessageV2(...)` | 否——传入非空字符串 |
 | `'Transaction integrity check failed'`（字符串） | 非字符串消息（如 `Uint8Array`）被钱包拦截，在用户关闭 TronLink 警告弹窗后返回；插件 4.11.0 及更早返回 `'Invalid transaction provided'` | `signMessageV2(...)` | 否——传入字符串 |
-| `'User has not unlocked wallet'`（字符串） | 钱包未解锁，或 DApp 未连接 | `signMessageV2(...)` | 是——用户解锁或重新连接后 |
+| `'User has not unlocked wallet'`（字符串） | 钱包未解锁，或 DApp 授权后已断开连接 | `signMessageV2(...)` | 是——用户解锁或重新连接后 |
 | (抛出) | provider 未注入 / 钱包未授权 | `window.tron.tronWeb` 未定义 | 否——先通过 `eth_requestAccounts` 连接 |
 
 跨 surface 的码对照见[错误码对照表](../reference/error-code-map.md)。

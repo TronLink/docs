@@ -7,7 +7,7 @@ When a DApp asks TronLink to sign a `DelegateResourceContract` or `UnDelegateRes
 - **Resource type** — read from `raw_data.contract[0].parameter.value.resource`. `tronWeb.transactionBuilder.delegateResource` / `undelegateResource` already set this field to `"ENERGY"` for energy. For bandwidth the field is omitted (it is the protobuf default), and TronLink (4.1.4 and later) treats a missing value as `"BANDWIDTH"`. You do not need to add it yourself.
 - **Estimated amount** — read from a top-level `__options` object that you add to the transaction: `estimatedBandwidth` is the estimated bandwidth, `estimatedEnergy` is the estimated energy. Only the value matching the resource type is shown. If `__options` is missing, the popup shows `0`; signing still works.
 
-`__options` sits outside `raw_data`, so adding it does not change `txID` or `raw_data_hex`. In contrast, `parameter.value.resource` is part of the signed protocol data. Do not change it after building: a modified value no longer matches `raw_data_hex` / `txID`. `trx.sign` rejects such a transaction (`'Invalid transaction provided'`), and `trx.multiSign` recomputes `txID` from the modified data, so the signed transaction differs from the one you built. To change the resource type, rebuild the transaction.
+`__options` sits outside `raw_data`, so adding it does not change `txID` or `raw_data_hex`. In contrast, `parameter.value.resource` is part of the signed protocol data. Do not change it after building: a modified value no longer matches `raw_data_hex` / `txID`. `trx.sign` rejects such a transaction (`'Invalid transaction provided'`; extension 4.4.3 and later), and `trx.multiSign` recomputes `txID` from the modified data, so the signed transaction differs from the one you built. To change the resource type, rebuild the transaction.
 
 ![Delegate transaction object with raw_data.contract[0].parameter.value.resource and the top-level __options.estimatedBandwidth highlighted](../images/dapp_stake2.0_img_0.jpg)
 
@@ -22,11 +22,11 @@ For example:
 ```javascript
 // ENERGY — tronWeb sets parameter.value.resource = "ENERGY"
 const energyTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'ENERGY', 'ownerAddress', false);
-energyTx.__options = { estimatedEnergy: 65000 };
+energyTx.__options = { estimatedEnergy: 1 }; // placeholder — calculate it as described below
 
 // BANDWIDTH — resource is omitted and displayed as BANDWIDTH
 const bandwidthTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'BANDWIDTH', 'ownerAddress', false);
-bandwidthTx.__options = { estimatedBandwidth: 3000 };
+bandwidthTx.__options = { estimatedBandwidth: 1 }; // placeholder — calculate it as described below
 
 const signed = await tronWeb.trx.sign(energyTx);
 ```

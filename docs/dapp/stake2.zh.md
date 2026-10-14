@@ -7,7 +7,7 @@ DApp 请求 TronLink 对 `DelegateResourceContract` 或 `UnDelegateResourceContr
 - **资源类型**——读取自 `raw_data.contract[0].parameter.value.resource`。`tronWeb.transactionBuilder.delegateResource` / `undelegateResource` 对能量交易已自动写入 `"ENERGY"`；带宽交易会省略该字段（它是 protobuf 默认值），TronLink（4.1.4 及以上）把缺失值按 `"BANDWIDTH"` 处理。DApp 无需自行添加。
 - **预估数量**——读取自 DApp 在交易对象顶层添加的 `__options`：`estimatedBandwidth` 表示预估带宽，`estimatedEnergy` 表示预估能量。弹窗只展示与资源类型对应的那一项。缺少 `__options` 时弹窗显示 `0`，签名不受影响。
 
-`__options` 不在 `raw_data` 内，添加它不会改变 `txID` 或 `raw_data_hex`。而 `parameter.value.resource` 属于被签名的协议数据，构建后不要再修改：修改后的值与 `raw_data_hex` / `txID` 不一致。`trx.sign` 会拒绝这样的交易（`'Invalid transaction provided'`），`trx.multiSign` 则会按修改后的数据重新计算 `txID`，签出的交易与你构建的不同。需要更换资源类型时请重新构建交易。
+`__options` 不在 `raw_data` 内，添加它不会改变 `txID` 或 `raw_data_hex`。而 `parameter.value.resource` 属于被签名的协议数据，构建后不要再修改：修改后的值与 `raw_data_hex` / `txID` 不一致。`trx.sign` 会拒绝这样的交易（`'Invalid transaction provided'`；插件 4.4.3 起），`trx.multiSign` 则会按修改后的数据重新计算 `txID`，签出的交易与你构建的不同。需要更换资源类型时请重新构建交易。
 
 ![委托交易对象示意，标出 raw_data.contract[0].parameter.value.resource 与顶层的 __options.estimatedBandwidth](../images/dapp_stake2.0_img_0.jpg)
 <style>
@@ -21,11 +21,11 @@ img {
 ```javascript
 // 能量——tronWeb 会写入 parameter.value.resource = "ENERGY"
 const energyTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'ENERGY', 'ownerAddress', false);
-energyTx.__options = { estimatedEnergy: 65000 };
+energyTx.__options = { estimatedEnergy: 1 }; // 占位值——按下方说明计算
 
 // 带宽——省略 resource，按 BANDWIDTH 展示
 const bandwidthTx = await tronWeb.transactionBuilder.delegateResource(10e6, 'receiverAddress', 'BANDWIDTH', 'ownerAddress', false);
-bandwidthTx.__options = { estimatedBandwidth: 3000 };
+bandwidthTx.__options = { estimatedBandwidth: 1 }; // 占位值——按下方说明计算
 
 const signed = await tronWeb.trx.sign(energyTx);
 ```

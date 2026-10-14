@@ -464,5 +464,5 @@ CLI 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级允�
     - 提示、横幅、颜色码的具体文本。
     - stderr 日志行格式（自动化请用 `--json`）。
 - **`--json` 是自动化契约。** 如果脚本调用本 CLI，**必须**传 `--json` 并基于结构化字段分支；纯文本输出供人阅读，minor 之间会漂移。
-- **废弃窗口。** 被标 deprecated 的子命令 / flag 至少在 **一个 minor 周期** 内继续可用，使用时 stderr 打印 `[DEPRECATED]`；移除最早发生在下一个 major。
-- **升级后校验。** v1.0.1 使用 `tronlink --help` + 依赖的子命令 `--help`，并对一条读操作 + 一条 preview-only 写操作的 `--json` 结构抽查一次再恢复自动化。
+- **废弃窗口。** 被标 deprecated 的子命令 / flag 至少在 **一个 minor 周期** 内继续可用；移除最早发生在下一个 major。
+- **升级后校验。** v1.0.1 使用 `tronlink --help` + 依赖的子命令 `--help`，并抽查一条读命令的 `--json` 输出后再恢复自动化。

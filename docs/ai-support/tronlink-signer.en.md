@@ -133,7 +133,7 @@ interface BroadcastResult {
 }
 ```
 
-`"failed"` means the transaction reached the chain but execution failed (e.g. `OUT_OF_ENERGY`, Solidity revert). **It is not thrown** — inspect `status` instead. The SDK only throws when broadcast itself never happened (signature error, user rejection, network unreachable, etc.).
+`"failed"` means the transaction reached the chain but execution failed (e.g. `OUT_OF_ENERGY`, Solidity revert). **It is not thrown** — inspect `status` instead. A thrown error does **not** mean the transaction was never broadcast: for example, aborting via `signal` while the SDK waits for confirmation throws `CANCELLED_BY_CALLER` even though the transaction may already be on chain. Reconcile before retrying — see the retry policy under Safety & Side Effects.
 
 ### `signer.waitForTransaction(txId, network?, options?): Promise<{ status; error? }>`
 
@@ -190,6 +190,7 @@ try {
   });
 } catch (e) {
   // e.message === "CANCELLED_BY_CALLER"
+  // If onBroadcasted already fired, the transaction may be on chain — reconcile before retrying.
 }
 ```
 
@@ -205,7 +206,7 @@ try {
 - **Human-in-the-loop:** `connectWallet` and every signing/Remote Write call require the user to approve on the TronLink approval page — the SDK throws on rejection. Private keys never leave TronLink.
 - **Retry policy:**
     - Read and Sign-only calls are safe to retry (idempotent, no chain effect).
-    - Remote Write calls must **not** be blindly retried. The SDK throws only when broadcast never happened (signature error, user rejection, network unreachable) — those are safe to retry. But a returned `status: "pending"` means the broadcast may have landed; resending risks a double-spend. Reconcile with `waitForTransaction(txId)` before any retry.
+    - Remote Write calls must **not** be blindly retried. A thrown error does **not** prove the transaction was never broadcast — for example, aborting via `signal` while the SDK waits for confirmation throws `CANCELLED_BY_CALLER` even though the transaction may already be on chain. A returned `status: "pending"` likewise means the broadcast may have landed. Before any retry, reconcile: use the `txId` from `onBroadcasted` (or the result) with `waitForTransaction(txId)` or an explorer; resending without checking risks a double-spend.
 - **Failure ≠ throw:** an on-chain failure (`OUT_OF_ENERGY`, revert) is reported as `status: "failed"` on the `BroadcastResult`, not thrown — branch on `status`, not on try/catch. See [Broadcast Result](#broadcast-result).
 
 ## How It Works
@@ -308,15 +309,15 @@ export type {
 
 The SDK and the MCP wrapper share a version line and are released together.
 
-- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** (0.1.x → 0.1.y) will not change exported types, function signatures, or `error.code` values. Post-1.0: standard semver — major-only.
+- **Semver.** Pre-1.0: a **minor** bump (0.x → 0.y) may introduce breaking changes; a **patch** (0.1.x → 0.1.y) will not change exported types or function signatures. Post-1.0: standard semver — major-only.
 - **Stable contracts** (won't change in a patch):
     - `TronSigner` method names (`connectWallet`, `sendTrx`, `sendTrc20`, `signMessage`, `signTypedData`, `signTransaction`).
     - The `BroadcastResult` shape (`status: 'success' | 'pending' | 'failed'`, `txId`, `error?`).
-    - `error.code` enum values and `error.retryable` semantics.
+    - Thrown errors are plain `Error` objects; there is no `error.code` or `error.retryable` (v0.1.4).
     - The HITL (browser approval) requirement — no programmatic bypass will ever be added in a patch.
 - **Volatile contracts** (may change at any time):
     - Internal helper exports under `./internal/*`, `./browser-bridge.ts`, etc.
     - Wording of approval-page UI, signing-notice text, and stderr log lines.
-    - The exact layout of `error.message`; branch on `error.code`.
+    - The exact text of `error.message` (for example `USER_REJECTED`, `Confirmation declined by user`, `CANCELLED_BY_CALLER`, `TIMEOUT: ...`). Match the values you handle and treat any other error as not safe to retry.
 - **Type-level breakage.** Because the SDK is TypeScript-first, a minor bump may **add** required properties to an internal options interface without changing the callable function signature — this surfaces as a `tsc` error in your code but not a runtime change. We treat that as **a minor change**, not major; pin TypeScript-strict consumers to a `~0.1` range or read the diff before bumping.
 - **Verifying after upgrade.** Re-import the public types and confirm your `BroadcastResult` branching still compiles; in MCP mode, re-call `list_tools` to verify wrapper tool names and `inputSchema`.

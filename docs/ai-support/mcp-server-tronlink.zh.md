@@ -300,7 +300,7 @@ Claude Code 自动检测：
 
 如果选择自动创建，服务会生成随机密码，把密码保存到 `~/.agent-wallet/runtime_secrets.json`，创建一个加密的 `main` 钱包，并继续当前会话。
 
-下面是更完整的 Nile 配置。示例省略了兑换路由变量，以使用 Nile 默认值：`tl_chain_swap`（V2）走 Nile 路由；`tl_chain_swap_v3` 在 Nile 上可以询价（`action=estimate`），但无法执行——默认 V3 路由在 Nile 上没有合约，Nile 上的 Smart Router `TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj` 也没有实现 `exactInputSingle`。Shasta 的 URL 会使用主网默认值，因此 Shasta 上无法兑换。请勿把主网路由地址填进 Nile 配置：
+下面是更完整的 Nile 配置。示例省略了兑换路由变量，以使用 Nile 默认值：`tl_chain_swap`（V2）走 Nile 路由，但它会把报价 API 最优路径中的代币路径交给该 V2 路由执行，路径包含非 V2 池子时会失败（例如 Nile 上的 TRX→USDT），除非路径是纯 V2，否则 Nile 上的兑换只能视为可询价；`tl_chain_swap_v3` 在 Nile 上可以询价（`action=estimate`），但无法执行——默认 V3 路由在 Nile 上没有合约，Nile 上的 Smart Router `TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj` 也没有实现 `exactInputSingle`。Shasta 的 URL 会使用主网默认值，因此 Shasta 上无法兑换。请勿把主网路由地址填进 Nile 配置：
 
 ```json
 {
@@ -577,7 +577,7 @@ mcp-server-tronlink/
 
 - **必须设置 minOut / 滑点上限。** 通过 `list_tools` 查看 `tl_chain_swap_v3` 的输入 schema（`SwapV3Params`），核对实际的 minimum-output / 滑点字段名；**不要**依赖未声明的默认值，缺省或 0 的 minOut 一律视为不安全。
 - **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或同等接口）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
-- **核对 router。** 路由默认值按网络内置（见环境变量中的 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`）。如果覆盖 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`，请在目标网络上核实地址；过期或错误的 router 会把资金路由到非预期目标。
+- **核对 router。** 路由默认值为内置：V2 路由按网络区分，V3 默认值在所有网络都是同一个主网地址（见环境变量中的 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`）。如果覆盖 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`，请在目标网络上核实地址；过期或错误的 router 会把资金路由到非预期目标。
 - **不可自动重试。** swap 失败或结果未知都属于远程写——先在链上确认再决定是否重发（`TL_CHAIN_SWAP_FAILED` 不可重试）。
 
 #### 多签凭证管理（`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`）

@@ -468,5 +468,5 @@ The CLI is at **v1.0.x**, so standard semver applies — only **major** bumps ma
     - The exact wording of prompts, banner output, color codes.
     - Log line formats on stderr (parse `--json` instead).
 - **`--json` is the automation contract.** If you are scripting against this CLI, always pass `--json` and branch on structured fields. Plain-text output is for humans and will drift across minor releases.
-- **Deprecation window.** Deprecated subcommands / flags are kept for at least one minor cycle alongside their replacement; the CLI prints `[DEPRECATED]` to stderr when they are used. Removal lands no earlier than the next major.
-- **Verifying after upgrade.** For v1.0.1, re-run `tronlink --help` and any subcommand `--help` you depend on; spot-check the `--json` schema for one read and one preview-only write before resuming automation.
+- **Deprecation window.** Deprecated subcommands / flags are kept for at least one minor cycle alongside their replacement. Removal lands no earlier than the next major.
+- **Verifying after upgrade.** For v1.0.1, re-run `tronlink --help` and any subcommand `--help` you depend on; spot-check the `--json` output of one read command before resuming automation.

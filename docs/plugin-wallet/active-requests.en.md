@@ -204,10 +204,12 @@ The signed message is then sent to the backend for verification to authenticate 
 
 ```typescript
 const tronweb = window.tron.tronWeb;
-
+const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
 try {
-  const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
   const signedString = await tronweb.trx.signMessageV2(message);
+  // verify with the same string; returns the signer's base58 address
+  const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
+  const ok = recovered === tronweb.defaultAddress.base58;
 } catch (e) {}
 ```
 
@@ -217,12 +219,7 @@ Pass the message as a non-empty **string**. TronLink signs the UTF-8 bytes of th
 
 Through the TronLink-injected `tronWeb`, only strings are supported (TronLink extension 4.0.0 and later). TronWeb itself also accepts `Uint8Array` / `number[]` for raw bytes, but TronLink rejects those types, so a DApp cannot ask TronLink to sign arbitrary raw bytes with `signMessageV2`.
 
-To verify, pass the **same string** to `verifyMessageV2`. It returns the recovered base58 address and does not throw on a mismatch — compare the address yourself:
-
-```javascript
-const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
-const ok = recovered === tronweb.defaultAddress.base58;
-```
+To verify, pass the **same string** to `verifyMessageV2`, as in the example above. It returns the recovered base58 address and does not throw on a mismatch — compare the address yourself.
 
 See [TronWeb: Sign and Verify Message](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/).
 
@@ -430,7 +427,7 @@ Triggering the request shows an unlock popup if TronLink is locked, then a netwo
 
 ## JSON Schema Reference
 
-All RPC-style methods below are invoked via `window.tron.request({ method, params? })`. tronWeb-based methods (sign, multiSign, signMessageV2) take a positional argument and return a promise. Schemas follow JSON Schema Draft 7. Branch on integer `error.code` (table per method), never on `error.message`.
+All RPC-style methods below are invoked via `window.tron.request({ method, params? })`. tronWeb-based methods (sign, multiSign, signMessageV2) take a positional argument and return a promise. Schemas follow JSON Schema Draft 7. For `request` methods, branch on the numeric `code` listed per method; tronWeb signing methods fail in different forms depending on the cause — follow the notes under each method.
 
 ### `eth_requestAccounts` (TIP-1102)
 

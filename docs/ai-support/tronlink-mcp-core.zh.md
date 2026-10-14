@@ -389,7 +389,7 @@ interface GasFreeCapability {
 
 ### 错误码
 
-这是本框架所有工具返回错误码的**唯一数据源**（SSOT）。下游 server（`mcp-server-tronlink`、`mcp-tronlink-signer`）继承这些错误码并可扩展自有错误码。`retryable` 反映框架层面的安全性，agent 仍**必须**叠加调用工具的副作用分级——无论 `retryable` 为何，**结果未确认的 Remote Write 绝不能自动重试**。
+这是本框架所有工具返回错误码的**唯一数据源**（SSOT）。基于本框架的下游 server（`mcp-server-tronlink`）继承这些错误码并可扩展自有错误码；`mcp-tronlink-signer` 是独立的 server，不使用这些错误码。`retryable` 反映框架层面的安全性，agent 仍**必须**叠加调用工具的副作用分级——无论 `retryable` 为何，**结果未确认的 Remote Write 绝不能自动重试**。
 
 | 错误码 | Retryable | Hint | 典型触发 |
 |---|:---:|---|---|

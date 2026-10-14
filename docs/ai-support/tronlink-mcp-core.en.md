@@ -387,7 +387,7 @@ All tools return a consistent structure:
 
 ### Error Codes
 
-This is the single source of truth (SSOT) for error codes returned by every tool in this framework. Downstream servers (`mcp-server-tronlink`, `mcp-tronlink-signer`) inherit these codes and may extend them. `retryable` reflects framework-level safety; an agent **must** still apply the side-effect classification of the calling tool — never auto-retry a Remote Write whose outcome is unknown, regardless of `retryable`.
+This is the single source of truth (SSOT) for error codes returned by every tool in this framework. Downstream servers built on this framework (`mcp-server-tronlink`) inherit these codes and may extend them; `mcp-tronlink-signer` is a separate server and does not use them. `retryable` reflects framework-level safety; an agent **must** still apply the side-effect classification of the calling tool — never auto-retry a Remote Write whose outcome is unknown, regardless of `retryable`.
 
 | Code | Retryable | Hint | Typical trigger |
 |------|:---:|------|-----------------|

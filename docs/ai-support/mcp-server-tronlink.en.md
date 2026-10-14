@@ -297,7 +297,7 @@ If no wallet exists yet, startup shows two paths:
 
 If you choose auto-create, the server generates a random password, saves it to `~/.agent-wallet/runtime_secrets.json`, creates an encrypted `main` wallet, and continues with the current session.
 
-The following is a fuller Nile configuration. Swap router variables are omitted so the Nile defaults apply: `tl_chain_swap` (V2) uses the Nile router. `tl_chain_swap_v3` can quote (`action=estimate`) but cannot execute on Nile — the default V3 router has no contract there, and the Nile Smart Router `TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj` does not implement `exactInputSingle`. A Shasta URL selects the Mainnet defaults, so swaps do not work on Shasta. Do not copy Mainnet router addresses into a Nile configuration:
+The following is a fuller Nile configuration. Swap router variables are omitted so the Nile defaults apply: `tl_chain_swap` (V2) uses the Nile router, but it executes the token path of the quote API's best route through that V2 router, so it fails when the route includes non-V2 pools (for example TRX→USDT on Nile); treat Nile swaps as quote-only unless the route is pure V2. `tl_chain_swap_v3` can quote (`action=estimate`) but cannot execute on Nile — the default V3 router has no contract there, and the Nile Smart Router `TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj` does not implement `exactInputSingle`. A Shasta URL selects the Mainnet defaults, so swaps do not work on Shasta. Do not copy Mainnet router addresses into a Nile configuration:
 
 ```json
 {
@@ -583,7 +583,7 @@ Swaps are **Remote Write** and execute against a public DEX router, so they are 
 
 - **Always bound the trade with a minimum-output / slippage limit.** Inspect the `tl_chain_swap_v3` input schema via `list_tools` (the `SwapV3Params` shape) for the exact slippage / minimum-output field names — do **not** rely on an unstated default, and treat a missing or zero minimum-output as unsafe.
 - **Quote immediately before executing.** Get a fresh quote/route (e.g. Skills `tron-swap` `swap-quote` / `swap-route`), pick a tolerance you accept, and pass it explicitly.
-- **Check the router.** Router defaults are built in per network (see `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` under Environment Variables). If you override `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`, verify the address on the target network; a stale or wrong router can route funds unexpectedly.
+- **Check the router.** Router defaults are built in: the V2 router depends on the network, and the V3 default is the same Mainnet address on every network (see `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` under Environment Variables). If you override `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER`, verify the address on the target network; a stale or wrong router can route funds unexpectedly.
 - **No auto-retry.** A failed/uncertain swap is a Remote Write — confirm on-chain before re-issuing (`TL_CHAIN_SWAP_FAILED` is not retryable).
 
 #### Multi-sig credential hygiene (`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`)

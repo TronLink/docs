@@ -184,9 +184,12 @@ DApp 可以请求用户对消息签名，再将消息与签名转发给后端验
 #### 代码示例
 ```typescript
 const tronweb = window.tron.tronWeb;
+const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
 try {
-  const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
   const signedString = await tronweb.trx.signMessageV2(message);
+  // 用同一个字符串验签，返回签名者的 base58 地址
+  const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
+  const ok = recovered === tronweb.defaultAddress.base58;
 } catch (e) {}
 ```
 #### 参数
@@ -194,12 +197,7 @@ try {
 
 通过 TronLink 注入的 `tronWeb` 只支持字符串（TronLink 插件 4.0.0 起）。TronWeb 本身还接受 `Uint8Array` / `number[]` 来签原始字节，但 TronLink 会拒绝这些类型，因此 DApp 无法通过 `signMessageV2` 让 TronLink 对任意原始字节签名。
 
-验签时把**同一个字符串**传给 `verifyMessageV2`。它返回恢复出的 base58 地址，地址不匹配时不会抛错——需要自行比对：
-
-```javascript
-const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
-const ok = recovered === tronweb.defaultAddress.base58;
-```
+验签时把**同一个字符串**传给 `verifyMessageV2`（见上方示例）。它返回恢复出的 base58 地址，地址不匹配时不会抛错——需要自行比对。
 
 参见 [TronWeb 消息签名与验签说明](https://tronweb.network/docu/docs/Sign%20and%20Verify%20Message/)。
 
@@ -402,7 +400,7 @@ interface SwitchTronChainParameter {
 
 ## JSON Schema 参考
 
-下方 RPC 风格的方法都通过 `window.tron.request({ method, params? })` 调用；tronWeb 系列方法（sign、multiSign、signMessageV2）接收一个位置参数并返回 Promise。Schema 遵循 JSON Schema Draft 7。请基于 integer `error.code`（各方法独立的码表）分支，**不要**解析 `error.message`。
+下方 RPC 风格的方法都通过 `window.tron.request({ method, params? })` 调用；tronWeb 系列方法（sign、multiSign、signMessageV2）接收一个位置参数并返回 Promise。Schema 遵循 JSON Schema Draft 7。`request` 方法按各方法列出的数字 `code` 判断；tronWeb 签名方法失败的返回形式因原因而异，按各方法下的说明处理。
 
 ### `eth_requestAccounts`（TIP-1102）
 

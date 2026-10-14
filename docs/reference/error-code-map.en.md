@@ -2,7 +2,7 @@
 
 TronLink agents traverse three or four error-code dialects when a single user request crosses the DApp provider → DeepLink → MCP → CLI surfaces. This page is a single horizontal join keyed by **business meaning**; use it to translate a code from one dialect to its peers and to decide whether retrying is safe.
 
-> The per-surface tables linked in the column headers remain the SSOT. This page is a navigation aid — when in doubt, branch on the structured field of the surface you actually called (`error.code` for MCP; exit status + the stderr `error` string for CLI; the `code` field for `window.tron.request` (the rejection string for `tronWeb.trx.*` signing); the callback `code` for DeepLink).
+> The per-surface tables linked in the column headers remain the SSOT. This page is a navigation aid — when in doubt, branch on the structured field of the surface you actually called (`error.code` for MCP Server TronLink; the `Error: <message>` text for MCP TronLink Signer; exit status + the stderr `error` string for CLI; the `code` field for `window.tron.request` (the rejection string for `tronWeb.trx.*` signing); the callback `code` for DeepLink).
 
 **Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](#handling-rejections). Do not automatically retry signing.
 
@@ -26,7 +26,7 @@ TronLink agents traverse three or four error-code dialects when a single user re
 
 ## Handling rejections
 
-Besides the user-rejection values described above, other values a DApp can receive from the signing methods include `'User has not unlocked wallet'` (wallet locked, or the DApp is not connected), `'Invalid transaction provided'` (invalid payload, or signing failed inside the wallet), `'Transaction integrity check failed'` (4.11.1 and later; the payload failed TronLink's integrity check, e.g. a non-string message — returned after the user closes TronLink's warning popup), and `{ code: 4100, message: 'Watch accounts cannot sign' }` (watch-only account; 4.10.0 and later). Treat anything you do not recognize as an unexpected error, not as a user rejection.
+Besides the user-rejection values described above, other values a DApp can receive from the signing methods include `'User has not unlocked wallet'` (wallet locked, or the DApp was disconnected after authorization), `'Invalid transaction provided'` (invalid payload, or signing failed inside the wallet), `'Transaction integrity check failed'` (4.11.1 and later; the payload failed TronLink's integrity check, e.g. a non-string message — returned after the user closes TronLink's warning popup), and `{ code: 4100, message: 'Watch accounts cannot sign' }` (watch-only account; 4.10.0 and later). Treat anything you do not recognize as an unexpected error, not as a user rejection.
 
 ```javascript
 function isUserRejection(err) {
@@ -52,8 +52,8 @@ try {
     - **No** — auto-retry will fail or do harm. The most dangerous case is "On-chain execution failed", where the tx is already final on-chain.
     - **Yes** — transient; back off (exponential, max 3 retries) and retry the original call.
     - **Maybe** — read-only retry is OK; **never auto-retry writes** without first reconciling with on-chain state.
-3. The DeepLink and CLI columns have many gaps because those surfaces only cover a slice of the lifecycle — DeepLink is mobile-only and lives on a separate trust boundary; CLI v1.0.1 exits with `1` for every failure class, so its column cannot distinguish them — read the string `error` on stderr instead (`—` means the condition does not arise on the CLI). Use the most specific surface available.
+3. The DeepLink and CLI columns have many gaps because those surfaces only cover a slice of the lifecycle — DeepLink is mobile-only and lives on a separate trust boundary; CLI v1.0.1 exits with `1` for every failure class, so its column cannot distinguish them — read the string `error` on stderr instead (`—` means the CLI has no dedicated condition for it; any failure still exits `1`). For CLI write commands, an exit `1` is never safe to auto-retry, even in rows marked **Yes** — confirm on chain first. Use the most specific surface available.
 
 ## Notes for downstream MCP servers
 
-Downstream MCP servers (TronLink Signer, custom Skills) **must reuse** the `TL_*` codes from this map rather than minting new strings. If a new business meaning emerges, add a new row here and a new `TL_*` constant in `tronlink-mcp-core` (the SSOT) before shipping; do not invent codes in the consuming server.
+Downstream MCP servers built on TronLink MCP Core (for example custom Skills) **must reuse** the `TL_*` codes from this map rather than minting new strings. If a new business meaning emerges, add a new row here and a new `TL_*` constant in `tronlink-mcp-core` (the SSOT) before shipping; do not invent codes in the consuming server.
