@@ -240,9 +240,9 @@ Pre-configured multi-step workflows with dependency checks and parameter templat
 |----------|-------------|
 | `TL_TRONGRID_URL` | Full-node API URL |
 | `TL_TRONGRID_API_KEY` | API key (required for Mainnet). Free tier ≈ 100k requests/day at ~5 QPS; paid tiers raise QPS, daily quota, and add billing. Quotas and headers change over time — see [TronGrid Pricing](https://www.trongrid.io/pricing) and the dashboard for current values, and inspect `X-Ratelimit-*` response headers in your own runtime. Hitting the limit returns HTTP 429 (mapped to `TL_CHAIN_QUERY_FAILED`, retryable). For long-running agents, set up billing alerts at 50% / 80% / 95% of your plan. |
-| `TL_SUNSWAP_ROUTER` | SunSwap V2 router address. **No built-in default** — pin to the current router; the value in the example below is **effective as of 2026-05** (Mainnet). Source: [docs.sun.io](https://docs.sun.io). When SunSwap publishes a new router, set this env var rather than waiting on a docs/code change. |
-| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 smart router address. Same rules as V2. |
-| `TL_WTRX_ADDRESS` | WTRX contract address. Mainnet WTRX is `TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR`. Effective as of 2026-05. |
+| `TL_SUNSWAP_ROUTER` | SunSwap V2 Router address. Recommended: set it to the Router for the same network listed in the official [SunSwap V2 contract addresses](https://docs.sun.io/protocols/sunswap-v2/reference/contract/). If unset, the server falls back to a built-in default, which may differ from the official address. |
+| `TL_SUNSWAP_V3_ROUTER` | SunSwap V3 Router address (must implement `exactInputSingle`). Recommended: set it to the Router for the same network listed in the official [SunSwap V3 contract addresses](https://docs.sun.io/protocols/sunswap-v3/reference/contract/). If unset, the built-in default is a Mainnet address on every network, so V3 swaps cannot execute on Nile without this variable. |
+| `TL_WTRX_ADDRESS` | WTRX contract address. Optional; the default matches the WTRX used by the network's Router, so it normally does not need to be set. |
 
 **Wallet (`agent-wallet`):**
 
@@ -297,7 +297,7 @@ If no wallet exists yet, startup shows two paths:
 
 If you choose auto-create, the server generates a random password, saves it to `~/.agent-wallet/runtime_secrets.json`, creates an encrypted `main` wallet, and continues with the current session.
 
-For a ready-to-use Nile setup with the common fields already filled, you can extend the config like this:
+The following is a fuller Nile configuration. The router addresses are SunSwap's official Nile Routers ([V2](https://docs.sun.io/protocols/sunswap-v2/reference/contract/), [V3](https://docs.sun.io/protocols/sunswap-v3/reference/contract/)); do not copy Mainnet router addresses into a Nile configuration. `tl_chain_swap` (V2) executes the token path of the quote API's best route through the V2 router, so it fails when the route includes non-V2 pools (for example TRX→USDT on Nile). A Shasta URL selects the Mainnet defaults, so swaps do not work on Shasta:
 
 ```json
 {
@@ -312,8 +312,8 @@ For a ready-to-use Nile setup with the common fields already filled, you can ext
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
         "AGENT_WALLET_PASSWORD": "your-wallet-password",
-        "TL_SUNSWAP_ROUTER": "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
-        "TL_SUNSWAP_V3_ROUTER": "TB6xBCixqRPUSKiXb45ky1GhChFJ7qrfFj",
+        "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
+        "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
         "TL_MULTISIG_SECRET_ID": "TEST",
         "TL_MULTISIG_SECRET_KEY": "TESTTESTTEST",
@@ -339,6 +339,8 @@ If you only need direct API tools and do not need browser automation, you can ke
       "env": {
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
         "AGENT_WALLET_PASSWORD": "your-wallet-password",
+        "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
+        "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
         "TL_MULTISIG_SECRET_ID": "TEST",
         "TL_MULTISIG_SECRET_KEY": "TESTTESTTEST",
@@ -436,7 +438,7 @@ Pinned to the `package.json` of `mcp-server-tronlink@0.1.1`. Re-verify when bump
 | Side effect | Examples |
 | --- | --- |
 | **Read-only** (Network Read) | `tl_chain_get_account`, `tl_chain_get_tx`, `tl_gasfree_get_account`, `tl_wallet_list`, screen/state reads |
-| **Remote Write** (signs / changes remote state) | `tl_chain_send`, `tl_chain_stake`, `tl_chain_swap_v3`, `tl_multisig_submit_tx`, transfers, delegation |
+| **Remote Write** (signs / changes remote state) | `tl_chain_send`, `tl_chain_stake`, `tl_chain_swap` / `tl_chain_swap_v3` (`action=execute`), `tl_multisig_submit_tx`, transfers, delegation |
 
 - **Pre-checks:** all transaction tools validate (balances, reverts, resource burn) before execution.
 - **Human-in-the-loop:** write tools sign with the encrypted local `agent-wallet`; in browser-mode flows the user approves in the TronLink UI. Treat every Remote Write tool as requiring confirmation in production.
@@ -475,8 +477,8 @@ These are **docs-side mirrors** of the most critical tool inputs — useful when
     "action":           { "type": "string", "enum": ["estimate", "execute"], "description": "estimate = quote-only (Network Read); execute = sign & broadcast (Remote Write)" },
     "from_token":       { "type": "string", "description": "Source token address or 'TRX' for native" },
     "to_token":         { "type": "string", "description": "Target token address or 'TRX' for native" },
-    "amount":           { "type": "string", "description": "Input amount in token units" },
-    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in bps: 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
+    "amount":           { "type": "string", "description": "Input amount in the token's smallest unit, as an integer string (sun for TRX: \"1000000\" = 1 TRX). Decimals such as \"1.5\" are rejected." },
+    "fee_tier":         { "type": "number", "enum": [500, 3000, 10000], "description": "Pool fee tier in parts per million (ppm): 500=0.05%, 3000=0.3%, 10000=1% (default: 3000)" },
     "slippage":         { "type": "number", "description": "Slippage tolerance percent (default: 0.5). See 'Swap safety' above — never accept an unstated default for production execution." },
     "sqrt_price_limit": { "type": "string", "description": "Optional price limit for partial fills (advanced)" }
   }
@@ -572,7 +574,7 @@ Reminder: `tl_evaluate` runs arbitrary JS in the controlled Playwright browser. 
 | Boundary | Guarantee | Agent / operator obligation |
 |---|---|---|
 | **Prompt injection** | Tool inputs are consumed verbatim as call arguments. The server never concatenates tool inputs into a prompt re-sent to an LLM. Strings retrieved from chain or third-party APIs (account memos, contract revert reasons, transaction notes) **may contain attacker-controlled text** — treat them as untrusted. | Do not let the agent auto-route Remote Write tools off prose returned from a read. Always require structured fields (`txId`, `code`, `retryable`) for branching. |
-| **Outbound host allowlist (SSRF)** | The server only originates HTTPS to the four configured endpoints: `TL_TRONGRID_URL` (TronGrid), `TL_MULTISIG_BASE_URL`, `TL_GASFREE_BASE_URL`, and SunSwap routers via TronWeb. Tools never accept user-supplied URLs that get fetched verbatim. | Pin these env vars to known hosts in production; do not let LLM input populate any `*_BASE_URL`. |
+| **Outbound host allowlist (SSRF)** | The server only originates HTTPS to the three configured endpoints — `TL_TRONGRID_URL` (TronGrid; SunSwap router contracts are also called through its `triggersmartcontract` endpoint), `TL_MULTISIG_BASE_URL`, `TL_GASFREE_BASE_URL` — plus the built-in SunSwap quote API (`rot.endjgfsv.link` on Mainnet, `tnrouter.endjgfsv.link` on Nile; not configurable). Tools never accept user-supplied URLs that get fetched verbatim. | Pin these env vars to known hosts in production, and include the quote API host in any egress allowlist; do not let LLM input populate any `*_BASE_URL`. |
 | **API key handling (token passthrough)** | `TL_TRONGRID_API_KEY`, `TL_MULTISIG_SECRET_KEY`, `TL_GASFREE_API_SECRET` are read from env at startup and used only on the outbound leg. They are **not** returned in any tool response, error `details`, or Knowledge Store record. The server does not accept Authorization headers from MCP clients and forward them upstream. | Audit env capture in your MCP host config (some hosts log env); store secrets in the host's secret manager, not in `.mcp.json` committed to git. |
 | **Browser JS execution** | `tl_evaluate` runs arbitrary JavaScript in the controlled Playwright browser context. This is a **High-risk / Destructive** primitive — it can read DOM, click invisible elements, exfiltrate state, and bypass UI HITL. | Disable `tl_evaluate` from the MCP host's tool allowlist for any agent that does not strictly require it. Never expose it to a remote/multi-user MCP deployment. |
 | **HITL bypass** | Direct-API tools (`tl_chain_send`, `tl_chain_swap_v3`, etc.) sign with the local encrypted `agent-wallet` and broadcast **without** a TronLink browser approval. The `agent-wallet` password is the only barrier. | Hold `AGENT_WALLET_PASSWORD` outside the agent's reach. For production, prefer `mcp-tronlink-signer` (browser approval) over Direct-API for any tool that moves funds. |
@@ -585,7 +587,7 @@ Swaps are **Remote Write** and execute against a public DEX router, so they are 
 
 - **Always bound the trade with a minimum-output / slippage limit.** Inspect the `tl_chain_swap_v3` input schema via `list_tools` (the `SwapV3Params` shape) for the exact slippage / minimum-output field names — do **not** rely on an unstated default, and treat a missing or zero minimum-output as unsafe.
 - **Quote immediately before executing.** Get a fresh quote/route (e.g. Skills `tron-swap` `swap-quote` / `swap-route`), pick a tolerance you accept, and pass it explicitly.
-- **Pin the router.** `TL_SUNSWAP_V3_ROUTER` has no built-in default; a stale or wrong router can route funds unexpectedly. Set it to the current SunSwap V3 router (see Environment Variables).
+- **Check the router.** Set `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` to the Routers listed for your network in SunSwap's official contract addresses (see Environment Variables); a stale or wrong router can route funds unexpectedly.
 - **No auto-retry.** A failed/uncertain swap is a Remote Write — confirm on-chain before re-issuing (`TL_CHAIN_SWAP_FAILED` is not retryable).
 
 #### Multi-sig credential hygiene (`TL_MULTISIG_SECRET_ID` / `TL_MULTISIG_SECRET_KEY`)

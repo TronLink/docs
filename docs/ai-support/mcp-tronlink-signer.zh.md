@@ -100,7 +100,7 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 }
 ```
 
-**3. 审批（人工确认 HITL）** —— 服务打开 TronLink 审批页;用户核对「Send 5 TRX → TJRabc…xyz (Nile)」后点击 **Approve**。若点击 Reject 则返回 `USER_REJECTED`（不可重试）。
+**3. 审批（人工确认 HITL）** —— 服务打开 TronLink 审批页;用户核对「Send 5 TRX → TJRabc…xyz (Nile)」后点击 **Approve**。若点击 Reject 则返回错误结果 `Error: USER_REJECTED`（未经用户同意不要重发）。
 
 **4. MCP 工具 → 智能体（结果）**
 
@@ -115,7 +115,7 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 
 > 「已发送 5 TRX——链上已确认（交易 `0a1b2c…`）。」
 
-> 请基于 `status` / `error.code` 分支,不要解析自然语言。`status: "pending"` 表示广播成功但确认超时——应用 `get_balance` 或浏览器查询对账,而不是重发(见[错误](#错误)）。
+> 请基于 `isError` 与 JSON 结果中的 `status` 分支；错误只有消息文本（见[错误](#errors)）。`status: "pending"` 表示广播成功但确认超时——应用 `get_balance` 或浏览器查询对账,而不是重发(见[错误](#errors)）。
 
 ## 取消
 
@@ -123,36 +123,39 @@ claude mcp add -s user tronlink-signer -- node /path/to/packages/mcp-tronlink-si
 
 ## 交易确认
 
-当调用 `sign_transaction` 且 `broadcast: true` 时，服务器会在广播后自动轮询链上确认状态，并返回执行结果（`success` 或 `pending`）。如果交易在链上失败（如 `OUT_OF_ENERGY`、Solidity revert），错误信息会连同解码后的原因一并返回给 AI 智能体。
+当调用 `sign_transaction` 且 `broadcast: true` 时，服务器会在广播后自动轮询链上确认状态，并返回执行结果（`success`、`pending` 或 `failed`）。如果交易在链上失败（如 `OUT_OF_ENERGY`、Solidity revert），结果为 `status: "failed"`，`error` 中带解码后的原因，并标记 `isError: true`。
+
+<a id="errors"></a>
 
 ## 错误
 
-server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `retryable`，便于 agent 在不解析自然语言的前提下做分支。框架层错误码统一以 [TronLink MCP Core 错误码](tronlink-mcp-core.md#错误码) 为准；signer 特有错误如下：
+v0.1.4 中，错误以 MCP 工具结果返回：`isError: true`，内容是一段文本 `Error: <message>`，没有结构化的 `code` 或 `retryable` 字段。已知的消息如下：
 
-| 条件 | Retryable | 何时发生 |
+| 结果 | Retryable | 何时发生 |
 | --- | :---: | --- |
-| `USER_REJECTED` | 否 | 用户在 TronLink 审批页点击 Reject。 |
-| `TIMEOUT` | 是 | 在超时时间内未审批（默认 5 分钟）。重发会重新弹审批；**禁止**自动重试可能已在途的广播。 |
-| `BROWSER_DISCONNECTED` | 是（仅签名场景） | 审批页被关闭或心跳丢失。重发即可重新连接；如可能已落账则**禁止**重发。 |
-| `NETWORK_ERROR` | 是 | TronGrid / RPC 请求失败，偶发性故障。 |
-| `BROADCAST_FAILED` | 否 | 签名成功但节点拒绝提交。**禁止**自动重试——签名可能已被其他节点接受。 |
-| `ON_CHAIN_FAILED` | 否 | 广播成功但链上执行失败（`OUT_OF_ENERGY`、Solidity revert、`FAILED`）。该交易已最终化；先解决根因再发送新交易。 |
-| `INVALID_INPUT` | 否 | 工具输入校验失败。修正参数。 |
-| `CANCELLED` | 否 | MCP 客户端取消调用（如用户按 Ctrl+C）。 |
+| `Error: USER_REJECTED` | 否 | 用户在签名审批页点击 Reject。 |
+| `Error: Confirmation declined by user` | 否 | 用户在 TronLink 插件弹窗中拒绝。 |
+| `Error: CANCELLED_BY_CALLER` | 先核对 | MCP 客户端取消调用（如按 Ctrl+C）。如果是在广播之后取消，交易可能已经上链。 |
+| `Error: TIMEOUT: Request timed out after 5 minutes` | 先核对 | 5 分钟内没有结果。重发会重新弹出审批。 |
+| `Error: WALLET_CHANGED: <reason>` | 先核对 | TronLink 账户或网络切换、或钱包断开，待处理请求被清空。 |
+| JSON 结果 `"status": "failed"`（`isError: true`） | 否 | 广播成功但链上执行失败（`OUT_OF_ENERGY`、Solidity revert）。该交易已最终化；先解决根因再发送新交易。 |
+| 其他 `Error: <message>` | 否——先排查 | 输入校验失败、节点拒绝广播、网络错误等，文本原样透传。 |
 
-**重试策略。** 只读调用（`get_balance`）与签名前失败（`USER_REJECTED`、`INVALID_INPUT`、`CANCELLED`）agent 可安全用修正后的输入重发。任何签名 + 广播路径——一旦请求离开 server，结果就必须视为未知，先用 `get_balance` 或区块浏览器确认后再考虑重发。
+**重试策略。** 只读调用（`get_balance`）可安全重发。拒绝表示用户不同意——未经用户同意不要重发。对 `send_trx`、`send_trc20` 及 `broadcast: true` 的 `sign_transaction`，任何错误（包括 `CANCELLED_BY_CALLER`、`TIMEOUT`）都应视为结果未知，先用 `get_balance` 或区块浏览器确认后再考虑重发。
 
 ## 安全边界
 
 | 边界 | 保证 | Agent / 运维方义务 |
 |---|---|---|
-| **Prompt 注入** | 工具输入按原始值作为调用参数，server 不会再次提交给 LLM。TronLink 审批页渲染的是解析后的交易字段，不是 agent 的自由文本。 | 链上拿到的字符串（备注、revert 原因）视为不可信；分支应基于 `txId` / `status` / `code`，而非 prose。 |
+| **Prompt 注入** | 工具输入按原始值作为调用参数，server 不会再次提交给 LLM。TronLink 审批页渲染的是解析后的交易字段，不是 agent 的自由文本。 | 链上拿到的字符串（备注、revert 原因）视为不可信；分支应基于 `txId` / `status`，而非 prose。 |
 | **本地 HTTP listener** | 本地审批 server **仅绑定 `127.0.0.1`**（端口 `TRON_HTTP_PORT`，默认 3386，被占用时自增），永远不接受跨主机连接。每个 server session 有唯一 ID，前一次 session 的浏览器标签会被自动失效。 | 不要把 3386 端口转发到外网。同一台机器不要用相同 `TRON_HTTP_PORT` 跑两份。 |
-| **出站 host 白名单（SSRF）** | signer 只与 [Networks](#环境变量) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
+| **出站 host 白名单（SSRF）** | signer 只与 [Networks](#environment-variables) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
 | **API key 处理（token passthrough）** | `TRON_API_KEY` 仅在启动时从 env 读取，仅用于到 TronGrid 的出站；**不**会出现在任何工具响应、错误 `details` 或 MCP resource 中。server 不接受 MCP 客户端传入的 Authorization header 并转发到上游。 | API key 放进 MCP host 的 secret manager，不要写进会提交 git 的 `mcpServers` 配置。 |
 | **签名必须 HITL** | 所有签名工具（`send_trx`、`send_trc20`、`sign_message`、`sign_typed_data`、`sign_transaction`）都会打开 TronLink 审批页，**不存在程序化绕过**。私钥始终留在 TronLink。 | 不需要运维额外强制 HITL——这是结构性保证。不要试图通过移除浏览器层来"加固"。 |
 | **浏览器标签劫持** | 审批页基于 server session ID 验证每次请求，过期的标签会被忽略；心跳检测会在断连时关闭 session。 | 同一用户跑多个 agent 时，请让每个 agent 启动自己的 signer 实例；跨实例的请求串扰由 session ID 屏蔽，但 UI 层混淆不防。 |
 | **Confused deputy** | signer 以已连接的 TronLink 账户身份执行，没有来自 MCP 客户端的逐次授权 scope。 | 一个 signer 实例 = 一个 TronLink 账户，不要把多个终端用户复用到同一个实例。 |
+
+<a id="environment-variables"></a>
 
 ## 环境变量
 
@@ -167,6 +170,8 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 - **包：** `mcp-tronlink-signer` v0.1.4
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases)
+
+<a id="inline-changelog"></a>
 
 ### 内联 changelog
 
@@ -190,7 +195,7 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 - **改进** —— 单页审批流：一个常驻浏览器标签 + 心跳检测；server 重启后旧标签自动失效。
 - **改进** —— TRC20 金额校验改用 BigInt 小数转换（处理 0 位小数、>18 位小数等边界）。
 - **改进** —— `send_trx`、`sign_transaction` 在提交失败时返回真实的 broadcast 错误，不再是空消息。
-- **迁移** —— 若你已经基于 `error.code` / `status` 分支，无需迁移；如有解析 message 文本，请立即切换（见 [错误](#错误)）。
+- **迁移** —— 无需迁移；MCP 工具 schema 未变更。
 
 #### v0.1.1 — 2026-04-15
 
@@ -201,8 +206,8 @@ server 返回的错误使用标准 MCP 信封结构，带稳定的 `code` 与 `r
 
 ### 兼容性与迁移策略
 
-- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更 MCP 工具名、输入 schema 或 `error.code` 值。1.0 之后：标准 semver，仅 major 允许破坏。
+- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更 MCP 工具名或输入 schema。1.0 之后：标准 semver，仅 major 允许破坏。
 - **废弃窗口。** 当某工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，schema 内置 `meta.deprecated` 标记；移除最早发生在再下一周期。
-- **稳定契约。** 工具名、`error.code` 枚举、`status` 值（`success` / `pending`）属于公开面，patch 不会动。
-- **不稳定契约。** `message` 自然语言文本、日志行格式、审批页的视觉布局 **不属于** 公开面，随时可能变化。
+- **稳定契约。** 工具名、`status` 值（`success` / `pending` / `failed`）属于公开面，patch 不会动。
+- **不稳定契约。** 错误 `message` 文本（匹配[错误](#errors)中列出的已知取值，其他按未知处理）、日志行格式、审批页的视觉布局 **不属于** 公开面，随时可能变化。
 - **升级后校验。** 升级后 **必须** 重新 `list_tools` 确认你依赖的名字 + schema 仍存在，再继续工作流。

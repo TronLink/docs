@@ -1,9 +1,11 @@
 
 # Upcoming implementation: compatibility adaptation for the v field in the signature returned after Ledger signing
 
-For Ledger signing (including all transaction signatures, message signatures, and EIP-712 signatures), a new technical measure will be rolled out in the coming months. The trailing `01` in the `signature` field will be replaced with `1c`, and `00` will be replaced with `1b`.
+> **Current status — planned, not yet released:** Today, Ledger signatures (transaction, message, and EIP-712) are returned exactly as the device produces them and end in `00` / `01`; the same value goes into the broadcast transaction. Regular (non-Ledger) accounts end in `1b` / `1c`. Until the change ships, DApps that verify signatures should accept both forms — treat a trailing `00` / `01` as `1b` / `1c` (v + 27) before recovering the signer or passing the signature to a contract that expects `v` = 27 / 28.
 
-This change ensures that the last two bytes of Ledger account signatures are consistent with those of regular account signatures.
+For Ledger signing (including all transaction signatures, message signatures, and EIP-712 signatures), a new technical measure is planned: the trailing `01` in the `signature` field will be replaced with `1c`, and `00` will be replaced with `1b`.
+
+This change ensures that the final byte (two hexadecimal characters) of Ledger account signatures is consistent with those of regular account signatures.
 
 ### Transaction Signing
 

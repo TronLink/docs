@@ -50,7 +50,7 @@ await signer.stop();
 
 ### `signer.sendTrx(to, amount, network?, options?): Promise<BroadcastResult>`
 
-向指定地址发送 TRX，会打开浏览器授权页面供用户确认。返回 `{ txId, status, error? }`，其中 `status` 为 `"success"`、`"pending"` 或 `"failed"`（参见[广播结果](#广播结果)）。
+向指定地址发送 TRX，会打开浏览器授权页面供用户确认。返回 `{ txId, status, error? }`，其中 `status` 为 `"success"`、`"pending"` 或 `"failed"`（参见[广播结果](#broadcast-result)）。
 
 | 参数 | 类型 | 说明 |
 | ---- | ---- | ---- |
@@ -61,7 +61,7 @@ await signer.stop();
 
 ### `signer.sendTrc20(contractAddress, to, amount, decimals?, network?, options?): Promise<BroadcastResult>`
 
-发送 TRC20 代币，会打开浏览器授权页面。返回 `{ txId, status, error? }` — 参见[广播结果](#广播结果)。
+发送 TRC20 代币，会打开浏览器授权页面。返回 `{ txId, status, error? }` — 参见[广播结果](#broadcast-result)。
 
 | 参数 | 类型 | 说明 |
 | ---- | ---- | ---- |
@@ -93,7 +93,7 @@ const { signature } = await signer.signTypedData({
 
 ### `signer.signTransaction(transaction, network?, broadcast?, options?): Promise<{ signedTransaction; txId?; status?; error? }>`
 
-对原始交易进行签名。当 `broadcast` 为 `true` 时，签名后的交易会通过 TronLink 广播到链上，且 SDK 会自动轮询链上确认状态 — 可能的 `status` 取值参见[广播结果](#广播结果)。
+对原始交易进行签名。当 `broadcast` 为 `true` 时，签名后的交易会通过 TronLink 广播到链上，且 SDK 会自动轮询链上确认状态 — 可能的 `status` 取值参见[广播结果](#broadcast-result)。
 
 | 参数 | 类型 | 说明 |
 | ---- | ---- | ---- |
@@ -121,6 +121,8 @@ const result = await signer.signTransaction(tx, "nile", true, {
 });
 ```
 
+<a id="broadcast-result"></a>
+
 ### 广播结果
 
 广播类方法（`sendTrx`、`sendTrc20`、以及 `broadcast: true` 时的 `signTransaction`）均返回 `BroadcastResult`：
@@ -133,7 +135,7 @@ interface BroadcastResult {
 }
 ```
 
-`"failed"` 表示交易已上链但执行失败（如 `OUT_OF_ENERGY`、Solidity revert）。**它不会抛出异常** — 请检查 `status`。SDK 仅在广播本身没有发生时才会抛出（签名异常、用户拒绝、网络不可达等）。
+`"failed"` 表示交易已上链但执行失败（如 `OUT_OF_ENERGY`、Solidity revert）。**它不会抛出异常** — 请检查 `status`。抛错**不代表**交易未广播：例如 SDK 等待确认期间通过 `signal` 中止，会抛出 `CANCELLED_BY_CALLER`，但交易可能已经上链。重试前请先对账——见下方「安全与副作用」中的重试策略。
 
 ### `signer.waitForTransaction(txId, network?, options?): Promise<{ status; error? }>`
 
@@ -190,6 +192,7 @@ try {
   });
 } catch (e) {
   // e.message === "CANCELLED_BY_CALLER"
+  // 若 onBroadcasted 已触发，交易可能已上链——重试前先对账。
 }
 ```
 
@@ -205,7 +208,7 @@ try {
 - **人工确认（HITL）：** `connectWallet` 及每个签名/远程写调用都需要用户在 TronLink 审批页确认——被拒绝时 SDK 会抛错。私钥永不离开 TronLink。
 - **重试策略：**
     - 读取与仅签名调用可安全重试（幂等，无链上影响）。
-    - 远程写调用**不得**盲目重试。SDK 仅在广播从未发生时抛错（签名错误、用户拒绝、网络不可达）——这些可安全重试。但返回 `status: "pending"` 意味着广播可能已上链,重发有双花风险。重试前请先用 `waitForTransaction(txId)` 对账。
+    - 远程写调用**不得**盲目重试。抛错**不代表**交易未广播——例如 SDK 等待确认期间通过 `signal` 中止，会抛出 `CANCELLED_BY_CALLER`，但交易可能已经上链。返回 `status: "pending"` 同样表示广播可能已上链。重试前请先对账：用 `onBroadcasted`（或返回结果）中的 `txId` 调用 `waitForTransaction(txId)` 或在浏览器中查询；未核对就重发有双花风险。
 - **失败 ≠ 抛错：** 链上失败（`OUT_OF_ENERGY`、revert）以 `BroadcastResult` 的 `status: "failed"` 报告,不会抛出——请基于 `status` 分支,而非 try/catch。参见 [Broadcast Result](#broadcast-result)。
 
 ## 工作原理
@@ -302,21 +305,21 @@ export type {
 
 - **包：** `tronlink-signer` v0.1.4
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
-- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases) —— 与 `mcp-tronlink-signer` 共用版本线；已发布 GitHub release：**v0.1.1、v0.1.2**（2026-04-15）。v0.1.3 / v0.1.4 截至当前仅 npm —— MCP 可见变更详见 [`mcp-tronlink-signer` 的内联 changelog](mcp-tronlink-signer.md#内联-changelog)，SDK 层跟随同一波次。
+- **变更记录 / 发布：** [https://github.com/TronLink/mcp-tronlink-signer/releases](https://github.com/TronLink/mcp-tronlink-signer/releases) —— 与 `mcp-tronlink-signer` 共用版本线；已发布 GitHub release：**v0.1.1、v0.1.2**（2026-04-15）。v0.1.3 / v0.1.4 截至当前仅 npm —— MCP 可见变更详见 [`mcp-tronlink-signer` 的内联 changelog](mcp-tronlink-signer.md#inline-changelog)，SDK 层跟随同一波次。
 
 ### 兼容性与迁移策略
 
 SDK 与 MCP 封装层共用版本线、共同发布。
 
-- **语义化版本。** 1.0 之前：**minor**（0.x → 0.y）允许破坏性变更；**patch**（0.1.x → 0.1.y）不变更导出类型、函数签名或 `error.code`。1.0 之后：标准 semver，仅 major 允许破坏。
+- **语义化版本。** 1.0 之前：**minor**（0.x → 0.y）允许破坏性变更；**patch**（0.1.x → 0.1.y）不变更导出类型或函数签名。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
-    - 导出函数名（`connect`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
-    - `BroadcastResult` 结构（`status: 'success' | 'pending'`、`txId`、`error?`）。
-    - `error.code` 枚举值与 `error.retryable` 语义。
+    - `TronSigner` 方法名（`connectWallet`、`sendTrx`、`sendTrc20`、`signMessage`、`signTypedData`、`signTransaction`）。
+    - `BroadcastResult` 结构（`status: 'success' | 'pending' | 'failed'`、`txId`、`error?`）。
+    - 抛出的错误是普通 `Error`，没有 `error.code` 或 `error.retryable`（v0.1.4）。
     - HITL（浏览器审批）强制要求——patch 永远不会引入程序化绕过。
 - **不稳定契约**（随时可能变化）：
     - `./internal/*`、`./browser-bridge.ts` 等内部 helper 导出。
     - 审批页 UI 文案、签名提示、stderr 日志行。
-    - `error.message` 的具体文本（分支用 `error.code`）。
+    - `error.message` 的具体文本（如 `USER_REJECTED`、`Confirmation declined by user`、`CANCELLED_BY_CALLER`、`TIMEOUT: ...`）。只匹配你要处理的取值，其他错误一律不视为可安全重试。
 - **类型层破坏。** SDK 是 TS-first，minor 升级可能 **新增** 内部 options 接口的必填字段而不改函数签名——在 TS 严格模式下表现为 `tsc` 报错但 runtime 行为不变。这种我们当作 **minor 变更** 处理，不算 major；TS-严格的消费方请把版本钉到 `~0.1`，或升级前先看 diff。
 - **升级后校验。** 重新导入公开类型，确认 `BroadcastResult` 分支仍能通过编译；MCP 模式下再 `list_tools` 复核封装层工具名 + `inputSchema`。

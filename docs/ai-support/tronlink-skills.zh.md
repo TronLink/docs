@@ -153,6 +153,8 @@ Stake 2.0 查询与 SR 信息。
 
 ---
 
+<a id="skill-mcp-tool-map"></a>
+
 ## Skill ↔ MCP 工具映射
 
 `scripts/mcp_server.mjs`（即[方式二](#mcp)的封装）将 **33 个 CLI 命令中的 25 个** 暴露为 MCP 工具——签名、输入字段、输出结构都由同一份 `tron_api.mjs` 实现派生，因此 CLI 与 MCP 工具保证等价。剩余 8 个 CLI-only 命令仍可通过方式一（skill 提示词）和方式三（直接 CLI）使用。需要按用户提问路由到具体工具，或核对 `tools/list` 输出时，请用下表。
@@ -553,7 +555,7 @@ Skills 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级�
 
 - **稳定契约**（minor / patch 不会动）：
     - 33 个 CLI 命令名与其必填 / 可选 flag（`tron_api.mjs <command> [...]`）。
-    - [Skill ↔ MCP 工具映射](#skill--mcp-工具映射) 列出的 25 个 MCP 工具名（`tron_*` 形式）及其 `inputSchema` 字段名。
+    - [Skill ↔ MCP 工具映射](#skill-mcp-tool-map) 列出的 25 个 MCP 工具名（`tron_*` 形式）及其 `inputSchema` 字段名。
     - Exit code：`0` 成功，`1` 查询错误 / 参数非法，`2` 未支持 / 未知命令。
     - `Network Read` 副作用分级——任何命令未经 major 升级都不会变成 Remote Write。
 - **不稳定契约**（minor 允许变化）：
@@ -561,5 +563,5 @@ Skills 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级�
     - 内置代币 symbol 快捷表（`USDT`、`USDC`、`WTRX`…）——minor 允许新增 symbol；已存在的映射 minor 不会重指。
     - 启发式与阈值（`whale-transfers` 默认阈值、`optimize-cost` 决策树权重等）。
 - **子集关系。** MCP 工具子集（目前 25 / 33）可能在 minor 中 **扩大**（CLI-only 命令被新增为 MCP 工具）；不会在 minor 中 **缩小**。
-- **废弃窗口。** 被标 deprecated 的命令 / 工具至少在 **一个 minor 周期** 内继续可用，runtime 会在 stderr 打印 `[DEPRECATED]` 警告；移除最早发生在下一个 major。
+- **废弃窗口。** 被标 deprecated 的命令 / 工具至少在 **一个 minor 周期** 内继续可用；移除最早发生在下一个 major。
 - **升级后校验。** 重新 `tron_api.mjs --help`，使用 MCP 时再跑 `tools/list`，确认依赖的名字仍在。MCP `initialize` 阶段返回的 `serverInfo.version` 应与升级后的 `package.json` 版本一致。

@@ -53,6 +53,6 @@ Plus the DApp integration, mobile (DeepLink), and Reference (networks, glossary,
 ## Notes for agents
 
 - Start from `llms.txt` — it is the authoritative map. Don't enumerate the site blindly.
-- For tool calls, branch on the structured `error.code` / `error.retryable`, never on the human-readable `message`.
+- Error formats differ between tools — follow the error section on each tool's page.
 - Read operations are safe to retry; signing / Remote Write operations require user approval (HITL) and must not be auto-retried — see each tool's Safety section.
 - Default to testnets (`nile` / `shasta`) when experimenting; use `mainnet` only for real funds.

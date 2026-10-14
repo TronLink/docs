@@ -32,7 +32,7 @@
 
 ## Ledger 签名看起来不一样（`v` 字节）
 
-TronLink 会规范化 Ledger 签名的末尾字节（`01`→`1c`，`00`→`1b`），使 Ledger 与普通账户签名一致。参见[对 Ledger 签名后的 v 字段兼容](../plugin-wallet/ledger-signing-update.md)。
+TronLink 插件的 Ledger 签名目前末尾为 `00` / `01`（v = 0 / 1），普通账户签名末尾为 `1b` / `1c`（v = 27 / 28）。[Ledger v 字段兼容指南](../plugin-wallet/ledger-signing-update.md)描述了计划中的归一化（`01`→`1c`、`00`→`1b`），目前尚未上线。验签时请同时兼容两种形式。
 
 ## 如何与移动端集成？
 

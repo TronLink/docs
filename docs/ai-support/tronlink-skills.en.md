@@ -553,7 +553,7 @@ Skills are at **v1.0.x**, so standard semver applies — only **major** bumps ma
 
 - **Stable contracts** (won't change in a minor or patch):
     - The 33 CLI command names and their required / optional flags (`tron_api.mjs <command> [...]`).
-    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill--mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
+    - The 25 MCP tool names listed in [Skill ↔ MCP Tool Map](#skill-mcp-tool-map) (`tron_*` form) and their `inputSchema` keys.
     - Exit codes: `0` success, `1` query error / invalid input, `2` unsupported / unknown command.
     - The `Network Read` side-effect classification — no command will ever become a Remote Write without a major bump.
 - **Volatile contracts** (may change in a minor):
@@ -561,5 +561,5 @@ Skills are at **v1.0.x**, so standard semver applies — only **major** bumps ma
     - Built-in token-symbol shortcut list (`USDT`, `USDC`, `WTRX`, …) — symbols may be added in any minor; existing mappings won't be repointed in a minor.
     - Heuristics and thresholds (`whale-transfers` default cutoff, `optimize-cost` decision tree weights, etc.).
 - **Subset relationship.** The MCP tool subset (currently 25 of 33) may **grow** in a minor (a previously CLI-only command exposed as an MCP tool); it will not **shrink** in a minor.
-- **Deprecation window.** A command / tool marked deprecated continues to work for at least one minor cycle; the runtime prints a `STDERR: [DEPRECATED]` warning. Removal lands no earlier than the next major.
+- **Deprecation window.** A command / tool marked deprecated continues to work for at least one minor cycle. Removal lands no earlier than the next major.
 - **Verifying after upgrade.** Re-run `tron_api.mjs --help` and (if using MCP) `tools/list` to confirm the names you depend on are still present. The MCP `serverInfo.version` exposed during `initialize` should match the bumped `package.json` version.

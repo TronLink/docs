@@ -1,111 +1,127 @@
-# Asset Filter Logic Documentation
+# 资产过滤规则
 
-## Overview
-This document describes the implementation of asset filtering logic in the TronLink wallet, specifically focusing on the interaction between basic mode, security anti-fraud reminder mode, and asset display settings.
+## 概述
 
-## Core Components
+本文介绍 TronLink 钱包中资产过滤逻辑的实现，重点说明基础模式、安全防诈骗提醒和资产显示设置之间的关系。
 
-### 1. Filter States
-- `hideLittleAssets`: Controls whether to hide small value assets
-- `hideScamToken`: Controls whether to hide scam tokens
+## 核心组成
 
-### 2. Mode States
-- `isBasicMode`: Indicates if the wallet is in basic mode
-- `isAntiCheatOpen`: Indicates if security anti-fraud reminder is enabled
+### 1. 过滤状态
 
-## Implementation Details
+- `hideLittleAssets`：控制是否隐藏小额资产
+- `hideScamToken`：控制是否隐藏诈骗代币
 
-### Filter Status Management
+### 2. 模式状态
 
-#### Reading Filter Status
-The `readHideLittleAssetsFlag()` method handles the initialization and updates of filter states:
-1. Retrieves saved filter settings from storage
-2. Gets current mode status
-3. Updates filter states based on mode status
-4. Updates UI to reflect current filter states
+- `isBasicMode`：表示钱包是否处于基础模式
+- `isAntiCheatOpen`：表示是否开启安全防诈骗提醒
 
-#### Filter State Updates
-The `updateFiltersState()` method manages filter state logic:
-1. In basic mode:
-   - Forces `hideLittleAssets` to false
-   - Ignores saved small assets hiding setting
-2. In non-basic mode:
-   - Uses saved `hideLittleAssets` setting
-3. For scam token filtering:
-   - Only applies when anti-fraud reminder is enabled
-   - Uses saved `hideScamToken` setting
+## 实现细节
 
-### Mode Change Handling
+### 过滤状态管理
 
-#### Basic Mode Changes
-When basic mode is enabled:
-1. Switches to user-defined sorting if currently using value-based sorting
-2. Updates filter states
-3. Refreshes UI
+#### 读取过滤状态
 
-#### Anti-Fraud Mode Changes
-When anti-fraud reminder is disabled:
-1. Clears saved scam token hiding setting
-2. Updates filter states
-3. Refreshes UI
+`readHideLittleAssetsFlag()` 方法负责初始化和更新过滤状态：
 
-### UI Updates
-The `updateFiltersUI()` method:
-1. Updates filter indicators in the UI
-2. Reflects current filter states to users
+1. 从存储中读取已保存的过滤设置
+2. 获取当前模式状态
+3. 根据模式状态更新过滤状态
+4. 更新界面，展示当前过滤状态
 
-## Key Methods
+#### 更新过滤状态
+
+`updateFiltersState()` 方法管理过滤状态逻辑：
+
+1. 在基础模式下：
+   - 强制将 `hideLittleAssets` 设为 `false`
+   - 忽略已保存的小额资产隐藏设置
+2. 在非基础模式下：
+   - 使用已保存的 `hideLittleAssets` 设置
+3. 对于诈骗代币过滤：
+   - 仅在开启防诈骗提醒时生效
+   - 使用已保存的 `hideScamToken` 设置
+
+### 模式变更处理
+
+#### 基础模式变更
+
+开启基础模式时：
+
+1. 如果当前按资产价值排序，则切换为用户自定义排序
+2. 更新过滤状态
+3. 刷新界面
+
+#### 防诈骗提醒状态变更
+
+关闭防诈骗提醒时：
+
+1. 清除已保存的诈骗代币隐藏设置
+2. 更新过滤状态
+3. 刷新界面
+
+### 界面更新
+
+`updateFiltersUI()` 方法：
+
+1. 更新界面中的过滤状态标识
+2. 向用户展示当前过滤状态
+
+## 关键方法
 
 ### `readHideLittleAssetsFlag()`
-- Purpose: Initialize and update filter states
-- Trigger: Mode changes, app startup
-- Dependencies: Saved settings, current mode status
+
+- 用途：初始化和更新过滤状态
+- 触发时机：模式变更、应用启动
+- 依赖：已保存的设置、当前模式状态
 
 ### `updateFiltersState()`
-- Purpose: Apply filter logic based on mode
-- Parameters:
-  - `isBasicMode`: Basic mode status
-  - `isAntiCheatOpen`: Anti-fraud reminder status
-  - `savedHideLittleAssets`: Saved small assets hiding setting
-  - `savedHideScamToken`: Saved scam token hiding setting
+
+- 用途：根据模式应用过滤逻辑
+- 参数：
+  - `isBasicMode`：基础模式状态
+  - `isAntiCheatOpen`：防诈骗提醒状态
+  - `savedHideLittleAssets`：已保存的小额资产隐藏设置
+  - `savedHideScamToken`：已保存的诈骗代币隐藏设置
 
 ### `handleBasicModeChanged()`
-- Purpose: Handle basic mode state changes
-- Actions:
-  - Updates sorting if needed
-  - Refreshes filter states
+
+- 用途：处理基础模式状态变更
+- 操作：
+  - 按需更新排序方式
+  - 刷新过滤状态
 
 ### `handleAntiCheatChanged()`
-- Purpose: Handle anti-fraud reminder state changes
-- Actions:
-  - Clears scam token settings if disabled
-  - Updates filter states
 
-## State Dependencies
+- 用途：处理防诈骗提醒状态变更
+- 操作：
+  - 在关闭防诈骗提醒时清除诈骗代币相关设置
+  - 更新过滤状态
 
-1. Basic Mode Impact:
-   - Overrides small assets hiding setting
-   - Forces user-defined sorting
+## 状态依赖
 
-2. Anti-Fraud Reminder Impact:
-   - Controls scam token filtering
-   - Clears settings when disabled
+1. 基础模式的影响：
+   - 覆盖小额资产隐藏设置
+   - 强制使用用户自定义排序
+2. 防诈骗提醒的影响：
+   - 控制诈骗代币过滤
+   - 关闭时清除相关设置
 
-## UI Integration
+## 界面集成
 
-The filter states are reflected in the UI through:
-1. Filter indicators
-2. Asset list display
-3. Sorting options
+过滤状态通过以下界面元素体现：
 
-## Future Considerations
+1. 过滤状态标识
+2. 资产列表显示
+3. 排序选项
 
-1. Potential improvements:
-   - Add more granular filter controls
-   - Implement filter presets
-   - Add filter statistics
+## 后续考虑
 
-2. Maintenance points:
-   - Monitor filter performance
-   - Track user filter preferences
-   - Optimize filter update frequency 
+1. 潜在改进：
+   - 增加更细粒度的过滤控制
+   - 实现预设过滤方案
+   - 增加过滤统计功能
+2. 维护要点：
+   - 监控过滤性能
+   - 跟踪用户的过滤偏好
+   - 优化过滤更新频率

@@ -47,9 +47,11 @@ try {
 
 ## 错误码
 
+**错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](../reference/error-code-map.md#handling-rejections)。不要自动重试签名。
+
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
-| `4001` | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
+| `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
 | (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
 | (抛出) | 签名权重广播后仍低于 `threshold` | `sendRawTransaction` | 否——再凑签名(每个 co-signer 一次 `multiSign`) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
