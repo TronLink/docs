@@ -8,7 +8,7 @@
 
 **核心亮点：**
 - **6 大技能，33 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
-- **零 npm 依赖**：使用原生 Node.js 18+ `fetch` 和 `crypto`，无需 `npm install`
+- **零 npm 依赖**：使用原生 Node.js `fetch` 和 `crypto`（要求精确版本 Node.js 24.22.1，见下方「依赖项」），无需 `npm install`
 - **TRON 专属领域知识** — 专门处理能量 + 带宽资源模型
 - **多平台支持** — Claude Code、Cursor、OpenCode、Codex CLI、LangChain/CrewAI
 - **纯只读安全设计**：所有命令均为查询操作，不涉及私钥或签名
@@ -39,7 +39,7 @@ TronLink Skills 以深度 TRON 领域知识填补了这一空白。
 AI 代理 (Claude Code / Cursor / OpenCode / 自定义)
          |
          v
-tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
+tron_api.mjs (Node.js 24.22.1, 原生 fetch, 零依赖)
     ├── 零 npm 依赖
     ├── TronGrid HTTP API（公共或带 API Key）
     └── Tronscan API 用于代币元数据
@@ -483,7 +483,7 @@ tronlink-skills/
 
 | 依赖 | 是否必需？ | 用途 |
 |------|-----------|------|
-| Node.js >= 18 | 是 | 运行时（原生 fetch、crypto） |
+| Node.js 24.22.1（精确版本） | 是 | 运行时（原生 fetch、crypto）。默认分支通过 `.nvmrc` 与 `package.json` 的 `engines` 固定该版本；`install.sh` 检测到其他版本会直接报错退出。安装前先执行 `nvm install 24.22.1 && nvm use 24.22.1`。 |
 | npm install | 不需要 | 所有操作均无需安装任何 npm 依赖 |
 
 ---

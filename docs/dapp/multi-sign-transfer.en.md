@@ -28,9 +28,10 @@ Use the resulting `id` as `permissionId` below.
 ```javascript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-const activePermissionId = 2; // obtained via tronWeb.trx.getAccount(...).active_permission
+const fromAddress = tronweb.defaultAddress.base58; // the multi-sig controlled account that pays; replace if different
+const activePermissionId = 2; // obtained via tronWeb.trx.getAccount(fromAddress).active_permission
 const tx = await tronweb.transactionBuilder.sendTrx(
-  toAddress, 10,
+  toAddress, 10, fromAddress,
   { permissionId: activePermissionId }
 ); // Step 1
 try {
@@ -50,7 +51,7 @@ Note that the broadcast only collects one signature in this call — a fully sig
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'` (string) | User clicked **Reject** in the signing popup | `tronWeb.trx.multiSign(...)` | No — user declined |
-| (thrown) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})` — wrong or revoked permission | No — re-query `getAccount(...).active_permission` |
+| (thrown) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx(to, amount, from, {permissionId})` — wrong or revoked permission | No — re-query `getAccount(...).active_permission` |
 | (thrown) | Signature weight below `threshold` after broadcast | `sendRawTransaction` | No — collect more signatures (one `multiSign` call per co-signer) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | Broadcast succeeded but execution failed on-chain | `getTransactionInfo(txid)` | **No — the tx is final; never auto-retry** |
 

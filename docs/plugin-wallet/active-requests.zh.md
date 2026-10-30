@@ -155,9 +155,10 @@ try {
 ```typescript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
+const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
 const activePermissionId = 2;
 const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10, 
+    toAddress, 10, fromAddress,
     { permissionId: activePermissionId}
 ); // 步骤1
 try {
@@ -670,9 +671,10 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
+  const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
   const activePermissionId = 2;
   const tx = await tronweb.transactionBuilder.sendTrx(
-      toAddress, 10, 
+      toAddress, 10, fromAddress,
       { permissionId: activePermissionId}
   ); // 步骤1
   try {

@@ -171,10 +171,11 @@ Refer to **Normal Transfer** above.
 ```typescript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
+const fromAddress = tronweb.defaultAddress.base58; // the multi-sig controlled account that pays; replace if different
 const activePermissionId = 2;
 
 const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10,
+    toAddress, 10, fromAddress,
     { permissionId: activePermissionId}
 );
 
@@ -704,10 +705,11 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
+  const fromAddress = tronweb.defaultAddress.base58; // the multi-sig controlled account that pays; replace if different
   const activePermissionId = 2;
 
   const tx = await tronweb.transactionBuilder.sendTrx(
-      toAddress, 10,
+      toAddress, 10, fromAddress,
       { permissionId: activePermissionId}
   );
 

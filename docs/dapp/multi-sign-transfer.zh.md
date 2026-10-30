@@ -28,9 +28,10 @@ console.log(activePermissions.map(p => ({ id: p.id, name: p.permission_name, thr
 ```javascript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-const activePermissionId = 2; // 通过 tronWeb.trx.getAccount(...).active_permission 查出
+const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
+const activePermissionId = 2; // 通过 tronWeb.trx.getAccount(fromAddress).active_permission 查出
 const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10,
+    toAddress, 10, fromAddress,
     { permissionId: activePermissionId }
 ); // 步骤1
 try {
@@ -52,7 +53,7 @@ try {
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
-| (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
+| (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx(to, amount, from, {permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
 | (抛出) | 签名权重广播后仍低于 `threshold` | `sendRawTransaction` | 否——再凑签名(每个 co-signer 一次 `multiSign`) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
 

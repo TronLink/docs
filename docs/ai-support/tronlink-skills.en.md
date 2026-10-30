@@ -8,7 +8,7 @@
 
 **Key Highlights:**
 - **6 skills, 33 commands** covering wallet, token research, market data, swaps, resources, and staking
-- **Zero npm dependencies** — uses native Node.js 18+ `fetch` and `crypto`, no `npm install` needed
+- **Zero npm dependencies** — uses native Node.js `fetch` and `crypto` (requires exactly Node.js 24.22.1 — see [Dependencies](#dependencies)), no `npm install` needed
 - **TRON-specific domain knowledge** — dedicated handling of Energy + Bandwidth resource model
 - **Multi-platform support** — Claude Code, Cursor, OpenCode, Codex CLI, LangChain/CrewAI
 - **Read-only & safe** — all commands are query-only, no private keys or signing involved
@@ -39,7 +39,7 @@ Natural Language Input
 AI Agent (Claude Code / Cursor / OpenCode / Custom)
          |
          v
-tron_api.mjs (Node.js 18+, native fetch, zero dependencies)
+tron_api.mjs (Node.js 24.22.1, native fetch, zero dependencies)
     ├── Zero npm dependencies
     ├── TronGrid HTTP API (public or with API key)
     └── Tronscan API for token metadata
@@ -481,7 +481,7 @@ tronlink-skills/
 
 | Dependency | Required? | Purpose |
 |------------|-----------|---------|
-| Node.js >= 18 | Yes | Runtime (native fetch, crypto) |
+| Node.js 24.22.1 (exact) | Yes | Runtime (native fetch, crypto). Pinned by `.nvmrc` and `package.json` `engines` on the default branch; `install.sh` exits with an error on any other version. Run `nvm install 24.22.1 && nvm use 24.22.1` before installing. |
 | npm install | Not needed | All operations work without any npm dependencies |
 
 ---
