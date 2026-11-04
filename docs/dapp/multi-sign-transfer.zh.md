@@ -42,7 +42,7 @@ try {
   const res = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
   if (!res.result) {
     // 节点拒绝以返回值给出，不会抛异常——见下方错误码。
-    console.error(res.code, tronweb.toUtf8(res.message));
+    console.error(res.code, res.message && tronweb.toUtf8(res.message));
   }
 } catch (e) {}
 ```

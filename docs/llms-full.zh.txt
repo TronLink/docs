@@ -2,11 +2,11 @@
 
 > 中文文档全文拼接，适合 LLM 一次性 ingest。由 scripts/gen_llms_full.py 生成。索引见 ../llms.txt 的 Localized 段。
 
-- Generated: 2026-11-04T08:51:09Z
-- Commit: 7c37b1ce958c
+- Generated: 2026-11-04T08:53:50Z
+- Commit: 90b7e3d76d9d
 - Language: zh
 - Pages: 24
-- Token estimate: ~42,408 (chars / 4)
+- Token estimate: ~42,412 (chars / 4)
 ---
 
 <!-- source: docs/introduction.zh.md | url: introduction/ -->
@@ -5094,7 +5094,7 @@ try {
   const res = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
   if (!res.result) {
     // 节点拒绝以返回值给出，不会抛异常——见下方错误码。
-    console.error(res.code, tronweb.toUtf8(res.message));
+    console.error(res.code, res.message && tronweb.toUtf8(res.message));
   }
 } catch (e) {}
 ```

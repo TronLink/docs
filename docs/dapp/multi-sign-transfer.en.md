@@ -42,7 +42,7 @@ try {
   const res = await tronweb.trx.sendRawTransaction(signedTx); // Step 3
   if (!res.result) {
     // Node rejections are returned, not thrown — see Errors below.
-    console.error(res.code, tronweb.toUtf8(res.message));
+    console.error(res.code, res.message && tronweb.toUtf8(res.message));
   }
 } catch (e) {}
 ```

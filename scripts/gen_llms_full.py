@@ -333,6 +333,8 @@ AGENTS_DIR_TARGETS = {
 def agents_link_url(href: str) -> str:
     """`docs/ai-support/ai-llms.en.md#x` -> `https://docs.tronlink.org/ai-support/ai-llms/#x`."""
     path, _, frag = href[len("docs/"):].partition("#")
+    if not (DOCS / path).exists():
+        raise SystemExit(f"AGENTS.md links to missing docs path: {href}")
     if path.endswith(".en.md"):
         path = path[: -len(".en.md")] + "/"
     path = AGENTS_DIR_TARGETS.get(path, path)
@@ -375,11 +377,12 @@ def strip_volatile(text: str, header_lines: int = 12) -> str:
 
 def check_derived() -> int:
     """Return 1 if a committed derived file differs from a fresh render."""
-    expected = {
-        "llms-full.en.txt": render_bundle(PAGES_EN, "en", "check", "check")[0],
-        "llms-full.zh.txt": render_bundle(PAGES_ZH, "zh", "check", "check")[0],
-        "AGENTS.txt": render_agents_txt(),
-    }
+    en, _, missing_en = render_bundle(PAGES_EN, "en", "check", "check")
+    zh, _, missing_zh = render_bundle(PAGES_ZH, "zh", "check", "check")
+    if missing_en or missing_zh:
+        print(f"Missing pages — en: {missing_en}; zh: {missing_zh}", file=sys.stderr)
+        return 1
+    expected = {"llms-full.en.txt": en, "llms-full.zh.txt": zh, "AGENTS.txt": render_agents_txt()}
     expected["llms-full.txt"] = expected["llms-full.en.txt"]
     stale = []
     for name, text in expected.items():
