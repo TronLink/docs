@@ -28,14 +28,22 @@ Use the resulting `id` as `permissionId` below.
 ```javascript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-const activePermissionId = 2; // obtained via tronWeb.trx.getAccount(...).active_permission
+// fromAddress = the account whose active permission controls the funds (the tx owner).
+// It is not necessarily the connected signer: if the connected account is only a
+// co-signer listed in that permission's keys[], set fromAddress to the controlled account.
+const fromAddress = tronweb.defaultAddress.base58;
+const activePermissionId = 2; // obtained via tronWeb.trx.getAccount(fromAddress).active_permission
 const tx = await tronweb.transactionBuilder.sendTrx(
-  toAddress, 10,
+  toAddress, 10, fromAddress,
   { permissionId: activePermissionId }
 ); // Step 1
 try {
   const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // Step 2
-  await tronweb.trx.sendRawTransaction(signedTx); // Step 3
+  const res = await tronweb.trx.sendRawTransaction(signedTx); // Step 3
+  if (!res.result) {
+    // Node rejections are returned, not thrown — see Errors below.
+    console.error(res.code, res.message && tronweb.toUtf8(res.message));
+  }
 } catch (e) {}
 ```
 
@@ -50,8 +58,10 @@ Note that the broadcast only collects one signature in this call — a fully sig
 | Code | Meaning | Where it comes from | Retryable? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'` (string) | User clicked **Reject** in the signing popup | `tronWeb.trx.multiSign(...)` | No — user declined |
-| (thrown) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx({permissionId})` — wrong or revoked permission | No — re-query `getAccount(...).active_permission` |
-| (thrown) | Signature weight below `threshold` after broadcast | `sendRawTransaction` | No — collect more signatures (one `multiSign` call per co-signer) |
+| `code: 'SIGERROR'`, `message` decodes to `Validate signature error: permission isn't exit` | `permissionId` does not exist on `fromAddress` (wrong or revoked). `sendTrx` does **not** validate the permission — the node rejects at broadcast | Return value of `sendRawTransaction(...)` (not thrown) | No — re-query `getAccount(fromAddress).active_permission` and rebuild the transaction |
+| `code: 'SIGERROR'`, other `Validate signature error: …` messages | Signatures do not satisfy the permission — e.g. total weight below `threshold`, or a signer that is not in its `keys[]` | Return value of `sendRawTransaction(...)` (not thrown) | No — collect the missing signatures (one `multiSign` call per co-signer) |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | Broadcast succeeded but execution failed on-chain | `getTransactionInfo(txid)` | **No — the tx is final; never auto-retry** |
+
+`message` in a `sendRawTransaction` result is hex-encoded; decode it with `tronweb.toUtf8(res.message)`. To check before broadcasting, call `tronweb.trx.getSignWeight(signedTx)`: `result.code` is `PERMISSION_ERROR` when the permission does not exist and `NOT_ENOUGH_PERMISSION` while the signatures are still below `threshold`.
 
 For cross-surface translation see the [Error Code Map](../reference/error-code-map.md).

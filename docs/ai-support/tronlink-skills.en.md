@@ -4,11 +4,13 @@
 
 **GitHub**: [https://github.com/TronLink/tronlink-skills](https://github.com/TronLink/tronlink-skills)
 
+> **Version scope.** The command reference on this page (6 skills, 33 commands) was written for **v1.0.x**. The default branch — what `git clone` and `install.sh` install — is now **v1.1.0** (commit `7d2d58cb`): it adds 7 read-only commands (40 in total) and requires exactly **Node.js 24.22.1**. See [Version & License](#version-license); treat `tron_api.mjs --help` / MCP `tools/list` from your installed copy as authoritative.
+
 **TronLink Wallet Skills** is an AI Agent skill set that provides complete TRON blockchain wallet and DeFi functionality through natural language. Designed for Claude Code, Cursor, OpenCode, Codex CLI, and other AI agents.
 
 **Key Highlights:**
 - **6 skills, 33 commands** covering wallet, token research, market data, swaps, resources, and staking
-- **Zero npm dependencies** — uses native Node.js 18+ `fetch` and `crypto`, no `npm install` needed
+- **Zero npm dependencies** — uses native Node.js `fetch` and `crypto` (requires exactly Node.js 24.22.1 — see [Dependencies](#dependencies)), no `npm install` needed
 - **TRON-specific domain knowledge** — dedicated handling of Energy + Bandwidth resource model
 - **Multi-platform support** — Claude Code, Cursor, OpenCode, Codex CLI, LangChain/CrewAI
 - **Read-only & safe** — all commands are query-only, no private keys or signing involved
@@ -39,7 +41,7 @@ Natural Language Input
 AI Agent (Claude Code / Cursor / OpenCode / Custom)
          |
          v
-tron_api.mjs (Node.js 18+, native fetch, zero dependencies)
+tron_api.mjs (Node.js 24.22.1, native fetch, zero dependencies)
     ├── Zero npm dependencies
     ├── TronGrid HTTP API (public or with API key)
     └── Tronscan API for token metadata
@@ -481,7 +483,7 @@ tronlink-skills/
 
 | Dependency | Required? | Purpose |
 |------------|-----------|---------|
-| Node.js >= 18 | Yes | Runtime (native fetch, crypto) |
+| Node.js 24.22.1 (exact; default branch v1.1.0) | Yes | Runtime (native fetch, crypto). Pinned by `.nvmrc` and `package.json` `engines` on the default branch; `install.sh` exits with an error on any other version. Run `nvm install 24.22.1 && nvm use 24.22.1` before installing. |
 | npm install | Not needed | All operations work without any npm dependencies |
 
 ---
@@ -543,7 +545,10 @@ node scripts/tron_api.mjs optimize-cost --address TAddress...
 
 ## Version & License
 
-- **Package:** `tronlink-skills` v1.0.1
+- **Package:** `tronlink-skills` v1.0.1 — the version the command tables on this page describe.
+- **Default branch:** v1.1.0 (commit `7d2d58cb`, `package.json` `version: 1.1.0`), installed by `git clone` / `install.sh`. Differences from v1.0.1 that affect agents:
+    - 7 additional read-only commands, also exposed as `tron_<command>` MCP tools: `wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`. 40 commands in total; all remain Network Read.
+    - Node.js is pinned to exactly 24.22.1 (`.nvmrc`, `engines`); `install.sh` exits on any other version.
 - **License:** MIT — `SPDX-License-Identifier: MIT`
 - **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
 

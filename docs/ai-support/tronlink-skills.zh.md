@@ -4,11 +4,13 @@
 
 **GitHub**: [https://github.com/TronLink/tronlink-skills](https://github.com/TronLink/tronlink-skills)
 
+> **版本范围。** 本页的命令说明（6 大技能、33 个命令）基于 **v1.0.x** 编写。默认分支（即 `git clone` 和 `install.sh` 安装的版本）现为 **v1.1.0**（commit `7d2d58cb`）：新增 7 个只读命令（共 40 个），并要求精确版本 **Node.js 24.22.1**。详见文末「版本与许可证」；以你本地安装版本的 `tron_api.mjs --help` / MCP `tools/list` 为准。
+
 **TronLink Wallet Skills** 是一套 AI Agent 技能集，通过自然语言提供完整的 TRON 区块链钱包和 DeFi 功能。专为 Claude Code、Cursor、OpenCode、Codex CLI 及其他 AI 代理设计。
 
 **核心亮点：**
 - **6 大技能，33 个命令**，涵盖钱包、代币研究、市场数据、兑换、资源和质押
-- **零 npm 依赖**：使用原生 Node.js 18+ `fetch` 和 `crypto`，无需 `npm install`
+- **零 npm 依赖**：使用原生 Node.js `fetch` 和 `crypto`（要求精确版本 Node.js 24.22.1，见下方「依赖项」），无需 `npm install`
 - **TRON 专属领域知识** — 专门处理能量 + 带宽资源模型
 - **多平台支持** — Claude Code、Cursor、OpenCode、Codex CLI、LangChain/CrewAI
 - **纯只读安全设计**：所有命令均为查询操作，不涉及私钥或签名
@@ -39,7 +41,7 @@ TronLink Skills 以深度 TRON 领域知识填补了这一空白。
 AI 代理 (Claude Code / Cursor / OpenCode / 自定义)
          |
          v
-tron_api.mjs (Node.js 18+, 原生 fetch, 零依赖)
+tron_api.mjs (Node.js 24.22.1, 原生 fetch, 零依赖)
     ├── 零 npm 依赖
     ├── TronGrid HTTP API（公共或带 API Key）
     └── Tronscan API 用于代币元数据
@@ -483,7 +485,7 @@ tronlink-skills/
 
 | 依赖 | 是否必需？ | 用途 |
 |------|-----------|------|
-| Node.js >= 18 | 是 | 运行时（原生 fetch、crypto） |
+| Node.js 24.22.1（精确版本；默认分支 v1.1.0） | 是 | 运行时（原生 fetch、crypto）。默认分支通过 `.nvmrc` 与 `package.json` 的 `engines` 固定该版本；`install.sh` 检测到其他版本会直接报错退出。安装前先执行 `nvm install 24.22.1 && nvm use 24.22.1`。 |
 | npm install | 不需要 | 所有操作均无需安装任何 npm 依赖 |
 
 ---
@@ -545,7 +547,10 @@ node scripts/tron_api.mjs optimize-cost --address T地址...
 
 ## 版本与许可证
 
-- **包：** `tronlink-skills` v1.0.1
+- **包：** `tronlink-skills` v1.0.1——本页命令表所描述的版本。
+- **默认分支：** v1.1.0（commit `7d2d58cb`，`package.json` 中 `version: 1.1.0`），`git clone` / `install.sh` 安装的就是该版本。与 v1.0.1 相比，影响 agent 的差异：
+    - 新增 7 个只读命令（同时以 `tron_<command>` 形式暴露为 MCP 工具）：`wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`。共 40 个命令，仍全部为 Network Read。
+    - Node.js 固定为精确版本 24.22.1（`.nvmrc`、`engines`）；`install.sh` 检测到其他版本会直接退出。
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) —— 截至当前 v1.0.x 尚无 GitHub tag 发布；打 tag 之前请直接看 commit 历史。
 
