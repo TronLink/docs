@@ -16,6 +16,11 @@ Usage:
     python3 scripts/gen_llms_full.py
         Generate the three bundles in docs/.
 
+    python3 scripts/gen_llms_full.py --check
+        Skip writing; exit 1 if any derived file (llms-full bundles,
+        AGENTS.txt) is stale relative to its sources. Header stamps
+        (timestamp, commit, token estimate) are ignored. Used in CI.
+
     python3 scripts/gen_llms_full.py --verify https://docs.tronlink.org
         Skip generation; sample-check that the curated indexes' links
         return 200 on the live deployment. Used as a post-deploy CI gate.
@@ -70,6 +75,7 @@ PAGES_EN = [
     "dapp/stake2.en.md",
     "reference/networks.en.md",
     "reference/glossary.en.md",
+    "reference/error-code-map.en.md",
     "reference/faq.en.md",
 ]
 
@@ -97,6 +103,7 @@ PAGES_ZH = [
     "dapp/stake2.zh.md",
     "reference/networks.zh.md",
     "reference/glossary.zh.md",
+    "reference/error-code-map.zh.md",
     "reference/faq.zh.md",
 ]
 
@@ -356,6 +363,38 @@ def render_agents_txt() -> str:
     return out
 
 
+# Header lines that change on every run; ignored by --check.
+VOLATILE_HEADER_PREFIXES = ("- Generated: ", "- Commit: ", "- Token estimate: ")
+
+
+def strip_volatile(text: str, header_lines: int = 12) -> str:
+    lines = text.splitlines()
+    head = [l for l in lines[:header_lines] if not l.startswith(VOLATILE_HEADER_PREFIXES)]
+    return "\n".join(head + lines[header_lines:])
+
+
+def check_derived() -> int:
+    """Return 1 if a committed derived file differs from a fresh render."""
+    expected = {
+        "llms-full.en.txt": render_bundle(PAGES_EN, "en", "check", "check")[0],
+        "llms-full.zh.txt": render_bundle(PAGES_ZH, "zh", "check", "check")[0],
+        "AGENTS.txt": render_agents_txt(),
+    }
+    expected["llms-full.txt"] = expected["llms-full.en.txt"]
+    stale = []
+    for name, text in expected.items():
+        path = DOCS / name
+        actual = path.read_text(encoding="utf-8") if path.exists() else ""
+        if strip_volatile(actual) != strip_volatile(text):
+            stale.append(name)
+    if stale:
+        print("Stale derived files: " + ", ".join(f"docs/{n}" for n in stale), file=sys.stderr)
+        print("Run `python3 scripts/gen_llms_full.py` and commit the result.", file=sys.stderr)
+        return 1
+    print(f"All {len(expected)} derived files are up to date")
+    return 0
+
+
 def generate_bundles() -> None:
     sha = git_short_sha()
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -405,6 +444,11 @@ def main() -> None:
              "(e.g. https://docs.tronlink.org).",
     )
     parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Skip generation; exit 1 if llms-full bundles or AGENTS.txt are stale.",
+    )
+    parser.add_argument(
         "--sample-size",
         type=int,
         default=5,
@@ -412,6 +456,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    if args.check:
+        sys.exit(check_derived())
     if args.verify:
         sys.exit(verify_live(args.verify, sample_size=args.sample_size))
     generate_bundles()
