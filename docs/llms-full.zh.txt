@@ -2,11 +2,11 @@
 
 > 中文文档全文拼接，适合 LLM 一次性 ingest。由 scripts/gen_llms_full.py 生成。索引见 ../llms.txt 的 Localized 段。
 
-- Generated: 2026-10-30T07:18:33Z
-- Commit: 49ac6515992c
+- Generated: 2026-11-04T07:52:55Z
+- Commit: 5af6e87d9ee1
 - Language: zh
 - Pages: 23
-- Token estimate: ~41,046 (chars / 4)
+- Token estimate: ~41,384 (chars / 4)
 ---
 
 <!-- source: docs/introduction.zh.md | url: introduction/ -->
@@ -913,7 +913,7 @@ try {
 ```typescript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
+const fromAddress = tronweb.defaultAddress.base58; // 交易 owner：由该 active 权限控制的账户；若当前账户只是共同签名人，请显式填写被控制账户
 const activePermissionId = 2;
 const tx = await tronweb.transactionBuilder.sendTrx(
     toAddress, 10, fromAddress,
@@ -1429,7 +1429,7 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-  const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
+  const fromAddress = tronweb.defaultAddress.base58; // 交易 owner：由该 active 权限控制的账户；若当前账户只是共同签名人，请显式填写被控制账户
   const activePermissionId = 2;
   const tx = await tronweb.transactionBuilder.sendTrx(
       toAddress, 10, fromAddress,
@@ -2460,7 +2460,7 @@ mcp-server-tronlink/
 
 以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）以及 `meta.schemaVersion`。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**镜像全部 52 个工具——以 core 仓库为 SSOT。
 
-> **平价由 CI 强制。** `scripts/check_doc_schema_parity.py`（在 push、PR 及每日定时通过 [`check-doc-schema-parity.yml`](https://github.com/xueyuanying/docs/blob/main/.github/workflows/check-doc-schema-parity.yml) 触发）会对下方每个块的顶层字段集 + required 标记与上游 `schemas.ts` 做 diff——上游改名或 required ↔ optional 漂移都会让 CI 失败。
+> **平价由 CI 强制。** `scripts/check_doc_schema_parity.py`（在 push、PR 及每日定时通过 [`check-doc-schema-parity.yml`](https://github.com/TronLink/docs/blob/main/.github/workflows/check-doc-schema-parity.yml) 触发）会对下方每个块的顶层字段集 + required 标记与上游 `schemas.ts` 做 diff——上游改名或 required ↔ optional 漂移都会让 CI 失败。
 
 #### `tl_chain_send` —— **Remote Write**
 
@@ -3398,6 +3398,8 @@ npm run clean      # 删除 dist/
 
 **GitHub**: [https://github.com/TronLink/tronlink-skills](https://github.com/TronLink/tronlink-skills)
 
+> **版本范围。** 本页的命令说明（6 大技能、33 个命令）基于 **v1.0.x** 编写。默认分支（即 `git clone` 和 `install.sh` 安装的版本）现为 **v1.1.0**（commit `7d2d58cb`）：新增 7 个只读命令（共 40 个），并要求精确版本 **Node.js 24.22.1**。详见文末「版本与许可证」；以你本地安装版本的 `tron_api.mjs --help` / MCP `tools/list` 为准。
+
 **TronLink Wallet Skills** 是一套 AI Agent 技能集，通过自然语言提供完整的 TRON 区块链钱包和 DeFi 功能。专为 Claude Code、Cursor、OpenCode、Codex CLI 及其他 AI 代理设计。
 
 **核心亮点：**
@@ -3877,7 +3879,7 @@ tronlink-skills/
 
 | 依赖 | 是否必需？ | 用途 |
 |------|-----------|------|
-| Node.js 24.22.1（精确版本） | 是 | 运行时（原生 fetch、crypto）。默认分支通过 `.nvmrc` 与 `package.json` 的 `engines` 固定该版本；`install.sh` 检测到其他版本会直接报错退出。安装前先执行 `nvm install 24.22.1 && nvm use 24.22.1`。 |
+| Node.js 24.22.1（精确版本；默认分支 v1.1.0） | 是 | 运行时（原生 fetch、crypto）。默认分支通过 `.nvmrc` 与 `package.json` 的 `engines` 固定该版本；`install.sh` 检测到其他版本会直接报错退出。安装前先执行 `nvm install 24.22.1 && nvm use 24.22.1`。 |
 | npm install | 不需要 | 所有操作均无需安装任何 npm 依赖 |
 
 ---
@@ -3939,7 +3941,10 @@ node scripts/tron_api.mjs optimize-cost --address T地址...
 
 ## 版本与许可证
 
-- **包：** `tronlink-skills` v1.0.1
+- **包：** `tronlink-skills` v1.0.1——本页命令表所描述的版本。
+- **默认分支：** v1.1.0（commit `7d2d58cb`，`package.json` 中 `version: 1.1.0`），`git clone` / `install.sh` 安装的就是该版本。与 v1.0.1 相比，影响 agent 的差异：
+    - 新增 7 个只读命令（同时以 `tron_<command>` 形式暴露为 MCP 工具）：`wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`。共 40 个命令，仍全部为 Network Read。
+    - Node.js 固定为精确版本 24.22.1（`.nvmrc`、`engines`）；`install.sh` 检测到其他版本会直接退出。
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) —— 截至当前 v1.0.x 尚无 GitHub tag 发布；打 tag 之前请直接看 commit 历史。
 
@@ -5075,7 +5080,10 @@ console.log(activePermissions.map(p => ({ id: p.id, name: p.permission_name, thr
 ```javascript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
+// fromAddress = 资金所在、由该 active 权限控制的账户（交易 owner）。
+// 它不一定是当前连接的签名账户：若当前账户只是该权限 keys[] 里的共同签名人，
+// 请把 fromAddress 改成被控制的账户地址。
+const fromAddress = tronweb.defaultAddress.base58;
 const activePermissionId = 2; // 通过 tronWeb.trx.getAccount(fromAddress).active_permission 查出
 const tx = await tronweb.transactionBuilder.sendTrx(
     toAddress, 10, fromAddress,
@@ -5083,7 +5091,11 @@ const tx = await tronweb.transactionBuilder.sendTrx(
 ); // 步骤1
 try {
   const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // 步骤2
-  await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+  const res = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+  if (!res.result) {
+    // 节点拒绝以返回值给出，不会抛异常——见下方错误码。
+    console.error(res.code, tronweb.toUtf8(res.message));
+  }
 } catch (e) {}
 ```
 
@@ -5100,9 +5112,11 @@ try {
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
-| (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx(to, amount, from, {permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
-| (抛出) | 签名权重广播后仍低于 `threshold` | `sendRawTransaction` | 否——再凑签名(每个 co-signer 一次 `multiSign`) |
+| `code: 'SIGERROR'`，`message` 解码为 `Validate signature error: permission isn't exit` | `fromAddress` 上不存在该 `permissionId`（填错或已撤销）。`sendTrx` **不会**校验权限，由节点在广播时拒绝 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——重新查 `getAccount(fromAddress).active_permission` 后重建交易 |
+| `code: 'SIGERROR'`，其他 `Validate signature error: …` 信息 | 签名不满足该权限——如总权重低于 `threshold`，或签名人不在其 `keys[]` 中 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——补齐缺少的签名（每个 co-signer 一次 `multiSign`） |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
+
+`sendRawTransaction` 返回结果里的 `message` 是 hex 编码，用 `tronweb.toUtf8(res.message)` 解码。若要在广播前检查，可调用 `tronweb.trx.getSignWeight(signedTx)`：权限不存在时 `result.code` 为 `PERMISSION_ERROR`，签名权重仍低于 `threshold` 时为 `NOT_ENOUGH_PERMISSION`。
 
 跨 surface 的码对照见[错误码对照表](../reference/error-code-map.md)。
 

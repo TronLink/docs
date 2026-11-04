@@ -47,4 +47,4 @@ If you need to change runtime behavior (tool schemas, error codes, transaction l
 python3 scripts/gen_llms_full.py
 ```
 
-This regenerates `docs/llms-full.txt` with a fresh commit SHA, timestamp, and token estimate. Run it after any change under `docs/`.
+This regenerates `docs/llms-full.txt` with a fresh commit SHA, timestamp, and token estimate, and rebuilds the published `docs/AGENTS.txt` from this file with site-absolute links. Run it after any change under `docs/` or to this file; do not edit `docs/AGENTS.txt` by hand.

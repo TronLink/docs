@@ -28,7 +28,10 @@ console.log(activePermissions.map(p => ({ id: p.id, name: p.permission_name, thr
 ```javascript
 const tronweb = window.tron.tronWeb;
 const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-const fromAddress = tronweb.defaultAddress.base58; // 被多签控制的转出账户；若不是当前账户请替换
+// fromAddress = 资金所在、由该 active 权限控制的账户（交易 owner）。
+// 它不一定是当前连接的签名账户：若当前账户只是该权限 keys[] 里的共同签名人，
+// 请把 fromAddress 改成被控制的账户地址。
+const fromAddress = tronweb.defaultAddress.base58;
 const activePermissionId = 2; // 通过 tronWeb.trx.getAccount(fromAddress).active_permission 查出
 const tx = await tronweb.transactionBuilder.sendTrx(
     toAddress, 10, fromAddress,
@@ -36,7 +39,11 @@ const tx = await tronweb.transactionBuilder.sendTrx(
 ); // 步骤1
 try {
   const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // 步骤2
-  await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+  const res = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+  if (!res.result) {
+    // 节点拒绝以返回值给出，不会抛异常——见下方错误码。
+    console.error(res.code, tronweb.toUtf8(res.message));
+  }
 } catch (e) {}
 ```
 
@@ -53,8 +60,10 @@ try {
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
-| (抛出) | `permission_id not active` / `permission_id not exist` | `transactionBuilder.sendTrx(to, amount, from, {permissionId})`——权限不存在或被撤销 | 否——重新 `getAccount(...).active_permission` 查 |
-| (抛出) | 签名权重广播后仍低于 `threshold` | `sendRawTransaction` | 否——再凑签名(每个 co-signer 一次 `multiSign`) |
+| `code: 'SIGERROR'`，`message` 解码为 `Validate signature error: permission isn't exit` | `fromAddress` 上不存在该 `permissionId`（填错或已撤销）。`sendTrx` **不会**校验权限，由节点在广播时拒绝 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——重新查 `getAccount(fromAddress).active_permission` 后重建交易 |
+| `code: 'SIGERROR'`，其他 `Validate signature error: …` 信息 | 签名不满足该权限——如总权重低于 `threshold`，或签名人不在其 `keys[]` 中 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——补齐缺少的签名（每个 co-signer 一次 `multiSign`） |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
+
+`sendRawTransaction` 返回结果里的 `message` 是 hex 编码，用 `tronweb.toUtf8(res.message)` 解码。若要在广播前检查，可调用 `tronweb.trx.getSignWeight(signedTx)`：权限不存在时 `result.code` 为 `PERMISSION_ERROR`，签名权重仍低于 `threshold` 时为 `NOT_ENOUGH_PERMISSION`。
 
 跨 surface 的码对照见[错误码对照表](../reference/error-code-map.md)。

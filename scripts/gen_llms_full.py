@@ -8,6 +8,9 @@ whole documentation set in one request.
 We also write `llms-full.txt` as a verbatim copy of the English bundle so
 existing links (e.g. /llms-full.txt) keep working.
 
+It also rebuilds docs/AGENTS.txt (served at /AGENTS.txt) from the repo-root
+AGENTS.md, rewriting repo-relative `docs/...` links to docs.tronlink.org URLs.
+
 Usage:
 
     python3 scripts/gen_llms_full.py
@@ -311,6 +314,48 @@ def verify_live(base_url: str, sample_size: int = 5) -> int:
     return 0
 
 
+SITE_BASE = "https://docs.tronlink.org/"
+
+# Repo-relative directory links in AGENTS.md -> a representative published page.
+AGENTS_DIR_TARGETS = {
+    "plugin-wallet/": "plugin-wallet/active-requests/",
+    "reference/": "reference/networks/",
+}
+
+
+def agents_link_url(href: str) -> str:
+    """`docs/ai-support/ai-llms.en.md#x` -> `https://docs.tronlink.org/ai-support/ai-llms/#x`."""
+    path, _, frag = href[len("docs/"):].partition("#")
+    if path.endswith(".en.md"):
+        path = path[: -len(".en.md")] + "/"
+    path = AGENTS_DIR_TARGETS.get(path, path)
+    return SITE_BASE + path + (f"#{frag}" if frag else "")
+
+
+def render_agents_txt() -> str:
+    """Published copy of AGENTS.md with repo-relative `docs/...` links made absolute.
+
+    AGENTS.md links are correct on GitHub, but served from the site root as
+    /AGENTS.txt they resolve to /docs/... and 404 (scan finding TL-E04).
+    """
+    def repl(m: re.Match) -> str:
+        text, href = m.group(1), m.group(2)
+        url = agents_link_url(href)
+        if text.startswith("docs/"):
+            # Path-like label: pages show their URL, directories read as `<dir>/*`.
+            rel = text[len("docs/"):]
+            if rel.endswith("/"):
+                rel += "*"
+            text = "docs.tronlink.org/" + rel if rel.endswith(("*", ".txt")) else url[len("https://"):]
+        return f"[{text}]({url})"
+
+    src = (REPO / "AGENTS.md").read_text(encoding="utf-8")
+    out = re.sub(r"\[([^\]]+)\]\((docs/[^)]+)\)", repl, src)
+    if "](docs/" in out:
+        raise SystemExit("AGENTS.txt still contains repo-relative docs/ links")
+    return out
+
+
 def generate_bundles() -> None:
     sha = git_short_sha()
     generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -341,6 +386,10 @@ def generate_bundles() -> None:
         if index_path.exists():
             stamp_index_header(index_path, generated_at, sha)
             print(f"Stamped {index_path.relative_to(REPO)} (commit {sha})")
+
+    agents_path = DOCS / "AGENTS.txt"
+    agents_path.write_text(render_agents_txt(), encoding="utf-8")
+    print(f"Wrote {agents_path.relative_to(REPO)} (from AGENTS.md, site-absolute links)")
 
     if all_missing:
         msg = "; ".join(f"{lang}: {', '.join(m)}" for lang, m in all_missing.items())
