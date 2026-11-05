@@ -12,19 +12,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         persist-credentials: false
 
+    # 使用独立的 Python，避免 runner 镜像中 apt 预装的包（如 Pygments）无法被 pip 卸载
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
     - name: Prepare build environment
       run: |
-        sudo apt install python3-pip python3-dev python3-setuptools
-        sudo pip3 install -U pygments==2.17.2 pymdown-extensions
-        sudo pip3 install mkdocs-exclude
-        sudo pip3 install mkdocs-material==9.6.8
-        sudo pip3 install jieba==0.42.1
-        sudo pip3 install mkdocs-minify-plugin
-        sudo pip3 install mkdocs-static-i18n
+        pip install -U pygments==2.17.2 pymdown-extensions
+        pip install mkdocs-exclude
+        pip install mkdocs-material==9.6.8
+        pip install jieba==0.42.1
+        pip install mkdocs-minify-plugin
+        pip install mkdocs-static-i18n
 
     - name: Build the document
       run: mkdocs build
