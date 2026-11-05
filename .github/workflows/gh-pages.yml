@@ -16,7 +16,7 @@ jobs:
       with:
         persist-credentials: false
 
-    # 使用独立的 Python，避免 runner 镜像中 apt 预装的包（如 Pygments）无法被 pip 卸载
+    # Use an isolated Python: pip cannot uninstall apt-installed packages (e.g. Pygments) on the runner image
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
