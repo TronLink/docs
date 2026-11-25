@@ -1,4 +1,4 @@
-# TronLink Extension Core
+# 插件开源核心库
 
 `@tronlink/core` 是 TronLink 插件使用的 JavaScript / TypeScript 钱包库。钱包应用可以用它派生 TRON 和 EVM 账户，并在本地签名。DApp 如需连接用户已安装的 TronLink 插件并请求签名，请使用[插件提供的接口](active-requests.zh.md)。
 

@@ -1,4 +1,4 @@
-# TronLink Android Core
+# Android Core (Open Source)
 
 Integrate the wallet functions used by TronLink Android to create a TRON wallet, read its address, and sign transactions or messages.
 
