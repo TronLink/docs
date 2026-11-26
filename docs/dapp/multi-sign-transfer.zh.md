@@ -97,11 +97,31 @@ const outcome = await signAndCheck(tronweb, tx);
 
 ### 后续共同签名人
 
-结果为 `collect` 时，通过 DApp 的交接流程将其中的 `signedTx` 传给下一位有权限的共同签名人。每位共同签名人在同一网络连接钱包，并核对收到的交易。将收到的交易对象传给下面的函数。`signAndCheck` 会在该对象上调用 `multiSign`，保留已有签名和交易 ID。
+结果为 `collect` 时，通过 DApp 的交接流程将其中的 `signedTx` 传给下一位有权限的共同签名人。每位共同签名人在同一网络连接钱包。签名前，先确认交易数据与其 `txID` 一致，再解析 owner、收款地址、金额和过期时间并展示给共同签名人，确认无误后再继续。调用 `coSignTransfer` 时传入收到的交易对象，以及一个在共同签名人确认后返回 `true` 的 `confirmTransfer` 回调。`signAndCheck` 会在该对象上调用 `multiSign`，保留已有签名和交易 ID。
 
 ```javascript
-async function coSignTransfer(partiallySignedTx) {
-  return signAndCheck(window.tron.tronWeb, partiallySignedTx);
+function describeTransfer(tronweb, tx) {
+  // 签名针对 txID，展示前先确认 raw_data 的哈希与其一致。
+  const txCheck = tronweb.utils?.transaction?.txCheck;
+  if (!txCheck || !txCheck(tx)) throw new Error("交易数据与 txID 不一致");
+  const contract = tx.raw_data.contract[0];
+  if (contract.type !== "TransferContract") throw new Error("不是 TRX 转账");
+  const { owner_address, to_address, amount } = contract.parameter.value;
+  return {
+    owner: tronweb.address.fromHex(owner_address),
+    recipient: tronweb.address.fromHex(to_address),
+    amount: `${tronweb.fromSun(amount)} TRX`,
+    permissionId: contract.Permission_id,
+    expires: new Date(tx.raw_data.expiration).toISOString(),
+  };
+}
+
+async function coSignTransfer(partiallySignedTx, confirmTransfer) {
+  const tronweb = window.tron.tronWeb;
+  const details = describeTransfer(tronweb, partiallySignedTx);
+  // 在 DApp 界面中展示这些信息，共同签名人确认后再签名。
+  if (!(await confirmTransfer(details))) return { status: "declined" };
+  return signAndCheck(tronweb, partiallySignedTx);
 }
 ```
 

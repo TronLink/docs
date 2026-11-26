@@ -22,6 +22,8 @@ dependencies {
 }
 ```
 
+This page documents `1.0.2`, the version in the upstream README. Before using a later tag, read [Version & License](#version-license).
+
 ## Create a wallet
 
 Create a wallet in your app and read its TRON address.
@@ -54,4 +56,4 @@ Embedding Android Core 1.0.2 does not start usage reporting. This tag predates t
 
 ## Version & License
 
-The installation snippet follows the upstream README’s `1.0.2` example. The latest tag is `1.0.16`. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+This page documents `1.0.2`, the version in the upstream README’s installation example. Later tags, up to `1.0.16`, have not been reviewed for this page. From `1.0.8` the library includes the `UserStatistics` module, so review its reporting behavior and the privacy section above before upgrading. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)

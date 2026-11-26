@@ -277,7 +277,7 @@ Generated when:
 
 1. A DApp requests connection and the user rejects it in the popup.
 
-<img src="../../images/plugin-wallet_rejectWeb.jpg" alt="TronLink connection popup with the user clicking Reject, generating the rejectWeb event" width="350" style="max-width: 100%; height: auto;">
+![TronLink connection popup with the user clicking Reject, generating the rejectWeb event](../images/plugin-wallet_rejectWeb.jpg){ width="350" }
 
 Developers can listen for this message:
 
@@ -299,7 +299,7 @@ Generated when:
 
 1. The user manually disconnects the website.
 
-<img src="../../images/plugin-wallet_disconnectWeb.jpg" alt="TronLink connected-sites screen with the user clicking Disconnect on the listed DApp, generating the disconnectWeb event" width="350" style="max-width: 100%; height: auto;">
+![TronLink connected-sites screen with the user clicking Disconnect on the listed DApp, generating the disconnectWeb event](../images/plugin-wallet_disconnectWeb.jpg){ width="350" }
 
 Developers can listen for this message:
 
@@ -320,7 +320,7 @@ Generated when:
 
 1. The user confirms the connection request.
 
-<img src="../../images/plugin-wallet_acceptWeb.jpg" alt="TronLink connection popup with the user clicking Accept, generating the acceptWeb event" width="350" style="max-width: 100%; height: auto;">
+![TronLink connection popup with the user clicking Accept, generating the acceptWeb event](../images/plugin-wallet_acceptWeb.jpg){ width="350" }
 
 Developers can listen for this message:
 
@@ -341,7 +341,7 @@ Generated when:
 
 1. The user proactively connects to the website.
 
-<img src="../../images/plugin-wallet_connectWeb.jpg" alt="TronLink connected-sites screen with the user clicking Connect on a previously authorized DApp, generating the connectWeb event" width="350" style="max-width: 100%; height: auto;">
+![TronLink connected-sites screen with the user clicking Connect on a previously authorized DApp, generating the connectWeb event](../images/plugin-wallet_connectWeb.jpg){ width="350" }
 
 Developers can listen for this message:
 

@@ -97,11 +97,31 @@ const outcome = await signAndCheck(tronweb, tx);
 
 ### Additional co-signers
 
-When the outcome has status `collect`, pass its `signedTx` to the next authorized co-signer using your DApp’s handoff flow. Each co-signer connects their wallet on the same network and reviews the received transaction. Call the function below with the received transaction object. `signAndCheck` calls `multiSign` on that object so the existing signatures and transaction ID carry forward.
+When the outcome has status `collect`, pass its `signedTx` to the next authorized co-signer using your DApp’s handoff flow. Each co-signer connects their wallet on the same network. Before signing, check that the transaction data matches its `txID`, show the co-signer the decoded owner, recipient, amount and expiration, and continue only after they confirm. Pass `coSignTransfer` the received transaction object and a `confirmTransfer` callback that resolves to `true` once the co-signer approves. `signAndCheck` calls `multiSign` on that object so the existing signatures and transaction ID carry forward.
 
 ```javascript
-async function coSignTransfer(partiallySignedTx) {
-  return signAndCheck(window.tron.tronWeb, partiallySignedTx);
+function describeTransfer(tronweb, tx) {
+  // The signature covers txID, so confirm raw_data hashes to it before showing details.
+  const txCheck = tronweb.utils?.transaction?.txCheck;
+  if (!txCheck || !txCheck(tx)) throw new Error("Transaction data does not match its txID");
+  const contract = tx.raw_data.contract[0];
+  if (contract.type !== "TransferContract") throw new Error("Not a TRX transfer");
+  const { owner_address, to_address, amount } = contract.parameter.value;
+  return {
+    owner: tronweb.address.fromHex(owner_address),
+    recipient: tronweb.address.fromHex(to_address),
+    amount: `${tronweb.fromSun(amount)} TRX`,
+    permissionId: contract.Permission_id,
+    expires: new Date(tx.raw_data.expiration).toISOString(),
+  };
+}
+
+async function coSignTransfer(partiallySignedTx, confirmTransfer) {
+  const tronweb = window.tron.tronWeb;
+  const details = describeTransfer(tronweb, partiallySignedTx);
+  // Show the details in your UI; sign only after the co-signer confirms them.
+  if (!(await confirmTransfer(details))) return { status: "declined" };
+  return signAndCheck(tronweb, partiallySignedTx);
 }
 ```
 

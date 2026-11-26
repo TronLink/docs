@@ -437,6 +437,8 @@ tronlink reward --json
 # Set PAYER to the address selected in TronLink and RECIPIENT to the destination.
 # If the wallet account or network changes, cancel and check the new balance first.
 NETWORK=mainnet
+
+# 1. Check the payer's balance
 tronlink balance --address "${PAYER:?set PAYER}" --network "$NETWORK" --json
 
 # 2. Send 10 TRX (opens browser for signing, wait for return)

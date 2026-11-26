@@ -435,6 +435,8 @@ tronlink reward --json
 # 将 PAYER 设为 TronLink 当前付款地址，RECIPIENT 设为收款地址。
 # 若账户或网络变化，请取消操作，重新查询实际付款账户的余额。
 NETWORK=mainnet
+
+# 1. 查询付款账户余额
 tronlink balance --address "${PAYER:?set PAYER}" --network "$NETWORK" --json
 
 # 2. 发送 10 TRX（会打开浏览器签名，需等待返回）

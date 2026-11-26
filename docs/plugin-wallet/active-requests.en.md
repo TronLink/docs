@@ -15,7 +15,10 @@ This method follows the Ethereum **EIP-1102** protocol.
 ```javascript
 try {
   await window.tron.request({method: 'eth_requestAccounts'});
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Connection declined");
+  else console.error("Authorization failed", error);
+}
 ```
 
 #### Return Value
@@ -140,10 +143,17 @@ const fromAddress = tronweb.defaultAddress.base58;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
 const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress);
 
+let signedTx;
 try {
-  const signedTx = await tronweb.trx.sign(tx);
-  await tronweb.trx.sendRawTransaction(signedTx);
-} catch (e) {}
+  signedTx = await tronweb.trx.sign(tx);
+} catch (error) {
+  if (error === "Confirmation declined by user") console.info("Signing declined");
+  else console.error("Signing failed", error);
+}
+if (signedTx) {
+  const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+  if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+}
 ```
 
 When executing `await tronweb.trx.sign(tx);`, TronLink displays a confirmation popup.
@@ -366,7 +376,10 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Network switch declined");
+  else console.error("Network switch failed", error);
+}
 ```
 
 #### Parameters
@@ -698,10 +711,17 @@ if (window.tronLink.ready) {
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
   const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress);
 
+  let signedTx;
   try {
-    const signedTx = await tronweb.trx.sign(tx);
-    await tronweb.trx.sendRawTransaction(signedTx);
-  } catch (e) {}
+    signedTx = await tronweb.trx.sign(tx);
+  } catch (error) {
+    if (error === "Confirmation declined by user") console.info("Signing declined");
+    else console.error("Signing failed", error);
+  }
+  if (signedTx) {
+    const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+    if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+  }
 }
 ```
 
@@ -738,42 +758,48 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc10',
         options: { address: '1002000' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 
 // Add TRC20
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc20',
         options: { address: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 
 // Add TRC721
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc721',
         options: { address: 'TVtaUnsgKXhTfqSFRnHCsSXzPiXmm53nZt' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 ```
 
@@ -786,5 +812,8 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Network switch declined");
+  else console.error("Network switch failed", error);
+}
 ```

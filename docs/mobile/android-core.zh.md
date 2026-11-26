@@ -22,6 +22,8 @@ dependencies {
 }
 ```
 
+本页内容基于上游 README 使用的 `1.0.2`。使用更新的版本前，请先阅读[版本与许可证](#version-license)。
+
 ## 创建钱包
 
 在应用中创建钱包并读取 TRON 地址。
@@ -52,6 +54,8 @@ gpg --verify release.aar.asc release.aar
 
 集成 Android Core 1.0.2 不会启动使用统计上报。此版本还没有 `UserStatistics` 模块；该模块在 [1.0.8](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.8) 中引入。
 
+<a id="version-license"></a>
+
 ## 版本与许可证
 
-安装示例沿用上游 README 的 `1.0.2`。最新标签为 `1.0.16`。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+本页内容基于上游 README 安装示例中的 `1.0.2`。之后的标签（截至 `1.0.16`）未经本页核对。自 `1.0.8` 起库中包含 `UserStatistics` 模块，升级前请核实其上报行为，并相应更新上方的隐私说明。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)

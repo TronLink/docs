@@ -11,7 +11,10 @@ TronLink 可用于管理钱包私钥，DApp 在进行一些需签名的操作前
 ```javascript
 try {
   await window.tron.request({method: 'eth_requestAccounts'});
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("连接请求被拒绝");
+  else console.error("授权失败", error);
+}
 ```
 #### 返回值
 
@@ -126,10 +129,17 @@ const tronweb = window.tron.tronWeb;
 const fromAddress = tronweb.defaultAddress.base58;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
 const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress); // 步骤1
+let signedTx;
 try {
-  const signedTx = await tronweb.trx.sign(tx); // 步骤2
-  await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
-} catch (e) {}
+  signedTx = await tronweb.trx.sign(tx); // 步骤2
+} catch (error) {
+  if (error === "Confirmation declined by user") console.info("用户拒绝签名");
+  else console.error("签名失败", error);
+}
+if (signedTx) {
+  const receipt = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+  if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+}
 ```
 
 当代码执行到 `await tronweb.trx.sign(tx);` 时，TronLink 钱包会提示弹窗，需要用户进行确认，如下图：
@@ -341,7 +351,10 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("用户拒绝切换网络");
+  else console.error("切换网络失败", error);
+}
 ```
 #### 参数
 params 接受一个只有单一元素的数组，单一元素为 `SwitchTronChainParameter` 类型：
@@ -376,7 +389,7 @@ interface SwitchTronChainParameter {
 
 ![TronLink 解锁弹窗，输入钱包密码](../images/zh_plugin-wallet_lock-page.png)
 
-解锁后将打开网络切换确认弹窗。
+解锁后，或者 TronLink 已经提前解锁，会打开网络切换确认弹窗：
 
 ![TronLink 网络切换确认弹窗，显示目标网络名称、chainId 与"确认"/"拒绝"按钮](../images/zh_plugin-wallet_switch-chain.png)
 
@@ -665,10 +678,17 @@ if (window.tronLink.ready) {
   const fromAddress = tronweb.defaultAddress.base58;
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
   const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress); // 步骤1
+  let signedTx;
   try {
-    const signedTx = await tronweb.trx.sign(tx); // 步骤2
-    await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
-  } catch (e) {}
+    signedTx = await tronweb.trx.sign(tx); // 步骤2
+  } catch (error) {
+    if (error === "Confirmation declined by user") console.info("用户拒绝签名");
+    else console.error("签名失败", error);
+  }
+  if (signedTx) {
+    const receipt = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
+    if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+  }
 }
 ```
 
@@ -704,42 +724,48 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc10',
         options: { address: '1002000' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset 调用失败", error);
+  }
 }
 
 // 添加 TRC20
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc20',
         options: { address: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset 调用失败", error);
+  }
 }
 
 // 添加 TRC721
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc721',
         options: { address: 'TVtaUnsgKXhTfqSFRnHCsSXzPiXmm53nZt' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset 调用失败", error);
+  }
 }
 ```
 
@@ -752,5 +778,8 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("用户拒绝切换网络");
+  else console.error("切换网络失败", error);
+}
 ```
