@@ -149,7 +149,7 @@ v0.1.4 中，错误以 MCP 工具结果返回：`isError: true`，内容是一�
 |---|---|---|
 | **Prompt 注入** | 工具输入按原始值作为调用参数，server 不会再次提交给 LLM。TronLink 审批页渲染的是解析后的交易字段，不是 agent 的自由文本。 | 链上拿到的字符串（备注、revert 原因）视为不可信；分支应基于 `txId` / `status`，而非 prose。 |
 | **本地 HTTP listener** | 本地审批 server **仅绑定 `127.0.0.1`**（端口 `TRON_HTTP_PORT`，默认 3386，被占用时自增），永远不接受跨主机连接。每个 server session 有唯一 ID，前一次 session 的浏览器标签会被自动失效。 | 不要把 3386 端口转发到外网。同一台机器不要用相同 `TRON_HTTP_PORT` 跑两份。 |
-| **出站 host 白名单（SSRF）** | signer 只与 [Networks](#environment-variables) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
+| **出站 host 白名单（SSRF）** | signer 只与 [网络端点](../reference/networks.md#networks) 列出的 TronGrid 端点以及本地浏览器通信，工具不接受会被原样请求的用户 URL。 | 生产环境钉死 `TRON_NETWORK`、`TRON_API_KEY`。 |
 | **API key 处理（token passthrough）** | `TRON_API_KEY` 仅在启动时从 env 读取，仅用于到 TronGrid 的出站；**不**会出现在任何工具响应、错误 `details` 或 MCP resource 中。server 不接受 MCP 客户端传入的 Authorization header 并转发到上游。 | API key 放进 MCP host 的 secret manager，不要写进会提交 git 的 `mcpServers` 配置。 |
 | **签名必须 HITL** | 所有签名工具（`send_trx`、`send_trc20`、`sign_message`、`sign_typed_data`、`sign_transaction`）都会打开 TronLink 审批页，**不存在程序化绕过**。私钥始终留在 TronLink。 | 不需要运维额外强制 HITL——这是结构性保证。不要试图通过移除浏览器层来"加固"。 |
 | **浏览器标签劫持** | 审批页基于 server session ID 验证每次请求，过期的标签会被忽略；心跳检测会在断连时关闭 session。 | 同一用户跑多个 agent 时，请让每个 agent 启动自己的 signer 实例；跨实例的请求串扰由 session ID 屏蔽，但 UI 层混淆不防。 |
@@ -207,7 +207,7 @@ v0.1.4 中，错误以 MCP 工具结果返回：`isError: true`，内容是一�
 ### 兼容性与迁移策略
 
 - **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更 MCP 工具名或输入 schema。1.0 之后：标准 semver，仅 major 允许破坏。
-- **废弃窗口。** 当某工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，schema 内置 `meta.deprecated` 标记；移除最早发生在再下一周期。
+- **弃用检查。** [mcp-tronlink-signer 0.1.4](https://www.npmjs.com/package/mcp-tronlink-signer/v/0.1.4) 的已注册工具没有弃用标记。升级前请查阅目标版本的发布说明，并用 `tools/list` 比对依赖的工具名称和输入字段。
 - **稳定契约。** 工具名、`status` 值（`success` / `pending` / `failed`）属于公开面，patch 不会动。
 - **不稳定契约。** 错误 `message` 文本（匹配[错误](#errors)中列出的已知取值，其他按未知处理）、日志行格式、审批页的视觉布局 **不属于** 公开面，随时可能变化。
 - **升级后校验。** 升级后 **必须** 重新 `list_tools` 确认你依赖的名字 + schema 仍存在，再继续工作流。

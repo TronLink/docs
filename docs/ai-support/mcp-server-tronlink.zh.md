@@ -8,7 +8,7 @@
 
 **核心亮点：**
 - 双模架构：**Playwright**（浏览器自动化）+ **Direct API**（链上操作）
-- 32 个内置 Flow Recipe，带预检查和依赖解析
+- 24 个内置 Flow Recipe，带预检查和依赖解析
 - 基于加密 `agent-wallet` 的非托管本地交易签名
 - 多签管理，支持实时 WebSocket 监控
 - 通过 GasFree 服务集成实现零 Gas TRC20 转账
@@ -27,7 +27,7 @@ flowchart TD
   Multi["TronLinkMultiSigCapability (5 个工具)"]
   GasFree["TronLinkGasFreeCapability (3 个工具)"]
   Util["实用能力<br/>Build · StateSnapshot · TRON Crypto"]
-  Flow["Flow Recipes<br/>(32 个内置流程配方)"]
+  Flow["Flow Recipes<br/>(24 个内置流程配方)"]
   Ext["TronGrid API / 多签服务 / GasFree 服务"]
   Chain["TRON 区块链"]
   Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
@@ -174,11 +174,13 @@ hexToAddress()             0x41... → T 地址
 
 ---
 
-## Flow Recipes（32 个内置流程）
+## <a id="flow-recipes32"></a>Flow Recipes（24 个内置流程） {#flow-recipes}
 
 预配置的多步骤工作流，带依赖检查和参数模板。
 
-### Playwright 流程
+调用 `tl_list_flows` 可查看运行中服务的注册清单。
+
+### <a id="playwright_1"></a>Playwright 流程（4 个） {#playwright-flows}
 | 流程 | 说明 |
 |------|------|
 | `switchNetworkFlow` | 切换到主网/Nile/Shasta |
@@ -248,7 +250,7 @@ hexToAddress()             0x41... → T 地址
 
 | 变量 | 说明 |
 |------|------|
-| `AGENT_WALLET_PASSWORD` | 钱包加密密码（自动创建时可省略；手动或已有钱包时需要） |
+| `AGENT_WALLET_PASSWORD` | 钱包加密密码（手动创建的钱包需提供；本地自动创建的钱包可复用已保存的随机密码） |
 | `AGENT_WALLET_DIR` | 自定义钱包目录 |
 | `TL_OWNER_WALLET_ID` | 多签 owner 使用的钱包 ID |
 | `TL_COSIGNER_WALLET_ID` | 多签 cosigner 使用的钱包 ID |
@@ -290,15 +292,13 @@ Claude Code 自动检测：
 }
 ```
 
-如果本地还没有钱包，服务启动后会提示两条路径：
+**手动创建（生产推荐）**。新建钱包时运行 `agent-wallet start local_secure --generate --wallet-id main`。对于该钱包或已有钱包，通过凭据管理器将其密码导出到启动 Claude Code（已核对 2.1.141）的环境变量 `AGENT_WALLET_PASSWORD`。在服务的 `env` 对象中添加下列配置，Claude Code 在启动服务时展开变量。 [Claude Code MCP](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json)
 
-1. 自动创建：调用 `tl_wallet_create`
-2. 手动创建：
-   1. 运行 `agent-wallet start local_secure --generate --wallet-id main`
-   2. 把 `AGENT_WALLET_PASSWORD` 写进 `.mcp.json`
-   3. 重启 MCP 服务
+```json
+{ "AGENT_WALLET_PASSWORD": "${AGENT_WALLET_PASSWORD}" }
+```
 
-如果选择自动创建，服务会生成随机密码，把密码保存到 `~/.agent-wallet/runtime_secrets.json`，创建一个加密的 `main` 钱包，并继续当前会话。
+**自动创建（本地开发）**。省略上述密码配置项。在尚无钱包时调用 `tl_wallet_create`，服务会生成随机密码，明文保存到 `~/.agent-wallet/runtime_secrets.json` 以便重启后复用。将文件权限限制为仅所有者可读写（`chmod 600`），并保护备份。
 
 下面是更完整的 Nile 配置。其中的路由地址是 SunSwap 官方的 Nile Router（[V2](https://docs.sun.io/protocols/sunswap-v2/reference/contract/)、[V3](https://docs.sun.io/protocols/sunswap-v3/reference/contract/)）；请勿把主网路由地址填进 Nile 配置。`tl_chain_swap`（V2）会把报价 API 最优路径中的代币路径交给 V2 路由执行，路径包含非 V2 池子时会失败（例如 Nile 上的 TRX→USDT）。Shasta 的 URL 会使用主网默认值，因此 Shasta 上无法兑换：
 
@@ -314,7 +314,6 @@ Claude Code 自动检测：
         "TL_MODE": "prod",
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
-        "AGENT_WALLET_PASSWORD": "your-wallet-password",
         "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
         "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
@@ -341,7 +340,6 @@ Claude Code 自动检测：
       "cwd": ".",
       "env": {
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
-        "AGENT_WALLET_PASSWORD": "your-wallet-password",
         "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
         "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
@@ -388,7 +386,7 @@ mcp-server-tronlink/
 │   │   ├── state-snapshot.ts       # UI 状态提取
 │   │   └── tron-crypto.ts          # 地址派生、签名、Base58
 │   └── flows/
-│       ├── index.ts                # 流程注册（32 个配方）
+│       ├── index.ts                # 流程注册（24 个配方）
 │       ├── switch-network.ts       # 网络切换流程
 │       ├── transfer-trx.ts         # 转账流程
 │       ├── multisig.ts             # 6 个多签流程
@@ -406,7 +404,7 @@ mcp-server-tronlink/
 
 ## 依赖项
 
-锁定到 `mcp-server-tronlink@0.1.1` 的 `package.json`。升级钱包、MCP 或密码学库 major 版本时务必重新核对。
+依赖范围取自 `mcp-server-tronlink@0.1.1` 的 `package.json`。升级钱包、MCP 或密码学库 major 版本时务必重新核对。
 
 | 包名 | 版本 | 用途 |
 |------|------|------|
@@ -414,14 +412,14 @@ mcp-server-tronlink/
 | `@noble/hashes` | ^2.0.1 | Keccak-256、SHA256 |
 | `@tronlink/tronlink-mcp-core` | ^0.1.0 | 核心 MCP 服务框架 |
 | `playwright` | ^1.49.0 | 浏览器自动化 |
-| `@bankofai/agent-wallet` | ^2.3.0 | 加密本地钱包管理（`local_secure`）——**已钉版本，不用 `latest`**，确保钱包行为可复现 |
+| `@bankofai/agent-wallet` | ^2.3.0 | 加密本地钱包管理（`local_secure`）。允许安装 2.3.0 至 3.0.0 之前的兼容版本。用 `npm ls @bankofai/agent-wallet` 查看实际安装版本。 |
 | `ws` | ^8.18.0 | WebSocket（多签监控） |
 
 ---
 
 ## 工具契约与副作用
 
-**输入/输出 schema 与错误契约。** 每个工具的输入/输出 schema 及结构化错误信封由底层框架定义——见 [TronLink MCP Core](tronlink-mcp-core.md#error-codes) 的 SSOT 错误码表（`code` / `retryable` / `hint` / 典型触发）。每个响应均带 `meta.schemaVersion`，major 版本内字段含义稳定。Agent 应基于 `error.code` 与 `error.retryable` 分支，**不要**解析人类可读的 `message`。
+**工具结果与错误。** 服务端使用 Core 0.1.0 时，先检查 Core 响应中的 `ok`。失败时，根据 `error.code` 在 [Core 错误码表](tronlink-mcp-core.zh.md#error-codes) 中查找重试条件。错误响应包含 `error.message`，也可能包含 `error.details`。对于结果未知的写操作，先核对交易状态，再决定是否重试。
 
 **逐工具输入 schema 可在运行时发现。** 每个工具的参数都由 core 用 Zod 校验,并通过 MCP `list_tools` 方法以 JSON `inputSchema` 形式暴露,因此客户端无需阅读本页即可枚举参数名、类型和必填项。下方表格按能力归纳工具;`list_tools` 才是权威的机器可读来源。
 
@@ -440,7 +438,7 @@ mcp-server-tronlink/
 
 ### 精选工具 schema（文档侧镜像）
 
-以下是最关键工具输入的**文档侧镜像**——当 agent 需要在没有打开 MCP 会话的情况下写工具调用站点时使用。运行时 `list_tools` 仍是权威源：那里有完整的 Zod 元信息（描述、`default` 等）以及 `meta.schemaVersion`。下方字段抄自 `@tronlink/tronlink-mcp-core` `src/mcp-server/schemas.ts`，遵循 JSON Schema Draft 7。**未**镜像全部 52 个工具——以 core 仓库为 SSOT。
+下表摘录了部分工具的输入参数。对实际安装的服务调用 `tools/list`，从各工具的 `inputSchema` 读取参数说明和默认值。以下示例使用 JSON Schema Draft 7。
 
 > 下方各块的字段名和 required 标记由文档 CI 与上游 `schemas.ts` 自动比对；如有不一致，以 `list_tools` 为准。
 
@@ -567,7 +565,7 @@ mcp-server-tronlink/
 
 | 边界 | 保证 | Agent / 运维方义务 |
 |---|---|---|
-| **Prompt 注入** | 工具输入按原始值作为调用参数使用，server 不会把工具输入拼接进任何向 LLM 二次提交的 prompt。**但**从链上或第三方 API 拿回来的字符串（账户备注、合约 revert 原因、交易 note 等）**可能含攻击者控制内容**，必须视为不可信。 | 不要让 agent 基于 read 工具返回的 prose 自动路由到 Remote Write。分支必须基于结构化字段（`txId`、`code`、`retryable`）。 |
+| **Prompt 注入** | 工具输入按原始值作为调用参数使用，server 不会把工具输入拼接进任何向 LLM 二次提交的 prompt。**但**从链上或第三方 API 拿回来的字符串（账户备注、合约 revert 原因、交易 note 等）**可能含攻击者控制内容**，必须视为不可信。 | 不要让 agent 基于 read 工具返回的 prose 自动路由到 Remote Write。分支必须基于结构化字段（`txId`、`error.code`）。 |
 | **出站 host 白名单（SSRF）** | server 只向 3 个配置端点发起 HTTPS——`TL_TRONGRID_URL`（TronGrid；SunSwap 路由合约也通过它的 `triggersmartcontract` 接口调用）、`TL_MULTISIG_BASE_URL`、`TL_GASFREE_BASE_URL`——以及内置的 SunSwap 报价 API（主网 `rot.endjgfsv.link`，Nile `tnrouter.endjgfsv.link`，不可配置）。工具不接收会被原样请求的用户 URL。 | 生产环境把这些 env 钉死到已知 host，并把报价 API host 加入出站白名单；禁止 LLM 输入回填任何 `*_BASE_URL`。 |
 | **API key 处理（token passthrough）** | `TL_TRONGRID_API_KEY`、`TL_MULTISIG_SECRET_KEY`、`TL_GASFREE_API_SECRET` 仅在启动时从 env 读取，仅用于出站；**不**会出现在任何工具响应、错误 `details` 或 Knowledge Store 记录中。server 不接受 MCP 客户端传入的 Authorization header 并转发到上游。 | 审计 MCP host 配置对 env 的捕获（部分 host 会落日志）；secret 放进 host 的 secret manager，不要写进会提交 git 的 `.mcp.json`。 |
 | **浏览器 JS 执行** | `tl_evaluate` 会在受控 Playwright 浏览器上下文中执行任意 JS。这是 **High-risk / Destructive** 原语——可读 DOM、点击隐藏元素、外泄状态、绕过 UI 上的 HITL。 | 严格不需要时，从 MCP host 的工具白名单中禁用 `tl_evaluate`。绝不要把它暴露给远程/多用户 MCP 部署。 |
@@ -579,7 +577,7 @@ mcp-server-tronlink/
 
 兑换属于 **远程写**，且对接公开 DEX 路由器，因此暴露在 **价格滑点** 与 **三明治攻击 / MEV** 之下：在报价和执行之间池子价格变动时，实际成交可能比报价更差。
 
-- **必须设置 minOut / 滑点上限。** 通过 `list_tools` 查看 `tl_chain_swap_v3` 的输入 schema（`SwapV3Params`），核对实际的 minimum-output / 滑点字段名；**不要**依赖未声明的默认值，缺省或 0 的 minOut 一律视为不安全。
+- **必须显式设置 `slippage`。** `tl_chain_swap_v3` 没有最小输出参数，服务端根据 `slippage`（百分比，默认 0.5）计算最小输出。**不要**依赖默认值；请与用户确认滑点，并在 `list_tools` 的 schema 中核对该字段。
 - **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或同等接口）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
 - **核对 router。** 请将 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` 设置为 SunSwap 官方合约地址中对应网络的 Router（见环境变量）；过期或错误的 router 会把资金路由到非预期目标。
 - **不可自动重试。** swap 失败或结果未知都属于远程写——先在链上确认再决定是否重发（`TL_CHAIN_SWAP_FAILED` 不可重试）。
@@ -631,9 +629,9 @@ mcp-server-tronlink/
 
 Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签名。解锁这把钱包有两条路径，请按目的明确选择。
 
-**路径 A — 手动（生产推荐）。** 离线创建钱包，将 `AGENT_WALLET_PASSWORD` 放进 MCP host 的 secret manager，再启动 server。密码仅存在于进程内存，server 不写任何文件。
+**手动创建（生产推荐）。** 离线创建钱包，将 `AGENT_WALLET_PASSWORD` 放进 MCP host 的 secret manager，再启动 server。此路径从运行环境读取提供的密码。
 
-**路径 B — 自动创建（仅适合本地开发）。** 启动时若无钱包且 agent 调用了 `tl_wallet_create`，server 将：
+**自动创建（仅适合本地开发）。** 启动时若无钱包且 agent 调用了 `tl_wallet_create`，server 将：
 
 1. 生成随机密码。
 2. **将密码以明文写入 `~/.agent-wallet/runtime_secrets.json`**，以便重启后能复用同一钱包。
@@ -642,7 +640,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 | 方面 | 行为 |
 |---|---|
 | **文件** | `~/.agent-wallet/runtime_secrets.json`（含密码的明文 JSON） |
-| **建议权限** | `chmod 600`——文件在用户 `$HOME` 下创建，但**没有 umask 兜底**，首次运行后请手工核查。 |
+| **建议权限** | 0.1.1 新建文件时指定权限 `0600`。启动后请核对实际权限。 |
 | **Git 隔离** | `~/.agent-wallet/` 默认在任何仓库之外。若把 `AGENT_WALLET_DIR` 指到仓库内部，必须显式加 `.gitignore`。 |
 | **Knowledge Store 脱敏边界** | Knowledge Store 自动脱敏 `password`、`mnemonic`、`private_key`、`seed` 等字段；**不**读取或处理 `runtime_secrets.json`。该文件与 Knowledge Store 互相独立。 |
 | **日志 / stderr** | 自动生成的密码不会落日志；文件路径可能出现在启动输出中。 |
@@ -650,11 +648,11 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 
 **生产建议。**
 
-- 优先路径 A。`AGENT_WALLET_PASSWORD` 来自 host 的 secret manager（Claude Desktop env、vault 等）。
-- 必须用路径 B 时（如临时 CI），把 `AGENT_WALLET_DIR` 指到任务结束即销毁的 tmpfs。
+- 优先手动创建。`AGENT_WALLET_PASSWORD` 来自 host 的 secret manager（如 vault）。
+- 必须用自动创建时（如临时 CI），把 `AGENT_WALLET_DIR` 指到任务结束即销毁的 tmpfs。
 - 涉及真实资金的工具，生产环境优先选 `mcp-tronlink-signer`（浏览器审批、不落盘密码），避免 Direct-API。
 
-**如何强制路径 A（文档侧的当下做法）。**
+**如何强制手动创建（文档侧的当下做法）。**
 
 1. **server 启动前**离线创建钱包：
 
@@ -663,7 +661,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
     # 此处输入的密码请单独保管——它是唯一的副本
     ```
 
-2. 让密码通过 MCP host 的 secret manager 注入到 server 的 `env`：
+2. 使用 Claude Code 时，通过凭据管理器将密码导出到客户端启动环境，并在服务配置中引用变量：
 
     ```jsonc
     // .mcp.json — secret 来自 host env，而不是这个文件本身
@@ -680,7 +678,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 
 3. **禁止 agent 调用 `tl_wallet_create`。** 用与 `tl_evaluate` 相同的方式禁用（Claude Code `permissions.deny`、Claude Desktop `disabledTools`，或客户端侧基于 `list_tools` 用名字 `tl_wallet_create` 过滤）。
 
-4. 首次启动后验证：`list_tools` 中不应出现 `tl_wallet_create`；`~/.agent-wallet/runtime_secrets.json` 不存在即说明路径 B 没有走过。
+4. 首次启动后验证：`list_tools` 中不应出现 `tl_wallet_create`；`~/.agent-wallet/runtime_secrets.json` 不存在即说明自动创建没有走过。
 
 **待解决（代码侧）。** 长期方案是在 server 启动时加 `--no-auto-create` / `AGENT_WALLET_DISABLE_AUTOCREATE=1` 开关，使无钱包时直接 fail-loud。上游 PR ship 之前，上面这套文档级强制方案是 defense-in-depth。
 
@@ -707,10 +705,10 @@ npm install && npm run build
 export TL_TRONGRID_URL="https://nile.trongrid.io"
 
 # 3. 如果本地还没有钱包，二选一：
-# 方案 A：在 MCP 会话里调用 tl_wallet_create
-# 方案 B：本地执行
+# 自动创建（本地开发）：在 MCP 会话里调用 tl_wallet_create
+# 手动创建（生产推荐）：本地执行
 # agent-wallet start local_secure --generate --wallet-id main
-# 然后把同一个密码写进 .mcp.json 的 AGENT_WALLET_PASSWORD
+# 通过凭据管理器设置 Claude Code 启动环境中的 AGENT_WALLET_PASSWORD，并按上述手动创建配置引用该变量
 
 # 4. 配合 Claude Code 使用
 # 配置好 .mcp.json 后自然语言使用：
@@ -727,16 +725,14 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
 
 ### 兼容性与迁移策略
 
-- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema、`error.code` 值或 `meta.schemaVersion` 语义。1.0 之后：标准 semver，仅 major 允许破坏。
+- **语义化版本。** 1.0 之前：**minor** 升级（0.x → 0.y）允许破坏性变更；**patch** 升级（0.1.x → 0.1.y）不变更工具名、输入 schema 或 `error.code` 值。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
     - 工具名（`tl_chain_send`、`tl_chain_swap_v3`、`tl_multisig_*`、`tl_gasfree_*`、`tl_evaluate` 等）
     - `error.code` 枚举（SSOT：[TronLink MCP Core 错误码](tronlink-mcp-core.md#error-codes)）
-    - `error.retryable` 语义
-    - `meta.schemaVersion` 的 major 分量
     - 必需环境变量名（`TL_TRONGRID_URL`、`TL_MULTISIG_SECRET_KEY`、`AGENT_WALLET_PASSWORD` 等）
 - **不稳定契约**（随时可能变化）：
     - `message` 自然语言文本、日志行格式、stderr 输出
     - 内部 Knowledge Store key（消费者不应解析）
     - 预检查的错误 detail 文本（分支用 `code`，别用 `details.reason`）
-- **废弃窗口。** 工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，`list_tools` 会带 `meta.deprecated` 标记；移除最早在再下一周期。
-- **升级后校验。** 重新 `list_tools` 确认依赖的工具名 + `inputSchema` 仍在，再继续工作流；将 `meta.schemaVersion` 与会话开始时缓存的值对比。
+- **弃用检查。** [@tronlink/mcp-server-tronlink 0.1.1](https://www.npmjs.com/package/@tronlink/mcp-server-tronlink/v/0.1.1) 的已注册工具没有弃用标记。升级前请查阅目标版本的发布说明，并用 `tools/list` 比对依赖的工具名称和输入字段。
+- **升级后校验。** 记录已安装的 Server 和 Core 版本，通过 `tools/list` 核对依赖的工具名和 `inputSchema`，再验证客户端能处理只读工具的 `ok: true` 和 `ok: false` 两种响应。

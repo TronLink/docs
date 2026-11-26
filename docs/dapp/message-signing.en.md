@@ -18,7 +18,13 @@ try {
   // verify with the same string; returns the signer's base58 address
   const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
   const ok = recovered === tronweb.defaultAddress.base58;
-} catch (e) {}
+} catch (error) {
+  if (error === "Confirmation declined by user") {
+    console.info("Signing declined");
+  } else {
+    console.error("Message signing or verification failed", error);
+  }
+}
 ```
 ### Parameters
 
@@ -38,12 +44,7 @@ If the user chooses to sign in the pop-up window, the DApp will get the signed h
     0xb0e0b150b9b10dc348f25c7f38fc87f16e18c0d230d23946aac519a5ad9e45937f656012d33c09e9d9dec00b03fbb304e797f8991bb823dce676ac91e03a55991b
 ```
 
-If an error occurs, the following information will be returned:
-
-```text
-    
-    Uncaught (in promise) Invalid transaction provided
-```
+An empty message or a signing failure can produce `Invalid transaction provided`. A user declining the prompt rejects with `Confirmation declined by user`. For other failures, inspect the returned reason.
 
 ## Interaction
 

@@ -6,7 +6,7 @@ TronLink 智能体在一次用户请求里跨 DApp provider → DeepLink → MCP
 
 **错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](#handling-rejections)。不要自动重试签名。
 
-| 业务含义 | DApp provider([EIP-1474][provider]) | DeepLink([5 位码][deeplink]) | MCP([`TL_*`][mcp]) | CLI v1.0.1([退出状态][cli]) | 可重试? |
+| 业务含义 | DApp provider([EIP-1474][provider]) | [DeepLink 回调码][deeplink] | MCP([`TL_*`][mcp]) | CLI v1.0.1([退出状态][cli]) | 可重试? |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | **用户拒绝**签名或连接弹窗 | `window.tron.request(...)` 为 `4001`；`tronWeb.trx.sign` / `multiSign` / `signMessageV2` 为字符串 `'Confirmation declined by user'` | `300`(交易取消) | —(HITL——只能在新的 tool 调用里再次唤起) | `1` | **否** |
 | **参数非法** / payload 错 | `tronWeb` 构造器抛错 | `10001`–`10020`、`10024`、`10025` | `TL_INVALID_INPUT` | `1` | **否**——修参数 |

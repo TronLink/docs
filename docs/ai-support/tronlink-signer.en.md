@@ -12,18 +12,26 @@ npm install tronlink-signer
 
 ## Quick Start
 
+On Nile, select a funded test account and set the Node.js environment variable `RECIPIENT` to your test recipient’s address. This example requests approval to send 1 test TRX.
+
 ```ts
 import { TronSigner } from "tronlink-signer";
 
+const recipient = process.env.RECIPIENT;
+if (!recipient) throw new Error("Set RECIPIENT to the Nile recipient address");
 const signer = new TronSigner();
 await signer.start();
 
-const { address, network } = await signer.connectWallet();
-const { txId, status } = await signer.sendTrx("TXxx...", 1); // status: "success" | "pending" | "failed"
-const { txId: txId2, status: s2 } = await signer.signTransaction(tx, "nile", true); // broadcast + auto-confirm
-const { balance } = await signer.getBalance("TXxx...");
-
-await signer.stop();
+try {
+  const { address } = await signer.connectWallet("nile");
+  const { balance } = await signer.getBalance(address, "nile");
+  console.log(address, balance);
+  // Signer takes TRX, so this sends 1 TRX.
+  const { txId, status } = await signer.sendTrx(recipient, 1, "nile");
+  console.log(txId, status);
+} finally {
+  await signer.stop();
+}
 ```
 
 ## API
@@ -102,24 +110,50 @@ Signs a raw transaction. When `broadcast` is `true`, the signed transaction is b
 | `broadcast` | `boolean` | Whether to broadcast after signing (default: `false`) |
 | `options` | `SignerOptions` | Optional — cancellation, confirmation control, broadcast callback |
 
-```ts
-// Sign only
-const { signedTransaction } = await signer.signTransaction(tx);
+To build an unsigned Nile transfer in Node.js, install `tronlink-signer` and `tronweb@6`. Select the funded Nile payer in TronLink and set `RECIPIENT` to the intended Nile recipient address. Run this setup followed by one calling pattern in the same ES module.
 
+```js
+import { TronSigner } from "tronlink-signer";
+import { TronWeb } from "tronweb";
+
+const signer = new TronSigner();
+const tronWeb = new TronWeb({ fullHost: "https://nile.trongrid.io" });
+const recipient = process.env.RECIPIENT;
+if (!TronWeb.isAddress(recipient)) throw new Error("Set RECIPIENT to a TRON address");
+await signer.start();
+const { address } = await signer.connectWallet("nile");
+// The builder takes SUN, so this creates a 10 SUN transfer (1 TRX = 1_000_000 SUN).
+const tx = await tronWeb.transactionBuilder.sendTrx(recipient, 10, address);
+```
+
+Choose one of the following calling patterns.
+
+```js
+// Sign only
+const { signedTransaction } = await signer.signTransaction(tx, "nile");
+```
+
+```js
 // Sign, broadcast, and wait for confirmation (default)
 const { signedTransaction, txId, status, error } = await signer.signTransaction(tx, "nile", true);
 // status === "success" — confirmed on-chain
 // status === "pending" — broadcast succeeded but not confirmed within timeout
 // status === "failed"  — on-chain execution failed; `error` carries the reason
+```
 
+```js
 // Broadcast without waiting for confirmation
 const result = await signer.signTransaction(tx, "nile", true, { confirm: false });
+```
 
+```js
 // Get notified as soon as the tx enters the mempool
 const result = await signer.signTransaction(tx, "nile", true, {
   onBroadcasted: ({ txId }) => console.log("Broadcast:", txId),
 });
 ```
+
+Wrap connection, construction and the selected call in `try / finally`, and call `await signer.stop()` in `finally` as in Quick Start. If a broadcast outcome is unknown, look up the transaction ID before taking further action.
 
 ### Broadcast Result
 

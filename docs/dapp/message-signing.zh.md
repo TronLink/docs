@@ -18,7 +18,13 @@ try {
   // 用同一个字符串验签，返回签名者的 base58 地址
   const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
   const ok = recovered === tronweb.defaultAddress.base58;
-} catch (e) {}
+} catch (error) {
+  if (error === "Confirmation declined by user") {
+    console.info("用户拒绝签名");
+  } else {
+    console.error("消息签名或验签失败", error);
+  }
+}
 ```
 
 ### 参数
@@ -39,11 +45,7 @@ try {
     0xb0e0b150b9b10dc348f25c7f38fc87f16e18c0d230d23946aac519a5ad9e45937f656012d33c09e9d9dec00b03fbb304e797f8991bb823dce676ac91e03a55991b
 ```
 
-如果报错，则会返回如下信息：
-
-```text
-    Uncaught (in promise) Invalid transaction provided
-```
+消息为空或钱包签名失败时可能返回 `Invalid transaction provided`。用户拒签时返回 `Confirmation declined by user`。其他失败请查看具体错误原因。
 
 ## 交互流程
 

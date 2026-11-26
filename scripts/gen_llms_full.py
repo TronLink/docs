@@ -60,9 +60,12 @@ PAGES_EN = [
     "mobile/asset-management.en.md",
     "mobile/deeplink.en.md",
     "mobile/dapp-support.en.md",
+    "mobile/android-core.en.md",
+    "mobile/ios-core.en.md",
     "plugin-wallet/active-requests.en.md",
     "plugin-wallet/passive-messages.en.md",
     "plugin-wallet/ledger-signing-update.en.md",
+    "plugin-wallet/extension-core.en.md",
     "ai-support/mcp-server-tronlink.en.md",
     "ai-support/tronlink-mcp-core.en.md",
     "ai-support/tronlink-skills.en.md",
@@ -88,9 +91,12 @@ PAGES_ZH = [
     "mobile/asset-management.zh.md",
     "mobile/deeplink.zh.md",
     "mobile/dapp-support.zh.md",
+    "mobile/android-core.zh.md",
+    "mobile/ios-core.zh.md",
     "plugin-wallet/active-requests.zh.md",
     "plugin-wallet/passive-messages.zh.md",
     "plugin-wallet/ledger-signing-update.zh.md",
+    "plugin-wallet/extension-core.zh.md",
     "ai-support/mcp-server-tronlink.zh.md",
     "ai-support/tronlink-mcp-core.zh.md",
     "ai-support/tronlink-skills.zh.md",
@@ -146,6 +152,17 @@ def page_url(rel: str, lang: str) -> str:
     return f"{slug}/"
 
 
+ANCHOR_LINE_RE = re.compile(r'^<a id="[^"]+"></a>\n\n?', re.M)
+HEADING_ANCHOR_RE = re.compile(r'^(#{1,6} )<a id="[^"]+"></a>', re.M)
+HEADING_ID_RE = re.compile(r"^(#{1,6} .*?) \{#[^}]+\}$", re.M)
+
+
+def strip_anchor_markup(text: str) -> str:
+    """Drop site-only anchors (`<a id>` tags, heading `{#id}` attrs) that are noise in plain text."""
+    text = HEADING_ANCHOR_RE.sub(r"\1", ANCHOR_LINE_RE.sub("", text))
+    return HEADING_ID_RE.sub(r"\1", text)
+
+
 def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> tuple[str, int, list[str]]:
     """Return (full_text, page_count, missing) for one language."""
     body_parts: list[str] = []
@@ -159,7 +176,7 @@ def render_bundle(pages: list[str], lang: str, sha: str, generated_at: str) -> t
         body_parts.append("")
         body_parts.append(f"<!-- source: docs/{rel} | url: {page_url(rel, lang)} -->")
         body_parts.append("")
-        body_parts.append(path.read_text(encoding="utf-8").rstrip())
+        body_parts.append(strip_anchor_markup(path.read_text(encoding="utf-8")).rstrip())
         body_parts.append("")
 
     body = "\n".join(body_parts)

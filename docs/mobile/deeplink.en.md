@@ -10,7 +10,14 @@ img {
 }
 </style>
 
-For every action below, the `param` value of `tronlinkoutside://pull.activity?param={}` is the protocol data in JSON format. Note: the JSON string must be URL-encoded before being placed in the link.
+The `param` query parameter contains URL-encoded JSON. Each sample link encodes the request shown below it. For your integration, replace the sample values and generate a new URL.
+
+```javascript
+const buildDeepLink = (request) =>
+  "tronlinkoutside://pull.activity?param=" + encodeURIComponent(JSON.stringify(request));
+```
+
+For login, transfer and signing, use your DApp URL and callback, the target chain ID, and a fresh action ID. For transaction signing, set `data` to the JSON string of a newly built transaction. The sample transaction contains an expired timestamp.
 
 ## Open Wallet
 
@@ -19,7 +26,7 @@ For every action below, the `param` value of `tronlinkoutside://pull.activity?pa
 Available since TronLink v4.10.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Open Tronlink</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22action%22%3A%22open%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%7D'>Open Tronlink</a>
 ```
 
 `param` (request):
@@ -39,7 +46,7 @@ Available since TronLink v4.10.0.
 Available since TronLink v4.10.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Open DApp</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fwww.tronlink.org%2F%22%2C%22action%22%3A%22open%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%7D'>Open DApp</a>
 ```
 
 `param` (request) — `url` is the target DApp:
@@ -58,14 +65,14 @@ Available since TronLink v4.10.0.
 Available since TronLink v4.11.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Login/Request Address</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2F%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22action%22%3A%22login%22%2C%22actionId%22%3A%22e5471a9c-b0f1-418b-8634-3de60d68a288%22%7D'>Login/Request Address</a>
 ```
 
 `param` (request):
 
 ```json
 {
-  "url": "https://justlend.org/#/home",
+  "url": "https://your-dapp.example.com/",
   "callbackUrl": "https://your-backend.example.com/api/tron/v1/callback",
   "dappIcon": "https://your-dapp.example.com/icon.png",
   "dappName": "Test demo",
@@ -94,14 +101,14 @@ Callback:
 Available since TronLink v4.11.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Transfer</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2F%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22memo%22%3A%22Reward%22%2C%22from%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22to%22%3A%22TXd9duqtcyyj4pBCKvXKNqmazxxDw5SdBa%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22tokenId%22%3A%220%22%2C%22contract%22%3A%22%22%2C%22amount%22%3A%2220%22%2C%22action%22%3A%22transfer%22%2C%22actionId%22%3A%22408170fc-7919-4459-be5e-05a9d4b4065e%22%7D'>Transfer</a>
 ```
 
 `param` (request):
 
 ```json
 {
-  "url": "https://justlend.org/#/home",
+  "url": "https://your-dapp.example.com/",
   "callbackUrl": "https://your-backend.example.com/api/tron/v1/callback",
   "dappIcon": "https://your-dapp.example.com/icon.png",
   "dappName": "Test demo",
@@ -137,14 +144,14 @@ Callback (`actionId` matches the request):
 Available since TronLink v4.11.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Sign transaction</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2F%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22action%22%3A%22sign%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22method%22%3A%22transfer%28address%2Cuint256%29%22%2C%22signType%22%3A%22signTransaction%22%2C%22data%22%3A%22%7B%5C%22visible%5C%22%3Afalse%2C%5C%22txID%5C%22%3A%5C%22dcfaf2c2d75d91994f9a23623e905eaa7d74bc804fa5821640111ada3441376a%5C%22%2C%5C%22raw_data%5C%22%3A%7B%5C%22contract%5C%22%3A%5B%7B%5C%22parameter%5C%22%3A%7B%5C%22value%5C%22%3A%7B%5C%22data%5C%22%3A%5C%22a9059cbb000000000000000000000000ed87a3ae2bf2ab8b95486a23f224487ad75c60200000000000000000000000000000000000000000000000000000000000000014%5C%22%2C%5C%22owner_address%5C%22%3A%5C%2241b42b84bad413dde093e27d01bb02ed9eede52c43%5C%22%2C%5C%22contract_address%5C%22%3A%5C%2241eca9bc828a3005b9a3b909f2cc5c2a54794de05f%5C%22%7D%2C%5C%22type_url%5C%22%3A%5C%22type.googleapis.com%2Fprotocol.TriggerSmartContract%5C%22%7D%2C%5C%22type%5C%22%3A%5C%22TriggerSmartContract%5C%22%7D%5D%2C%5C%22ref_block_bytes%5C%22%3A%5C%2284e1%5C%22%2C%5C%22ref_block_hash%5C%22%3A%5C%221731d6450e11a03f%5C%22%2C%5C%22expiration%5C%22%3A1670168865000%2C%5C%22fee_limit%5C%22%3A100000000%2C%5C%22timestamp%5C%22%3A1670168805340%7D%2C%5C%22raw_data_hex%5C%22%3A%5C%220a0284e122081731d6450e11a03f40e8d1c9eecd305aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a1541b42b84bad413dde093e27d01bb02ed9eede52c43121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000ed87a3ae2bf2ab8b95486a23f224487ad75c6020000000000000000000000000000000000000000000000000000000000000001470dcffc5eecd30900180c2d72f%5C%22%7D%22%2C%22actionId%22%3A%2264fcdb39-2cfa-47f2-85bd-d7e8409809ed%22%7D'>Sign transaction</a>
 ```
 
 `param` (request):
 
 ```json
 {
-  "url": "https://justlend.org/#/home",
+  "url": "https://your-dapp.example.com/",
   "callbackUrl": "https://your-backend.example.com/api/tron/v1/callback",
   "dappIcon": "https://your-dapp.example.com/icon.png",
   "dappName": "Test demo",
@@ -178,14 +185,14 @@ Callback (`actionId` matches the request):
 Available since TronLink v4.11.0.
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Sign message</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2F%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22signType%22%3A%22signStr%22%2C%22message%22%3A%22abc%22%2C%22action%22%3A%22sign%22%2C%22actionId%22%3A%2250554861-4861-41c4-adf3-abf36213f843%22%7D'>Sign message</a>
 ```
 
 `param` (request):
 
 ```json
 {
-  "url": "https://justlend.org/#/home",
+  "url": "https://your-dapp.example.com/",
   "callbackUrl": "https://your-backend.example.com/api/tron/v1/callback",
   "dappIcon": "https://your-dapp.example.com/icon.png",
   "dappName": "Test demo",
@@ -214,40 +221,38 @@ Callback:
 
 ## Result Code
 
-> Note: `tokenId` and `contract` are mutually exclusive in a transfer request — supplying both returns code `10025`.
-
-| Code | Message |
-|:-------|:-------|
-| 0 | success |
-| 10001 | Incorrect JSON format |
-| 10002 | Missing Action |
-| 10003 | Unknown Action |
-| 10004 | Missing ActionId |
-| 10005 | Incorrect DApp URL format |
-| 10006 | Incorrect CallbackUrl format |
-| 10007 | Empty DApp name |
-| 10008 | Version number not supported |
-| 10009 | Current network not supported |
-| 10010 | The URL is not supported to open TronLink |
-| 10011 | Unknown SignType |
-| 10012 | Incorrect Transaction format |
-| 10013 | Incorrect Method format |
-| 10014 | Incorrect Message format |
-| 10015 | Incorrect toAddress |
-| 10016 | No wallet created in TronLink |
-| 10017 | Incorrect fromAddress |
-| 10018 | Incorrect contractAddress |
-| 10019 | Incorrect chainId |
-| 10020 | Incorrect amount |
-| 10021 | The initiating address does not match the current wallet |
-| 10022 | Incorrect loginAddress |
-| 10023 | System contract not support |
-| 10024 | Incorrect tokenId |
-| 10025 | TokenId & Contract address should not exist together |
-| 300 | Transaction canceled |
-| 301 | Transaction executed in TronLink |
-| 302 | Broadcast failure - returned with incorrect info |
-| -1 | Unknown reason |
+| Code | Message | Notes |
+|:-------|:-------|:-------|
+| 0 | success | |
+| 10001 | Incorrect JSON format | |
+| 10002 | Missing Action | |
+| 10003 | Unknown Action | |
+| 10004 | Missing ActionId | |
+| 10005 | Incorrect DApp URL format | |
+| 10006 | Incorrect CallbackUrl format | |
+| 10007 | Empty DApp name | |
+| 10008 | Version number not supported | |
+| 10009 | Current network not supported | |
+| 10010 | The URL is not supported to open TronLink | |
+| 10011 | Unknown SignType | |
+| 10012 | Incorrect Transaction format | |
+| 10013 | Incorrect Method format | |
+| 10014 | Incorrect Message format | |
+| 10015 | Incorrect toAddress | |
+| 10016 | No wallet created in TronLink | |
+| 10017 | Incorrect fromAddress | |
+| 10018 | Incorrect contractAddress | |
+| 10019 | Incorrect chainId | |
+| 10020 | Incorrect amount | |
+| 10021 | The initiating address does not match the current wallet | |
+| 10022 | Incorrect loginAddress | |
+| 10023 | System contract not support | |
+| 10024 | Incorrect tokenId | |
+| 10025 | TokenId & Contract address should not exist together | Conflicting asset identifiers in a transfer request. |
+| 300 | Transaction canceled | |
+| 301 | Transaction executed in TronLink | |
+| 302 | Broadcast failure - returned with incorrect info | |
+| -1 | Unknown reason | |
 
 ## JSON Schema Reference
 
@@ -342,7 +347,13 @@ Every `param` shares this prefix:
 }
 ```
 
-**Transfer** request — `tokenId` (TRX / TRC10) and `contract` (TRC20) are **mutually exclusive**; supplying both returns `10025`. Set the unused one to `""` (empty string):
+**Transfer** uses the field values below. Send the unused field as an empty string, following the transfer sample and the DeepLink demo request format. Omitting the unused key produces a request that differs from these samples; this page does not define how the App treats an omitted key, so keep both keys present.
+
+| Asset | `tokenId` | `contract` |
+|---|---|---|
+| TRX | `"0"` | `""` |
+| TRC10 | Decimal token ID as a string | `""` |
+| TRC20 | `""` | Token contract address |
 
 ```json
 {
@@ -356,8 +367,8 @@ Every `param` shares this prefix:
     "from":         { "type": "string", "description": "Sender TRON address (base58)" },
     "to":           { "type": "string", "description": "Recipient TRON address (base58)" },
     "loginAddress": { "type": "string", "description": "Address that authorized this session — must match the current wallet (otherwise code 10021)" },
-    "tokenId":      { "type": "string", "description": "TRC10 token id or '0' for TRX; pass '' when sending TRC20" },
-    "contract":     { "type": "string", "description": "TRC20 contract address; pass '' when sending TRX / TRC10" },
+    "tokenId":      { "type": "string", "description": "TRC10 token id or '0' for TRX" },
+    "contract":     { "type": "string", "description": "TRC20 contract address" },
     "amount":       { "type": "string", "description": "Decimal string in human units (e.g. '1.5'); the app handles decimals" },
     "memo":         { "type": "string", "description": "Optional transaction memo" },
     "dappName":     { "type": "string" },

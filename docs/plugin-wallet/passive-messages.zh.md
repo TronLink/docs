@@ -222,7 +222,7 @@ window.tron.on('disconnect', (providerRpcError) => {
 })
 ```
 
-> **旧版用法（不推荐）：** [disconnectWeb（postMessage）](#disconnectweb) 或 [rejectWeb（postMessage）](#rejectweb)
+> **旧版用法（不推荐）：** [disconnectWeb（postMessage）](#disconnectweb)
 
 ## 历史遗留问题
 

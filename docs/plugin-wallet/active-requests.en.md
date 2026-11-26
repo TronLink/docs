@@ -15,7 +15,10 @@ This method follows the Ethereum **EIP-1102** protocol.
 ```javascript
 try {
   await window.tron.request({method: 'eth_requestAccounts'});
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Connection declined");
+  else console.error("Authorization failed", error);
+}
 ```
 
 #### Return Value
@@ -140,10 +143,17 @@ const fromAddress = tronweb.defaultAddress.base58;
 const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
 const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress);
 
+let signedTx;
 try {
-  const signedTx = await tronweb.trx.sign(tx);
-  await tronweb.trx.sendRawTransaction(signedTx);
-} catch (e) {}
+  signedTx = await tronweb.trx.sign(tx);
+} catch (error) {
+  if (error === "Confirmation declined by user") console.info("Signing declined");
+  else console.error("Signing failed", error);
+}
+if (signedTx) {
+  const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+  if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+}
 ```
 
 When executing `await tronweb.trx.sign(tx);`, TronLink displays a confirmation popup.
@@ -168,24 +178,7 @@ Refer to **Normal Transfer** above.
 
 #### Code Example
 
-```typescript
-const tronweb = window.tron.tronWeb;
-const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-const fromAddress = tronweb.defaultAddress.base58; // tx owner: the account this active permission controls; set it explicitly if the connected account is only a co-signer
-const activePermissionId = 2;
-
-const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10, fromAddress,
-    { permissionId: activePermissionId}
-);
-
-try {
-  const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId);
-  await tronweb.trx.sendRawTransaction(signedTx);
-} catch (e) {}
-```
-
-Rejecting triggers an exception; signing returns the signed transaction for broadcasting.
+Use the [multi-signature transfer example](../dapp/multi-sign-transfer.md) to query the transaction owner’s permission, collect a signature and verify the cumulative weight before broadcasting.
 
 > **Legacy (not recommended):** [Legacy: multiSign via window.tronLink](#legacy-multisign-via-windowtronlink)
 
@@ -211,7 +204,13 @@ try {
   // verify with the same string; returns the signer's base58 address
   const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
   const ok = recovered === tronweb.defaultAddress.base58;
-} catch (e) {}
+} catch (error) {
+  if (error === "Confirmation declined by user") {
+    console.info("Signing declined");
+  } else {
+    console.error("Message signing or verification failed", error);
+  }
+}
 ```
 
 #### Parameter
@@ -232,11 +231,7 @@ If signed successfully:
 0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
 ```
 
-If an error occurs:
-
-```typescript
-Uncaught (in promise) Invalid transaction provided
-```
+An empty message or a signing failure can produce `Invalid transaction provided`. A user declining the prompt rejects with `Confirmation declined by user`. For other failures, inspect the returned reason.
 
 ### Interaction Flow
 
@@ -381,7 +376,10 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Network switch declined");
+  else console.error("Network switch failed", error);
+}
 ```
 
 #### Parameters
@@ -608,12 +606,27 @@ Retained for back-compat; new integrations should use `eth_requestAccounts`.
 
 ```json
 {
-  "type": "object",
-  "required": ["code", "message"],
-  "properties": {
-    "code":    { "type": "integer", "enum": [200, 4000, 4001] },
-    "message": { "type": "string" }
-  }
+  "oneOf": [
+    {
+      "const": ""
+    },
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [200, 4000, 4001]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  ]
 }
 ```
 
@@ -639,15 +652,22 @@ Therefore, the DApp must perform the **Connect Website** request first and wait 
 #### Code Example
 
 ```typescript
-const res = await tronWeb.request(
+const res: RequestAccountsResponse = await window.tronLink.request(
   {
     method: 'tron_requestAccounts',
     params: {
       websiteIcon: '<WEBSITE ICON URI>',
       websiteName: '<WEBSITE NAME>',
-    } as RequestAccountParams,
+    } as RequestAccountsParams,
   }
 );
+if (res === "") {
+  console.info("Unlock TronLink");
+} else if (res.code === 200) {
+  console.info("Connected");
+} else {
+  console.info(res.code, res.message);
+}
 ```
 
 #### Parameters
@@ -660,14 +680,14 @@ interface RequestAccountsParams {
 ```
 
 - **method:** fixed string `tron_requestAccounts`
-- **params:** `RequestAccountParams` type:
+- **params:** `RequestAccountsParams` type:
   - `websiteIcon`: DApp website icon URI (displayed in connected site list)
   - `websiteName`: DApp website name
 
 #### Return Value
 
 ```typescript
-interface ReqestAccountsResponse {
+type RequestAccountsResponse = "" | {
   code: 200 | 4000 | 4001,
   message: string
 }
@@ -691,34 +711,24 @@ if (window.tronLink.ready) {
   const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
   const tx = await tronweb.transactionBuilder.sendTrx(toAddress, 10, fromAddress);
 
+  let signedTx;
   try {
-    const signedTx = await tronweb.trx.sign(tx);
-    await tronweb.trx.sendRawTransaction(signedTx);
-  } catch (e) {}
+    signedTx = await tronweb.trx.sign(tx);
+  } catch (error) {
+    if (error === "Confirmation declined by user") console.info("Signing declined");
+    else console.error("Signing failed", error);
+  }
+  if (signedTx) {
+    const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+    if (!receipt.result) console.error(receipt.code, receipt.message && tronweb.toUtf8(receipt.message));
+  }
 }
 ```
 
 
 ## Legacy: multiSign via window.tronLink
 
-```typescript
-if (window.tronLink.ready) {
-  const tronweb = tronLink.tronWeb;
-  const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-  const fromAddress = tronweb.defaultAddress.base58; // tx owner: the account this active permission controls; set it explicitly if the connected account is only a co-signer
-  const activePermissionId = 2;
-
-  const tx = await tronweb.transactionBuilder.sendTrx(
-      toAddress, 10, fromAddress,
-      { permissionId: activePermissionId}
-  );
-
-  try {
-    const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId);
-    await tronweb.trx.sendRawTransaction(signedTx);
-  } catch (e) {}
-}
-```
+Use the [multi-signature transfer example](../dapp/multi-sign-transfer.md) to query the transaction owner’s permission, collect a signature and verify the cumulative weight before broadcasting. For the legacy provider, obtain `tronweb` from `window.tronLink.tronWeb` once `window.tronLink.ready` is true.
 
 
 ## Legacy: signMessageV2 via window.tronLink
@@ -730,7 +740,13 @@ if (window.tronLink.ready) {
   try {
     const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
     const signedString = await tronweb.trx.signMessageV2(message);
-  } catch (e) {}
+  } catch (error) {
+    if (error === "Confirmation declined by user") {
+      console.info("Signing declined");
+    } else {
+      console.error("Message signing or verification failed", error);
+    }
+  }
 }
 ```
 
@@ -742,42 +758,48 @@ if (window.tronLink.ready) {
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc10',
         options: { address: '1002000' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 
 // Add TRC20
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc20',
         options: { address: 'TN3W4H6rK2ce4vX9YnFQHwKENnHjoxb3m9' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 
 // Add TRC721
 if (window.tronLink.ready) {
   const tronweb = tronLink.tronWeb;
   try {
-    tronweb.request({
+    await tronweb.request({
       method: 'wallet_watchAsset',
       params: {
         type: 'trc721',
         options: { address: 'TVtaUnsgKXhTfqSFRnHCsSXzPiXmm53nZt' },
       },
     });
-  } catch (e) {}
+  } catch (error) {
+    console.error("wallet_watchAsset failed", error);
+  }
 }
 ```
 
@@ -790,5 +812,8 @@ try {
     method: 'wallet_switchEthereumChain',
     params: [{chainId: '0x2b6653dc'}]
   });
-} catch (e) {}
+} catch (error) {
+  if (error?.code === 4001) console.info("Network switch declined");
+  else console.error("Network switch failed", error);
+}
 ```

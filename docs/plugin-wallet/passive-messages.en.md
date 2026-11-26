@@ -254,7 +254,7 @@ window.tron.on('disconnect', (providerRpcError) => {
 })
 ```
 
-> **Legacy (not recommended):** [disconnectWeb (postMessage)](#user-disconnected-website-message) or [rejectWeb (postMessage)](#user-rejected-connection-message)
+> **Legacy (not recommended):** [disconnectWeb (postMessage)](#user-disconnected-website-message)
 
 ---
 

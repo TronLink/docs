@@ -327,7 +327,10 @@ In `--json` mode, v1.0.1 writes failures to **stderr** and exits with `1`:
 2. For read operations with `--address`: queries TronGrid directly
 3. For write/read without `--address`: connects to the TronLink browser extension for wallet info
 4. Builds unsigned transaction using local TronWeb `transactionBuilder`
-5. Pre-flight check: runs on all write commands (transfer, stake, unstake, delegate, reclaim, vote, trigger). Verifies TRX / token / staked / delegated balances, simulates contract calls to catch reverts, estimates energy & bandwidth burn, validates SR addresses (vote), NFT ownership (TRC721), and delegation unlock times (reclaim) before signing
+5. Pre-flight check: depends on the command (transfer, stake, unstake, delegate, reclaim, vote, trigger). Verifies TRX / token / staked / delegated balances, simulates contract calls to catch reverts, estimates energy & bandwidth burn, validates SR addresses (vote), NFT ownership (TRC721), and delegation unlock times (reclaim) before signing
+
+    In v1.0.1, `withdraw` queries the payer’s `unfrozenV2` entries and errors before signing if no matured TRX is available. `reward` calls `getReward(address)` and returns without signing if the amount is zero or less (JSON status `No Rewards`). A failed lookup stops either command before signing.
+
 6. Sends transaction to TronLink for signing (browser approval page)
 7. Broadcasts: signer broadcasts by default, or CLI broadcasts locally with `--local-broadcast`. In both modes the CLI polls `getUnconfirmedTransactionInfo` until the tx is packed into a block (~3s), and surfaces OUT_OF_ENERGY / REVERT / FAILED as errors
 8. Outputs result
@@ -431,11 +434,15 @@ tronlink reward --json
 ### Example: AI Transfer Flow
 
 ```bash
-# 1. Check balance first
-tronlink balance --address TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL --network mainnet --json
+# Set PAYER to the address selected in TronLink and RECIPIENT to the destination.
+# If the wallet account or network changes, cancel and check the new balance first.
+NETWORK=mainnet
+
+# 1. Check the payer's balance
+tronlink balance --address "${PAYER:?set PAYER}" --network "$NETWORK" --json
 
 # 2. Send 10 TRX (opens browser for signing, wait for return)
-tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network mainnet --json
+tronlink transfer --type trx --toAddress "${RECIPIENT:?set RECIPIENT}" --amount 10 --network "$NETWORK" --json
 
 # 3. Verify result — output includes txId and explorer URL
 # { "Status": "Success", "TxID": "abc...", "Explorer": "https://tronscan.org/#/transaction/abc..." }

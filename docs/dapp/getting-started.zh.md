@@ -105,27 +105,39 @@ async function getTronWeb() {
       async function connect() {
         if (!tronProvider) return alert("未检测到 TronLink！");
         try {
-          const accounts = await tronProvider.request({
-            method: "eth_requestAccounts",
-          });
-          console.log("已连接：", accounts[0]);
-
-          const tronweb = tronProvider.tronWeb;
-          const from = tronweb.defaultAddress.base58;
-          const to = "TN9RRaXkCFtTXRso2GdTZxSxxwufzxLQPP"; // 请替换为真实的收款地址
-
-          // 构建一笔 10 SUN 的 TRX 转账（金额单位为 SUN：1 TRX = 1_000_000 SUN）
-          const tx = await tronweb.transactionBuilder.sendTrx(to, 10, from);
-
-          // 弹出 TronLink 确认窗口
-          const signedTx = await tronweb.trx.sign(tx);
-
-          // 广播到网络
-          const broadcastTx = await tronweb.trx.sendRawTransaction(signedTx);
-          console.log(broadcastTx);
+          await tronProvider.request({ method: "eth_requestAccounts" });
         } catch (error) {
-          // 用户拒绝时为 { code: 4001, message: "User rejected the request." }
-          console.error(error);
+          if (error?.code === 4001) return console.info("连接请求被拒绝");
+          return console.error("授权失败", error);
+        }
+
+        const tronweb = tronProvider.tronWeb;
+        let tx;
+        try {
+          const to = "替换为实际收款地址";
+          // 构建一笔 10 SUN 的转账（1 TRX = 1_000_000 SUN）。
+          tx = await tronweb.transactionBuilder.sendTrx(to, 10, tronweb.defaultAddress.base58);
+        } catch (error) {
+          return console.error("构建转账失败", error);
+        }
+
+        let signedTx;
+        try {
+          signedTx = await tronweb.trx.sign(tx);
+        } catch (error) {
+          if (error === "Confirmation declined by user") return console.info("用户拒绝签名");
+          return console.error("签名失败", error);
+        }
+
+        try {
+          const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+          if (!receipt.result) {
+            const message = receipt.message ? tronweb.toUtf8(receipt.message) : "";
+            return console.error(receipt.code, message);
+          }
+          console.log("请查询该交易的链上确认状态", signedTx.txID);
+        } catch (error) {
+          console.error("广播结果未知，重试前先按交易 ID 查询", signedTx.txID, error);
         }
       }
     </script>

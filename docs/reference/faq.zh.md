@@ -24,7 +24,7 @@
 
 ## DApp 需要特定网络
 
-用 `wallet_switchEthereumChain`（TIP-3326）请求切换，传入目标十六进制 `chainId`。参见 [chainId 取值](networks.md)与[切换网络](../plugin-wallet/active-requests.md)。通过 `chainChanged` 确认当前网络。
+用 `wallet_switchEthereumChain`（TIP-3326）请求切换，传入目标十六进制 `chainId`。参见 [chainId 取值](networks.md)与[切换网络](../plugin-wallet/active-requests.md#tip-3326)。通过 `chainChanged` 确认当前网络。
 
 ## 交易因资源不足而失败
 
