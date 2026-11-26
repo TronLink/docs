@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - docs/wallet-core-guides
+      - feature/ai-readability-p0
   workflow_dispatch: # 仍保留手动触发的功能
 
 jobs:
