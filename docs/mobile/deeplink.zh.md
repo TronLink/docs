@@ -17,7 +17,7 @@ img {
 使用 DeepLink 方式唤起钱包。可用版本：TronLink v4.10.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Open Tronlink</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22action%22%3A%22open%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%7D'>Open Tronlink</a>
 ```
 
 `param`（请求）：
@@ -35,7 +35,7 @@ img {
 使用 DeepLink 方式唤起钱包，并在 DApp 浏览器中打开 DApp。可用版本：TronLink v4.10.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Open DApp</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fwww.tronlink.org%2F%22%2C%22action%22%3A%22open%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%7D'>Open DApp</a>
 ```
 
 `param`（请求），`url` 为目标 DApp：
@@ -51,10 +51,12 @@ img {
 
 ## 登录授权
 
+接入时请替换 DApp 的 URL、回调地址、图标、名称、目标网络及本次请求的 actionId，再将请求序列化为 JSON，用 `encodeURIComponent` 编码后填入 `param`。
+
 使用 DeepLink 方式唤起钱包，并在钱包中选择获取钱包地址。可用版本：TronLink v4.11.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Login/Request Address</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fjustlend.org%2F%23%2Fhome%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22action%22%3A%22login%22%2C%22actionId%22%3A%22e5471a9c-b0f1-418b-8634-3de60d68a288%22%7D'>Login/Request Address</a>
 ```
 
 `param`（请求）：
@@ -212,7 +214,7 @@ img {
 
 ## 回传消息码
 
-> 注意：转账请求中 `tokenId` 与 `contract` 互斥，两者同时传入会返回消息码 `10025`。
+> `10025` 表示转账资产标识冲突。每次转账只指定一种资产。
 
 | 消息码 | 消息 | 备注 |
 |:-------|:-------|:-------|
@@ -241,7 +243,7 @@ img {
 | 10022 | Incorrect loginAddress |  |
 | 10023 | System contract not support |  |
 | 10024 | Incorrect tokenId |  |
-| 10025 | TokenId & Contract address should not exist together |  |
+| 10025 | 代币 ID 与合约地址冲突 |  |
 | 300 | Transaction canceled |  |
 | 301 | Transaction executed in TronLink |  |
 | 302 | Broadcast failure - returned with incorrect info |  |
@@ -340,7 +342,7 @@ img {
 }
 ```
 
-**转账** 请求——`tokenId`（TRX / TRC10）与 `contract`（TRC20）**互斥**；同时传入会返回 `10025`。不用的那个传 `""`（空字符串）：
+**转账**时，TRX 使用 `tokenId: "0"`，TRC10 使用十进制字符串形式的资产 ID，TRC20 使用 `contract` 指定合约地址。示例将未使用的字段写作空字符串。省略字段会生成不同的 JSON 请求，请在目标 App 版本确认未使用字段的填法。
 
 ```json
 {
@@ -354,8 +356,8 @@ img {
     "from":         { "type": "string", "description": "发起方 TRON 地址（base58）" },
     "to":           { "type": "string", "description": "收款方 TRON 地址（base58）" },
     "loginAddress": { "type": "string", "description": "本次会话的授权地址——必须与当前钱包一致，否则返回 10021" },
-    "tokenId":      { "type": "string", "description": "TRC10 token id，或 '0' 表示 TRX；发送 TRC20 时传 ''" },
-    "contract":     { "type": "string", "description": "TRC20 合约地址；发送 TRX / TRC10 时传 ''" },
+    "tokenId":      { "type": "string", "description": "TRC10 token id，或 '0' 表示 TRX" },
+    "contract":     { "type": "string", "description": "TRC20 合约地址" },
     "amount":       { "type": "string", "description": "人类单位的十进制字符串（如 '1.5'），App 内部处理 decimals" },
     "memo":         { "type": "string", "description": "可选交易备注" },
     "dappName":     { "type": "string" },

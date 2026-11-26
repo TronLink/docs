@@ -168,24 +168,7 @@ Refer to **Normal Transfer** above.
 
 #### Code Example
 
-```typescript
-const tronweb = window.tron.tronWeb;
-const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-const fromAddress = tronweb.defaultAddress.base58; // tx owner: the account this active permission controls; set it explicitly if the connected account is only a co-signer
-const activePermissionId = 2;
-
-const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10, fromAddress,
-    { permissionId: activePermissionId}
-);
-
-try {
-  const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId);
-  await tronweb.trx.sendRawTransaction(signedTx);
-} catch (e) {}
-```
-
-Rejecting triggers an exception; signing returns the signed transaction for broadcasting.
+Use the [multi-signature transfer example](../dapp/multi-sign-transfer.md) to query the transaction owner’s permission, collect a signature and verify the cumulative weight before broadcasting.
 
 > **Legacy (not recommended):** [Legacy: multiSign via window.tronLink](#legacy-multisign-via-windowtronlink)
 
@@ -211,7 +194,13 @@ try {
   // verify with the same string; returns the signer's base58 address
   const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
   const ok = recovered === tronweb.defaultAddress.base58;
-} catch (e) {}
+} catch (error) {
+  if (error === "Confirmation declined by user") {
+    console.info("Signing declined");
+  } else {
+    console.error("Message signing or verification failed", error);
+  }
+}
 ```
 
 #### Parameter
@@ -232,11 +221,7 @@ If signed successfully:
 0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
 ```
 
-If an error occurs:
-
-```typescript
-Uncaught (in promise) Invalid transaction provided
-```
+An empty message or a signing failure can produce `Invalid transaction provided`. A user declining the prompt rejects with `Confirmation declined by user`. For other failures, inspect the returned reason.
 
 ### Interaction Flow
 
@@ -608,12 +593,27 @@ Retained for back-compat; new integrations should use `eth_requestAccounts`.
 
 ```json
 {
-  "type": "object",
-  "required": ["code", "message"],
-  "properties": {
-    "code":    { "type": "integer", "enum": [200, 4000, 4001] },
-    "message": { "type": "string" }
-  }
+  "oneOf": [
+    {
+      "const": ""
+    },
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [200, 4000, 4001]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  ]
 }
 ```
 
@@ -639,15 +639,22 @@ Therefore, the DApp must perform the **Connect Website** request first and wait 
 #### Code Example
 
 ```typescript
-const res = await tronWeb.request(
+const res: RequestAccountsResponse = await window.tronLink.request(
   {
     method: 'tron_requestAccounts',
     params: {
       websiteIcon: '<WEBSITE ICON URI>',
       websiteName: '<WEBSITE NAME>',
-    } as RequestAccountParams,
+    } as RequestAccountsParams,
   }
 );
+if (res === "") {
+  console.info("Unlock TronLink");
+} else if (res.code === 200) {
+  console.info("Connected");
+} else {
+  console.info(res.code, res.message);
+}
 ```
 
 #### Parameters
@@ -660,14 +667,14 @@ interface RequestAccountsParams {
 ```
 
 - **method:** fixed string `tron_requestAccounts`
-- **params:** `RequestAccountParams` type:
+- **params:** `RequestAccountsParams` type:
   - `websiteIcon`: DApp website icon URI (displayed in connected site list)
   - `websiteName`: DApp website name
 
 #### Return Value
 
 ```typescript
-interface ReqestAccountsResponse {
+type RequestAccountsResponse = "" | {
   code: 200 | 4000 | 4001,
   message: string
 }
@@ -701,24 +708,7 @@ if (window.tronLink.ready) {
 
 ## Legacy: multiSign via window.tronLink
 
-```typescript
-if (window.tronLink.ready) {
-  const tronweb = tronLink.tronWeb;
-  const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-  const fromAddress = tronweb.defaultAddress.base58; // tx owner: the account this active permission controls; set it explicitly if the connected account is only a co-signer
-  const activePermissionId = 2;
-
-  const tx = await tronweb.transactionBuilder.sendTrx(
-      toAddress, 10, fromAddress,
-      { permissionId: activePermissionId}
-  );
-
-  try {
-    const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId);
-    await tronweb.trx.sendRawTransaction(signedTx);
-  } catch (e) {}
-}
-```
+Use the [multi-signature transfer example](../dapp/multi-sign-transfer.md) to query the transaction owner’s permission, collect a signature and verify the cumulative weight before broadcasting. For the legacy provider, obtain `tronweb` from `window.tronLink.tronWeb` once `window.tronLink.ready` is true.
 
 
 ## Legacy: signMessageV2 via window.tronLink
@@ -730,7 +720,13 @@ if (window.tronLink.ready) {
   try {
     const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // plain UTF-8 text
     const signedString = await tronweb.trx.signMessageV2(message);
-  } catch (e) {}
+  } catch (error) {
+    if (error === "Confirmation declined by user") {
+      console.info("Signing declined");
+    } else {
+      console.error("Message signing or verification failed", error);
+    }
+  }
 }
 ```
 

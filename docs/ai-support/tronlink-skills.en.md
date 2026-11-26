@@ -292,7 +292,7 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 - Freeze TRX → Get Energy or Bandwidth → Vote for SR → Earn rewards
 - Unfreezing has **14-day wait** before withdrawal
 - Votes reset if you unfreeze; must re-vote after re-freezing
-- 1 frozen TRX ≈ 4.5 Energy/day — **dynamic**: depends on total network stake; use `tron-resource estimate-energy` for the live value. Effective figure as of 2026-05.
+- Energy obtained by staking depends on the network’s current stake. Estimate the quota per TRX from `TotalEnergyLimit / TotalEnergyWeight` on the target network. `estimate-energy` estimates a contract call’s consumption. [GetAccountResource](https://developers.tron.network/reference/getaccountresource)
 - Voting rewards claimable every 6 hours
 
 ---
@@ -303,8 +303,10 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 
 ```bash
 # Clone and use directly
+# v1.1.0 requires Git, nvm, Node.js 24.22.3 and (for the interactive steps) Claude Code.
 git clone https://github.com/TronLink/tronlink-skills.git
 cd tronlink-skills
+git checkout b12b5868
 nvm install && nvm use
 claude   # Auto-discovers SKILL.md files
 ```
@@ -537,21 +539,23 @@ Both formats are supported and auto-normalized across all commands:
 
 ```bash
 # 1. Clone
+# v1.1.0 requires Git, nvm, Node.js 24.22.3 and (for the interactive steps) Claude Code.
 git clone https://github.com/TronLink/tronlink-skills.git
 cd tronlink-skills
+git checkout b12b5868
 nvm install && nvm use
 
 # 2. Use with Claude Code (no install needed for reads)
 claude
-> "What's the TRX balance of TAddress...?"
-> "Show me the top trending tokens on TRON"
-> "How much Energy do I need to send USDT?"
-> "What's the best way to get Energy — freeze, rent, or burn?"
+# "What's the TRX balance of TAddress...?"
+# "Show me the top trending tokens on TRON"
+# "How much Energy do I need to send USDT?"
+# "What's the best way to get Energy — freeze, rent, or burn?"
 
-# 3. Or use directly
-node scripts/tron_api.mjs wallet-balance --address TAddress...
+# 3. Alternatively, run these in the shell. Set ACCOUNT to the address to query.
+node scripts/tron_api.mjs wallet-balance --address "${ACCOUNT:?set ACCOUNT}"
 node scripts/tron_api.mjs token-price --token USDT
-node scripts/tron_api.mjs optimize-cost --address TAddress...
+node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 ```
 
 ## Version & License

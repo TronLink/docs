@@ -6,7 +6,7 @@ TronLink agents traverse three or four error-code dialects when a single user re
 
 **Error shape:** On the TronLink-injected `tronWeb` (extension 4.0.0 and later), when the user rejects `trx.sign`, `trx.multiSign`, or `trx.signMessageV2`, the promise rejects with the **plain string** `'Confirmation declined by user'` — not an `Error` object, and without a numeric `code`. The `{ code: 4001, message: 'User rejected the request.' }` object is returned only by `window.tron.request(...)` methods such as `eth_requestAccounts`. Other failures (locked wallet, invalid payload, watch-only account) use other values — see [Handling rejections](#handling-rejections). Do not automatically retry signing.
 
-| Business meaning | DApp provider ([EIP-1474][provider]) | DeepLink ([5-digit][deeplink]) | MCP ([`TL_*`][mcp]) | CLI v1.0.1 ([exit status][cli]) | Retryable? |
+| Business meaning | DApp provider ([EIP-1474][provider]) | [DeepLink callback code][deeplink] | MCP ([`TL_*`][mcp]) | CLI v1.0.1 ([exit status][cli]) | Retryable? |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | **User rejected** the signing or connection prompt | `4001` from `window.tron.request(...)`; the string `'Confirmation declined by user'` from `tronWeb.trx.sign` / `multiSign` / `signMessageV2` | `300` (Transaction canceled) | — (HITL — re-prompt only on a fresh tool call) | `1` | **No** |
 | **Invalid input** / malformed params | thrown by `tronWeb` builder | `10001`–`10020`, `10024`, `10025` | `TL_INVALID_INPUT` | `1` | **No** — fix the payload |

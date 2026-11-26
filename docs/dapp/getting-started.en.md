@@ -107,27 +107,35 @@ The following self-contained HTML example detects TronLink via TIP-6963, request
       async function connect() {
         if (!tronProvider) return alert("TronLink not found!");
         try {
-          const accounts = await tronProvider.request({
-            method: "eth_requestAccounts",
-          });
-          console.log("Connected:", accounts[0]);
-
-          const tronweb = tronProvider.tronWeb;
-          const from = tronweb.defaultAddress.base58;
-          const to = "TN9RRaXkCFtTXRso2GdTZxSxxwufzxLQPP"; // replace with the actual recipient address
-
-          // Build a 10 SUN TRX transfer (amount unit is SUN: 1 TRX = 1_000_000 SUN)
-          const tx = await tronweb.transactionBuilder.sendTrx(to, 10, from);
-
-          // Pops up the TronLink confirmation window
-          const signedTx = await tronweb.trx.sign(tx);
-
-          // Broadcast to the network
-          const broadcastTx = await tronweb.trx.sendRawTransaction(signedTx);
-          console.log(broadcastTx);
+          await tronProvider.request({ method: "eth_requestAccounts" });
         } catch (error) {
-          // { code: 4001, message: "User rejected the request." } when the user declines
-          console.error(error);
+          if (error?.code === 4001) return console.info("Connection declined");
+          return console.error("Authorization failed", error);
+        }
+
+        const tronweb = tronProvider.tronWeb;
+        let tx;
+        try {
+          const to = "REPLACE_WITH_RECIPIENT_ADDRESS";
+          tx = await tronweb.transactionBuilder.sendTrx(to, 10, tronweb.defaultAddress.base58);
+        } catch (error) {
+          return console.error("Could not build transfer", error);
+        }
+
+        let signedTx;
+        try {
+          signedTx = await tronweb.trx.sign(tx);
+        } catch (error) {
+          if (error === "Confirmation declined by user") return console.info("Signing declined");
+          return console.error("Signing failed", error);
+        }
+
+        try {
+          const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+          if (receipt.result === false || receipt.code) return console.error(receipt.code, receipt.message);
+          console.log("Check on-chain confirmation for", signedTx.txID);
+        } catch (error) {
+          console.error("Broadcast outcome unknown. Check transaction before retrying", signedTx.txID, error);
         }
       }
     </script>

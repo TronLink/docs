@@ -36,7 +36,7 @@
 - **ABI** —— Application Binary Interface，合约可调用方法与事件的 JSON 描述。若代币合约的 ABI 缺少可识别的方法（如 `transfer`、`approve`），TronLink 可能无法提供相应操作。
 - **`chainId`** —— 网络标识。TronLink 在 `wallet_switchEthereumChain` 和 `chainChanged` 用十六进制形式（如 `0x2b6653dc`），在 EIP-712 的 `domain.chainId` 用十进制 EVM 形式（如 `728126428`）。参见[网络与地址](networks.md)。
 - **`ProviderRpcError`** —— EIP-1193 在 `disconnect` 时抛出的错误对象，结构为 `{ code: number; message: string; data?: unknown }`。
-- **permission id** —— 多签交易使用的活动权限索引（传给 `tronWeb.trx.multiSign`）。参见[多签转账](../dapp/multi-sign-transfer.md)。
+- **permission id** —— 交易 owner 账户中所选活动权限条目的 `id` 字段值（传给 `tronWeb.trx.multiSign`）。参见[多签转账](../dapp/multi-sign-transfer.md)。
 - **base58 / hex 地址** —— TRON 地址的两种编码（`T...` 与 `41...`）。参见[网络与地址](networks.md)。
 
 ## AI 工具

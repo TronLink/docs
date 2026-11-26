@@ -214,7 +214,7 @@ Callback:
 
 ## Result Code
 
-> Note: `tokenId` and `contract` are mutually exclusive in a transfer request — supplying both returns code `10025`.
+> Code `10025` indicates conflicting asset identifiers. Use one asset identifier per transfer.
 
 | Code | Message |
 |:-------|:-------|
@@ -243,7 +243,7 @@ Callback:
 | 10022 | Incorrect loginAddress |
 | 10023 | System contract not support |
 | 10024 | Incorrect tokenId |
-| 10025 | TokenId & Contract address should not exist together |
+| 10025 | Conflicting token ID and contract address |
 | 300 | Transaction canceled |
 | 301 | Transaction executed in TronLink |
 | 302 | Broadcast failure - returned with incorrect info |
@@ -342,7 +342,7 @@ Every `param` shares this prefix:
 }
 ```
 
-**Transfer** request — `tokenId` (TRX / TRC10) and `contract` (TRC20) are **mutually exclusive**; supplying both returns `10025`. Set the unused one to `""` (empty string):
+**Transfer** uses `tokenId: "0"` for TRX, the asset’s decimal ID string for TRC10, or `contract` with the contract address for TRC20. The example includes the unused field as an empty string. Omitting a key produces a different JSON request. Confirm the unused-field format on your target App version.
 
 ```json
 {
@@ -356,8 +356,8 @@ Every `param` shares this prefix:
     "from":         { "type": "string", "description": "Sender TRON address (base58)" },
     "to":           { "type": "string", "description": "Recipient TRON address (base58)" },
     "loginAddress": { "type": "string", "description": "Address that authorized this session — must match the current wallet (otherwise code 10021)" },
-    "tokenId":      { "type": "string", "description": "TRC10 token id or '0' for TRX; pass '' when sending TRC20" },
-    "contract":     { "type": "string", "description": "TRC20 contract address; pass '' when sending TRX / TRC10" },
+    "tokenId":      { "type": "string", "description": "TRC10 token id or '0' for TRX" },
+    "contract":     { "type": "string", "description": "TRC20 contract address" },
     "amount":       { "type": "string", "description": "Decimal string in human units (e.g. '1.5'); the app handles decimals" },
     "memo":         { "type": "string", "description": "Optional transaction memo" },
     "dappName":     { "type": "string" },

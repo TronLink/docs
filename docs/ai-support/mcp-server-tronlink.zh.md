@@ -8,7 +8,7 @@
 
 **核心亮点：**
 - 双模架构：**Playwright**（浏览器自动化）+ **Direct API**（链上操作）
-- 32 个内置 Flow Recipe，带预检查和依赖解析
+- 24 个内置 Flow Recipe，带预检查和依赖解析
 - 基于加密 `agent-wallet` 的非托管本地交易签名
 - 多签管理，支持实时 WebSocket 监控
 - 通过 GasFree 服务集成实现零 Gas TRC20 转账
@@ -27,7 +27,7 @@ flowchart TD
   Multi["TronLinkMultiSigCapability (5 个工具)"]
   GasFree["TronLinkGasFreeCapability (3 个工具)"]
   Util["实用能力<br/>Build · StateSnapshot · TRON Crypto"]
-  Flow["Flow Recipes<br/>(32 个内置流程配方)"]
+  Flow["Flow Recipes<br/>(24 个内置流程配方)"]
   Ext["TronGrid API / 多签服务 / GasFree 服务"]
   Chain["TRON 区块链"]
   Agent -- "MCP 协议 — stdio / JSON-RPC 2.0" --> Server
@@ -174,11 +174,13 @@ hexToAddress()             0x41... → T 地址
 
 ---
 
-## Flow Recipes（32 个内置流程）
+## Flow Recipes（24 个内置流程）
 
 预配置的多步骤工作流，带依赖检查和参数模板。
 
-### Playwright 流程
+调用 `tl_list_flows` 可查看运行中服务的注册清单。
+
+### Playwright 流程（4 个）
 | 流程 | 说明 |
 |------|------|
 | `switchNetworkFlow` | 切换到主网/Nile/Shasta |
@@ -248,7 +250,7 @@ hexToAddress()             0x41... → T 地址
 
 | 变量 | 说明 |
 |------|------|
-| `AGENT_WALLET_PASSWORD` | 钱包加密密码（自动创建时可省略；手动或已有钱包时需要） |
+| `AGENT_WALLET_PASSWORD` | 钱包加密密码（手动创建的钱包需提供；本地自动创建的钱包可复用已保存的随机密码） |
 | `AGENT_WALLET_DIR` | 自定义钱包目录 |
 | `TL_OWNER_WALLET_ID` | 多签 owner 使用的钱包 ID |
 | `TL_COSIGNER_WALLET_ID` | 多签 cosigner 使用的钱包 ID |
@@ -290,15 +292,13 @@ Claude Code 自动检测：
 }
 ```
 
-如果本地还没有钱包，服务启动后会提示两条路径：
+**手动创建（生产推荐）**。新建钱包时运行 `agent-wallet start local_secure --generate --wallet-id main`。对于该钱包或已有钱包，通过凭据管理器将其密码导出到启动 Claude Code（已核对 2.1.141）的环境变量 `AGENT_WALLET_PASSWORD`。在服务的 `env` 对象中添加下列配置，Claude Code 在启动服务时展开变量。 [Claude Code MCP](https://code.claude.com/docs/en/mcp#environment-variable-expansion-in-mcp-json)
 
-1. 自动创建：调用 `tl_wallet_create`
-2. 手动创建：
-   1. 运行 `agent-wallet start local_secure --generate --wallet-id main`
-   2. 把 `AGENT_WALLET_PASSWORD` 写进 `.mcp.json`
-   3. 重启 MCP 服务
+```json
+{ "AGENT_WALLET_PASSWORD": "${AGENT_WALLET_PASSWORD}" }
+```
 
-如果选择自动创建，服务会生成随机密码，把密码保存到 `~/.agent-wallet/runtime_secrets.json`，创建一个加密的 `main` 钱包，并继续当前会话。
+**自动创建（本地开发）**。省略上述密码配置项。在尚无钱包时调用 `tl_wallet_create`，服务会生成随机密码，明文保存到 `~/.agent-wallet/runtime_secrets.json` 以便重启后复用。将文件权限限制为仅所有者可读写（`chmod 600`），并保护备份。
 
 下面是更完整的 Nile 配置。其中的路由地址是 SunSwap 官方的 Nile Router（[V2](https://docs.sun.io/protocols/sunswap-v2/reference/contract/)、[V3](https://docs.sun.io/protocols/sunswap-v3/reference/contract/)）；请勿把主网路由地址填进 Nile 配置。`tl_chain_swap`（V2）会把报价 API 最优路径中的代币路径交给 V2 路由执行，路径包含非 V2 池子时会失败（例如 Nile 上的 TRX→USDT）。Shasta 的 URL 会使用主网默认值，因此 Shasta 上无法兑换：
 
@@ -314,7 +314,6 @@ Claude Code 自动检测：
         "TL_MODE": "prod",
         "TL_HEADLESS": "false",
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
-        "AGENT_WALLET_PASSWORD": "your-wallet-password",
         "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
         "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
@@ -341,7 +340,6 @@ Claude Code 自动检测：
       "cwd": ".",
       "env": {
         "TL_TRONGRID_URL": "https://nile.trongrid.io",
-        "AGENT_WALLET_PASSWORD": "your-wallet-password",
         "TL_SUNSWAP_ROUTER": "TYMjxCXfqLpMWW1QToP6hbcjpion7EE25p",
         "TL_SUNSWAP_V3_ROUTER": "TFkswj6rUfK3cQtFGzungCkNXxD2UCpEVD",
         "TL_MULTISIG_BASE_URL": "https://apinile.walletadapter.org",
@@ -388,7 +386,7 @@ mcp-server-tronlink/
 │   │   ├── state-snapshot.ts       # UI 状态提取
 │   │   └── tron-crypto.ts          # 地址派生、签名、Base58
 │   └── flows/
-│       ├── index.ts                # 流程注册（32 个配方）
+│       ├── index.ts                # 流程注册（24 个配方）
 │       ├── switch-network.ts       # 网络切换流程
 │       ├── transfer-trx.ts         # 转账流程
 │       ├── multisig.ts             # 6 个多签流程
@@ -406,7 +404,7 @@ mcp-server-tronlink/
 
 ## 依赖项
 
-锁定到 `mcp-server-tronlink@0.1.1` 的 `package.json`。升级钱包、MCP 或密码学库 major 版本时务必重新核对。
+依赖范围取自 `mcp-server-tronlink@0.1.1` 的 `package.json`。升级钱包、MCP 或密码学库 major 版本时务必重新核对。
 
 | 包名 | 版本 | 用途 |
 |------|------|------|
@@ -414,7 +412,7 @@ mcp-server-tronlink/
 | `@noble/hashes` | ^2.0.1 | Keccak-256、SHA256 |
 | `@tronlink/tronlink-mcp-core` | ^0.1.0 | 核心 MCP 服务框架 |
 | `playwright` | ^1.49.0 | 浏览器自动化 |
-| `@bankofai/agent-wallet` | ^2.3.0 | 加密本地钱包管理（`local_secure`）——**已钉版本，不用 `latest`**，确保钱包行为可复现 |
+| `@bankofai/agent-wallet` | ^2.3.0 | 加密本地钱包管理（`local_secure`）。允许安装 2.3.0 至 3.0.0 之前的兼容版本。用 `npm ls @bankofai/agent-wallet` 查看实际安装版本。 |
 | `ws` | ^8.18.0 | WebSocket（多签监控） |
 
 ---
@@ -631,9 +629,9 @@ mcp-server-tronlink/
 
 Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签名。解锁这把钱包有两条路径，请按目的明确选择。
 
-**路径 A — 手动（生产推荐）。** 离线创建钱包，将 `AGENT_WALLET_PASSWORD` 放进 MCP host 的 secret manager，再启动 server。密码仅存在于进程内存，server 不写任何文件。
+**手动创建（生产推荐）。** 离线创建钱包，将 `AGENT_WALLET_PASSWORD` 放进 MCP host 的 secret manager，再启动 server。此路径从运行环境读取提供的密码。
 
-**路径 B — 自动创建（仅适合本地开发）。** 启动时若无钱包且 agent 调用了 `tl_wallet_create`，server 将：
+**自动创建（仅适合本地开发）。** 启动时若无钱包且 agent 调用了 `tl_wallet_create`，server 将：
 
 1. 生成随机密码。
 2. **将密码以明文写入 `~/.agent-wallet/runtime_secrets.json`**，以便重启后能复用同一钱包。
@@ -642,7 +640,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 | 方面 | 行为 |
 |---|---|
 | **文件** | `~/.agent-wallet/runtime_secrets.json`（含密码的明文 JSON） |
-| **建议权限** | `chmod 600`——文件在用户 `$HOME` 下创建，但**没有 umask 兜底**，首次运行后请手工核查。 |
+| **建议权限** | 0.1.1 新建文件时指定权限 `0600`。启动后请核对实际权限。 |
 | **Git 隔离** | `~/.agent-wallet/` 默认在任何仓库之外。若把 `AGENT_WALLET_DIR` 指到仓库内部，必须显式加 `.gitignore`。 |
 | **Knowledge Store 脱敏边界** | Knowledge Store 自动脱敏 `password`、`mnemonic`、`private_key`、`seed` 等字段；**不**读取或处理 `runtime_secrets.json`。该文件与 Knowledge Store 互相独立。 |
 | **日志 / stderr** | 自动生成的密码不会落日志；文件路径可能出现在启动输出中。 |
@@ -650,11 +648,11 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 
 **生产建议。**
 
-- 优先路径 A。`AGENT_WALLET_PASSWORD` 来自 host 的 secret manager（Claude Desktop env、vault 等）。
-- 必须用路径 B 时（如临时 CI），把 `AGENT_WALLET_DIR` 指到任务结束即销毁的 tmpfs。
+- 优先手动创建。`AGENT_WALLET_PASSWORD` 来自 host 的 secret manager（如 vault）。
+- 必须用自动创建 时（如临时 CI），把 `AGENT_WALLET_DIR` 指到任务结束即销毁的 tmpfs。
 - 涉及真实资金的工具，生产环境优先选 `mcp-tronlink-signer`（浏览器审批、不落盘密码），避免 Direct-API。
 
-**如何强制路径 A（文档侧的当下做法）。**
+**如何强制手动创建（文档侧的当下做法）。**
 
 1. **server 启动前**离线创建钱包：
 
@@ -663,7 +661,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
     # 此处输入的密码请单独保管——它是唯一的副本
     ```
 
-2. 让密码通过 MCP host 的 secret manager 注入到 server 的 `env`：
+2. 使用 Claude Code 时，通过凭据管理器将密码导出到客户端启动环境，并在服务配置中引用变量：
 
     ```jsonc
     // .mcp.json — secret 来自 host env，而不是这个文件本身
@@ -680,7 +678,7 @@ Direct-API 路径使用 `@bankofai/agent-wallet` 管理的本地加密钱包签�
 
 3. **禁止 agent 调用 `tl_wallet_create`。** 用与 `tl_evaluate` 相同的方式禁用（Claude Code `permissions.deny`、Claude Desktop `disabledTools`，或客户端侧基于 `list_tools` 用名字 `tl_wallet_create` 过滤）。
 
-4. 首次启动后验证：`list_tools` 中不应出现 `tl_wallet_create`；`~/.agent-wallet/runtime_secrets.json` 不存在即说明路径 B 没有走过。
+4. 首次启动后验证：`list_tools` 中不应出现 `tl_wallet_create`；`~/.agent-wallet/runtime_secrets.json` 不存在即说明自动创建 没有走过。
 
 **待解决（代码侧）。** 长期方案是在 server 启动时加 `--no-auto-create` / `AGENT_WALLET_DISABLE_AUTOCREATE=1` 开关，使无钱包时直接 fail-loud。上游 PR ship 之前，上面这套文档级强制方案是 defense-in-depth。
 
@@ -707,10 +705,10 @@ npm install && npm run build
 export TL_TRONGRID_URL="https://nile.trongrid.io"
 
 # 3. 如果本地还没有钱包，二选一：
-# 方案 A：在 MCP 会话里调用 tl_wallet_create
-# 方案 B：本地执行
+# 自动创建（本地开发）：在 MCP 会话里调用 tl_wallet_create
+# 手动创建（生产推荐）：本地执行
 # agent-wallet start local_secure --generate --wallet-id main
-# 然后把同一个密码写进 .mcp.json 的 AGENT_WALLET_PASSWORD
+# 通过凭据管理器设置 Claude Code 启动环境中的 AGENT_WALLET_PASSWORD，并按上述手动创建配置引用该变量
 
 # 4. 配合 Claude Code 使用
 # 配置好 .mcp.json 后自然语言使用：

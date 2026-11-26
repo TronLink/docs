@@ -12,18 +12,25 @@ npm install tronlink-signer
 
 ## 快速开始
 
+在 Nile 选择有测试币的账户，并将 Node.js 环境变量 `RECIPIENT` 设为测试收款地址。此示例会请求授权转出 1 个测试 TRX。
+
 ```ts
 import { TronSigner } from "tronlink-signer";
 
+const recipient = process.env.RECIPIENT;
+if (!recipient) throw new Error("Set RECIPIENT to the Nile recipient address");
 const signer = new TronSigner();
 await signer.start();
 
-const { address, network } = await signer.connectWallet();
-const { txId, status } = await signer.sendTrx("TXxx...", 1); // status: "success" | "pending" | "failed"
-const { txId: txId2, status: s2 } = await signer.signTransaction(tx, "nile", true); // 广播 + 自动确认
-const { balance } = await signer.getBalance("TXxx...");
-
-await signer.stop();
+try {
+  const { address } = await signer.connectWallet("nile");
+  const { balance } = await signer.getBalance(address, "nile");
+  console.log(address, balance);
+  const { txId, status } = await signer.sendTrx(recipient, 1, "nile");
+  console.log(txId, status);
+} finally {
+  await signer.stop();
+}
 ```
 
 ## API
@@ -102,24 +109,49 @@ const { signature } = await signer.signTypedData({
 | `broadcast` | `boolean` | 签名后是否广播（默认：`false`） |
 | `options` | `SignerOptions` | 可选 — 取消、确认控制、广播回调 |
 
-```ts
-// 仅签名
-const { signedTransaction } = await signer.signTransaction(tx);
+在 Node.js 中构建 Nile 未签名转账前，请安装 `tronlink-signer` 和 `tronweb@6`，在 TronLink 选择有测试币的 Nile 付款账户，并将 `RECIPIENT` 设为预期的 Nile 收款地址。在同一个 ES 模块中运行以下准备代码，再选一种调用方式。
 
+```js
+import { TronSigner } from "tronlink-signer";
+import { TronWeb } from "tronweb";
+
+const signer = new TronSigner();
+const tronWeb = new TronWeb({ fullHost: "https://nile.trongrid.io" });
+const recipient = process.env.RECIPIENT;
+if (!TronWeb.isAddress(recipient)) throw new Error("Set RECIPIENT to a TRON address");
+await signer.start();
+const { address } = await signer.connectWallet("nile");
+const tx = await tronWeb.transactionBuilder.sendTrx(recipient, 10, address);
+```
+
+以下为不同调用方式，请选择一种使用。
+
+```js
+// 仅签名
+const { signedTransaction } = await signer.signTransaction(tx, "nile");
+```
+
+```js
 // 签名、广播并等待确认（默认行为）
 const { signedTransaction, txId, status, error } = await signer.signTransaction(tx, "nile", true);
 // status === "success" — 已在链上确认
 // status === "pending" — 广播成功但在超时时间内未被确认
 // status === "failed"  — 链上执行失败；`error` 包含失败原因
+```
 
+```js
 // 广播但不等待确认
 const result = await signer.signTransaction(tx, "nile", true, { confirm: false });
+```
 
+```js
 // 在交易进入内存池时立即收到通知
 const result = await signer.signTransaction(tx, "nile", true, {
   onBroadcasted: ({ txId }) => console.log("Broadcast:", txId),
 });
 ```
+
+参照快速开始，用 `try / finally` 包住连接、构建及所选调用，在 `finally` 中执行 `await signer.stop()`。广播结果未知时先按交易 ID 查询状态。
 
 <a id="broadcast-result"></a>
 

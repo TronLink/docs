@@ -7,7 +7,7 @@
 
 TronLink App 内置 DApp 浏览器，对于在其上运行的 TRON DApp，TronLink 会自动将 tronWeb 及 tronLink 对象注入到该 DApp。从而允许 DApp 与 TronLink App，以及TRON 网络交互。
 
-详情：参考[DApp章节](../../dapp/getting-started)
+在 App 内置浏览器中取得已授权的 TronWeb 实例后，可参考[开始开发](../dapp/getting-started.md)中的交易构建步骤。该指南的发现、授权和事件示例面向浏览器插件，请在目标 App 版本上逐项确认接口支持情况。从外部移动浏览器唤起 TronLink 请参考 [DeepLink](deeplink.md)。
 
 ## Dapp 浏览器
 

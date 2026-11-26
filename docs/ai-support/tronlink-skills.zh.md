@@ -294,7 +294,7 @@ tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resou
 - 冻结 TRX → 获取能量或带宽 → 投票给 SR → 赚取奖励
 - 解冻需 **14 天等待期** 才能提取
 - 解冻后投票重置；重新冻结后需重新投票
-- 1 冻结 TRX ≈ 每天 4.5 能量——**动态值**：取决于全网总质押量；实时数请用 `tron-resource estimate-energy`。数据截至 2026-05。
+- 质押所得能量取决于目标网络当前的质押总量。用该网络的 `TotalEnergyLimit / TotalEnergyWeight` 估算每质押 1 TRX 可获得的额度。`estimate-energy` 用于估算合约调用消耗。[GetAccountResource](https://developers.tron.network/reference/getaccountresource)
 - 投票奖励每 6 小时可领取一次
 
 ---
@@ -305,8 +305,10 @@ tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resou
 
 ```bash
 # 克隆后直接使用
+# v1.1.0 需要 Git、nvm 和 Node.js 24.22.3；交互步骤还需安装 Claude Code。
 git clone https://github.com/TronLink/tronlink-skills.git
 cd tronlink-skills
+git checkout b12b5868
 nvm install && nvm use
 claude   # 自动发现 SKILL.md 文件
 ```
@@ -539,21 +541,23 @@ tronlink-skills/
 
 ```bash
 # 1. 克隆
+# v1.1.0 需要 Git、nvm 和 Node.js 24.22.3；交互步骤还需安装 Claude Code。
 git clone https://github.com/TronLink/tronlink-skills.git
 cd tronlink-skills
+git checkout b12b5868
 nvm install && nvm use
 
 # 2. 配合 Claude Code 使用（只读操作无需安装）
 claude
-> "查一下 T地址... 的 TRX 余额"
-> "展示 TRON 上最热门的代币"
-> "发送 USDT 需要多少能量？"
-> "获取能量最好的方式是什么——冻结、租赁还是燃烧？"
+# "查一下 T地址... 的 TRX 余额"
+# "展示 TRON 上最热门的代币"
+# "发送 USDT 需要多少能量？"
+# "获取能量最好的方式是什么——冻结、租赁还是燃烧？"
 
-# 3. 或直接使用命令行
-node scripts/tron_api.mjs wallet-balance --address T地址...
+# 3. 也可在 shell 中直接执行。将 ACCOUNT 设为待查询地址。
+node scripts/tron_api.mjs wallet-balance --address "${ACCOUNT:?set ACCOUNT}"
 node scripts/tron_api.mjs token-price --token USDT
-node scripts/tron_api.mjs optimize-cost --address T地址...
+node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 ```
 
 ## 版本与许可证

@@ -246,6 +246,8 @@ tronlink transfer --type trx --toAddress TYqx5gm3p3wLDE9Bv8TBJAbK4ELNbSLfJV --am
 
 若网络抖动导致 CLI 本地广播与签名器残留的广播都打到节点（例如断线重连、同一 nonce 的两次 CLI 调用），第二次提交会被节点拒绝——TRON 节点按交易 ID 去重，结果只会是一次入块 + 一次 `DUP_TRANSACTION_ERROR` 类失败，绝不会出现两次链上效果。已确认入块后再看到此类错误视为良性；尚未确认前出现则按结果未知的网络失败处理（CLI 退出 `1`），先用区块浏览器核对再决定是否重试。
 
+## 输入校验
+
 所有输入在连接 TronLink 前会进行校验：
 
 - **金额**：仅支持非负数字，不允许科学计数法或多个小数点
@@ -323,7 +325,10 @@ v1.0.1 在 `--json` 模式下将失败信息写入 **stderr**，并以 `1` 退�
 2. 对于带 `--address` 的读操作：直接通过 TronGrid 查询
 3. 对于写操作或不带 `--address` 的读操作：连接 TronLink 浏览器扩展以获取钱包信息
 4. 使用本地 TronWeb `transactionBuilder` 构建未签名交易
-5. Pre-flight 校验：所有写命令（transfer、stake、unstake、delegate、reclaim、vote、trigger）在签名前会执行此步——校验 TRX / 代币 / 已质押 / 已委托余额，模拟合约调用以捕获 revert，估算能量与带宽消耗，校验 SR 地址（vote）、NFT 所有权（TRC721）、委托解锁时间（reclaim）
+5. Pre-flight 校验：以下命令（transfer、stake、unstake、delegate、reclaim、vote、trigger）在签名前会执行此步——校验 TRX / 代币 / 已质押 / 已委托余额，模拟合约调用以捕获 revert，估算能量与带宽消耗，校验 SR 地址（vote）、NFT 所有权（TRC721）、委托解锁时间（reclaim）
+
+    v1.0.1 中，`withdraw` 查询付款账户的 `unfrozenV2`，没有到期可提取的 TRX 时在签名前报错。`reward` 调用 `getReward(address)`，金额小于等于零时直接结束（JSON 状态为 `No Rewards`）。任一查询失败都会在签名前终止命令。
+
 6. 将交易发送给 TronLink 进行签名（浏览器授权页面）
 7. 广播：默认由签名器广播；使用 `--local-broadcast` 时由 CLI 在本地广播。两种模式下 CLI 都会轮询 `getUnconfirmedTransactionInfo` 直至交易被打包入块（约 3 秒），并将 OUT_OF_ENERGY / REVERT / FAILED 作为错误抛出
 8. 输出结果
@@ -427,11 +432,13 @@ tronlink reward --json
 ### 示例：AI 转账流程
 
 ```bash
-# 1. 先查询余额
-tronlink balance --address TNPeeaaFB7K9cmo4uQpcU32zGK8G1NYqeL --network mainnet --json
+# 将 PAYER 设为 TronLink 当前付款地址，RECIPIENT 设为收款地址。
+# 若账户或网络变化，请取消操作，重新查询实际付款账户的余额。
+NETWORK=mainnet
+tronlink balance --address "${PAYER:?set PAYER}" --network "$NETWORK" --json
 
 # 2. 发送 10 TRX（会打开浏览器签名，需等待返回）
-tronlink transfer --type trx --toAddress TRecipientAddress --amount 10 --network mainnet --json
+tronlink transfer --type trx --toAddress "${RECIPIENT:?set RECIPIENT}" --amount 10 --network "$NETWORK" --json
 
 # 3. 验证结果 — 输出包含 txId 和浏览器链接
 # { "Status": "Success", "TxID": "abc...", "Explorer": "https://tronscan.org/#/transaction/abc..." }

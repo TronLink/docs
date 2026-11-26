@@ -152,24 +152,7 @@ try {
 
 ### 技术规范
 #### 代码示例
-```typescript
-const tronweb = window.tron.tronWeb;
-const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-const fromAddress = tronweb.defaultAddress.base58; // 交易 owner：由该 active 权限控制的账户；若当前账户只是共同签名人，请显式填写被控制账户
-const activePermissionId = 2;
-const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10, fromAddress,
-    { permissionId: activePermissionId}
-); // 步骤1
-try {
-  const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // 步骤2
-  await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
-} catch (e) {}
-```
-
-如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
-
-如果用户在弹窗中选择【签名】，DApp 可以拿到签名后的交易，继续进行广播。
+按[多签转账示例](../dapp/multi-sign-transfer.md)查询交易 owner 的权限、收集签名并核对累计权重，满足阈值后再广播。
 
 > **旧版用法（不推荐）：** [兼容用法：multiSign（window.tronLink）](#multisignwindowtronlink)
 
@@ -191,7 +174,13 @@ try {
   // 用同一个字符串验签，返回签名者的 base58 地址
   const recovered = await tronweb.trx.verifyMessageV2(message, signedString);
   const ok = recovered === tronweb.defaultAddress.base58;
-} catch (e) {}
+} catch (error) {
+  if (error === "Confirmation declined by user") {
+    console.info("用户拒绝签名");
+  } else {
+    console.error("消息签名或验签失败", error);
+  }
+}
 ```
 #### 参数
 消息须为非空**字符串**。TronLink 对该字符串的 UTF-8 字节签名，并加上 TIP-191 前缀 `"\x19TRON Signed Message:\n" + <字节长度>`。外观类似 hex 的字符串**不会**被解码：`"0x1234"` 按六个文本字符（字节为 `30 78 31 32 33 34`）签名，而不是两个原始字节 `12 34`。
@@ -207,10 +196,7 @@ try {
 ```text
 0xaa302ca153b10dff25b5f00a7e2f603c5916b8f6d78cdaf2122e24cab56ad39a79f60ff3916dde9761baaadea439b567475dde183ee3f8530b4cc76082b29c341c
 ```
-如果报错，则会返回如下信息：
-```typescript
-Uncaught (in promise) Invalid transaction provided
-```
+消息为空或钱包签名失败时可能返回 `Invalid transaction provided`。用户拒签时返回 `Confirmation declined by user`。其他失败请查看具体错误原因。
 
 
 ### 交互流程
@@ -390,7 +376,7 @@ interface SwitchTronChainParameter {
 
 ![TronLink 解锁弹窗，输入钱包密码](../images/zh_plugin-wallet_lock-page.png)
 
-解锁后，或者 TronLink 已经提前解锁，会打开连接确认的弹窗：
+解锁后将打开网络切换确认弹窗。
 
 ![TronLink 网络切换确认弹窗，显示目标网络名称、chainId 与"确认"/"拒绝"按钮](../images/zh_plugin-wallet_switch-chain.png)
 
@@ -581,12 +567,27 @@ interface SwitchTronChainParameter {
 
 ```json
 {
-  "type": "object",
-  "required": ["code", "message"],
-  "properties": {
-    "code":    { "type": "integer", "enum": [200, 4000, 4001] },
-    "message": { "type": "string" }
-  }
+  "oneOf": [
+    {
+      "const": ""
+    },
+    {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "enum": [200, 4000, 4001]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  ]
 }
 ```
 
@@ -607,15 +608,22 @@ TronLink 提供外部发起 TRX 转账、合约签名、授权等功能。基于
 ### 技术规范
 #### 代码示例
 ```typescript
-const res = await tronWeb.request(
+const res: RequestAccountsResponse = await window.tronLink.request(
   {
     method: 'tron_requestAccounts',
     params: {
       websiteIcon: '<WEBSITE ICON URI>',
       websiteName: '<WEBSITE NAME>',
-    } as RequestAccountParams,
+    } as RequestAccountsParams,
   }
 );
+if (res === "") {
+  console.info("请解锁 TronLink");
+} else if (res.code === 200) {
+  console.info("已连接");
+} else {
+  console.info(res.code, res.message);
+}
 ```
 
 #### 参数
@@ -626,7 +634,7 @@ interface RequestAccountsParams {
 }
 ```
 * method: `tron_requestAccounts` 固定的字符串
-* params: `RequestAccountParams` 类型，具体参数如下
+* params: `RequestAccountsParams` 类型，具体参数如下
     * websiteIcon: DApp 网站的 Icon 的 URI，具体会展示在用户已连接网站列表中
     * websiteName: DApp 网站名称
 
@@ -634,7 +642,7 @@ interface RequestAccountsParams {
 #### 返回值
 类型说明：
 ```typescript
-interface ReqestAccountsResponse {
+type RequestAccountsResponse = "" | {
   code: 200 | 4000 | 4001,
   message: string
 }
@@ -667,22 +675,7 @@ if (window.tronLink.ready) {
 
 ## 兼容用法：multiSign（window.tronLink）
 
-```typescript
-if (window.tronLink.ready) {
-  const tronweb = tronLink.tronWeb;
-  const toAddress = "TDvSsdrNM5eeXNL3czpa6AxLDHZA9nwe9K";
-  const fromAddress = tronweb.defaultAddress.base58; // 交易 owner：由该 active 权限控制的账户；若当前账户只是共同签名人，请显式填写被控制账户
-  const activePermissionId = 2;
-  const tx = await tronweb.transactionBuilder.sendTrx(
-      toAddress, 10, fromAddress,
-      { permissionId: activePermissionId}
-  ); // 步骤1
-  try {
-    const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // 步骤2
-    await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
-  } catch (e) {}
-}
-```
+按[多签转账示例](../dapp/multi-sign-transfer.md)查询交易 owner 的权限、收集签名并核对累计权重，满足阈值后再广播。使用旧版 provider 时，等待 `window.tronLink.ready` 为真，再从 `window.tronLink.tronWeb` 取得示例中的 `tronweb`。
 
 
 ## 兼容用法：signMessageV2（window.tronLink）
@@ -693,7 +686,13 @@ if (window.tronLink.ready) {
   try {
     const message = "Sign in to Example DApp\nNonce: 8f3a2c"; // 普通 UTF-8 文本
     const signedString = await tronweb.trx.signMessageV2(message);
-  } catch (e) {}
+  } catch (error) {
+    if (error === "Confirmation declined by user") {
+      console.info("用户拒绝签名");
+    } else {
+      console.error("消息签名或验签失败", error);
+    }
+  }
 }
 ```
 

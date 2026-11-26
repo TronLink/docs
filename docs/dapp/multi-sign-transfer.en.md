@@ -8,48 +8,74 @@ For this section, you may refer to [General Transfer](transfer.en.md)
 
 ## Query active permissions
 
-`multiSign` requires a valid `permissionId` for an **active** permission on the signing account. Active permissions are returned by `tronWeb.trx.getAccount(address)` under the `active_permission[]` field; each entry exposes `id`, `permission_name`, `threshold`, and the `keys[]` array (address + weight). Owner permissions have a fixed `id` of `0` and are exposed under `owner_permission` separately.
+Choose the account that holds the funds. If the connected signer owns the funds, use its address. For a co-signer, enter the controlled account’s address. Read that owner’s permissions on the transaction network and select an entry whose keys include the signer and whose operations allow TRX transfers. Use its actual `id`.
 
 ```javascript
 const tronweb = window.tron.tronWeb;
-const account = await tronweb.trx.getAccount(tronweb.defaultAddress.base58);
-// account.active_permission is the array — pick the id whose keys[] includes
-// the address you intend to sign with, and whose weight + threshold allow the tx.
-const activePermissions = account.active_permission ?? [];
-console.log(activePermissions.map(p => ({ id: p.id, name: p.permission_name, threshold: p.threshold })));
+const owner = window.prompt("Transaction owner", tronweb.defaultAddress.base58);
+const account = await tronweb.trx.getAccount(owner);
+console.table(account.active_permission);
 ```
-
-Use the resulting `id` as `permissionId` below.
 
 ## Specification
 
-### Example
+### Sign and check the weight
+
+Continue in the same scope. Set the recipient and enter the permission ID you selected. After each additional signature, call `checkAndBroadcast` with the updated transaction on the same network. The node checks the signatures against the transaction owner’s current permission. [GetSignWeight](https://developers.tron.network/reference/getsignweight)
 
 ```javascript
-const tronweb = window.tron.tronWeb;
-const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-// fromAddress = the account whose active permission controls the funds (the tx owner).
-// It is not necessarily the connected signer: if the connected account is only a
-// co-signer listed in that permission's keys[], set fromAddress to the controlled account.
-const fromAddress = tronweb.defaultAddress.base58;
-const activePermissionId = 2; // obtained via tronWeb.trx.getAccount(fromAddress).active_permission
-const tx = await tronweb.transactionBuilder.sendTrx(
-  toAddress, 10, fromAddress,
-  { permissionId: activePermissionId }
-); // Step 1
-try {
-  const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // Step 2
-  const res = await tronweb.trx.sendRawTransaction(signedTx); // Step 3
-  if (!res.result) {
-    // Node rejections are returned, not thrown — see Errors below.
-    console.error(res.code, res.message && tronweb.toUtf8(res.message));
+async function checkAndBroadcast(signedTx) {
+  const contract = signedTx.raw_data.contract[0];
+  const check = await tronweb.trx.getSignWeight(signedTx);
+  if (!check) throw new Error("Sign-weight response unavailable");
+  const { permission, result, current_weight: weight } = check;
+  if (result?.code === "PERMISSION_ERROR") throw new Error("Recheck owner and permission");
+  if (!result || typeof result !== "object" || Array.isArray(result) ||
+      !permission || !Number.isSafeInteger(permission.id) ||
+      !Number.isSafeInteger(permission.threshold) ||
+      permission.threshold <= 0 || !Number.isSafeInteger(weight) || weight < 0 ||
+      !/^[0-9a-f]{64}$/i.test(permission.operations)) {
+    throw new Error("Permission or weight unavailable");
   }
-} catch (e) {}
+  // TransferContract is operation 1 in the active permission bitmap.
+  const allowsTransfer = (parseInt(permission.operations.slice(0, 2), 16) & 2) !== 0;
+  if (permission.type !== "Active" || permission.id !== contract.Permission_id || !allowsTransfer) {
+    throw new Error("Recheck owner and permission");
+  }
+  if (result.code === "NOT_ENOUGH_PERMISSION" && weight < permission.threshold) {
+    return { status: "collect", signedTx };
+  }
+  // The node may omit the default ENOUGH_PERMISSION code in a successful result.
+  if ((result.code !== undefined && result.code !== "ENOUGH_PERMISSION") ||
+      weight < permission.threshold) throw new Error("Weight check failed");
+  const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+  if (!receipt.result) throw new Error([receipt.code, receipt.message].join(" "));
+  return { status: "submitted", txID: signedTx.txID };
+}
+
+const recipient = window.prompt("Recipient address");
+const permissionId = Number(window.prompt("Active permission ID"));
+if (!account.active_permission?.some(p => p.id === permissionId)) {
+  throw new Error("Select an active permission of the transaction owner");
+}
+const tx = await tronweb.transactionBuilder.sendTrx(recipient, 10, owner, { permissionId });
+let signedTx;
+try {
+  signedTx = await tronweb.trx.multiSign(tx, undefined, permissionId);
+} catch (error) {
+  if (error === "Confirmation declined by user") console.info("Signing declined");
+  else console.error(tx.txID, error);
+}
+if (signedTx) {
+  try {
+    console.log(await checkAndBroadcast(signedTx));
+  } catch (error) {
+    console.error(signedTx.txID, error);
+  }
+}
 ```
 
-If the user chooses “Reject” in the pop-up window, an exception will be thrown, which the developer can catch for further processing. If the user chooses “Sign” in the pop-up window, the DApp receives and broadcasts the signed transaction.
-
-Note that the broadcast only collects one signature in this call — a fully signed multi-sig tx requires the threshold to be met across multiple `multiSign` calls (one per co-signer). Track the partially-signed transaction off-chain (or via the MCP `tl_multisig_*` tools) until the threshold is reached, then broadcast.
+On `collect`, keep the partially signed transaction for the next authorized co-signer. If the lookup fails or required fields are missing, pause and run the full check again after recovery. If the permission was revoked or no longer allows this operation, stop collecting signatures, verify the owner and permission ID, rebuild and collect fresh signatures. If broadcast times out, look up the transaction ID before another submission.
 
 ## Errors
 

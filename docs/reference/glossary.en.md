@@ -36,7 +36,7 @@ Definitions of terms, standards, and identifiers used across this documentation.
 - **ABI** — Application Binary Interface: the JSON description of a contract's callable methods and events. If a token contract's ABI lacks a recognized method (e.g. `transfer`, `approve`), TronLink may not be able to offer that action.
 - **`chainId`** — the network identifier. TronLink uses the hex form (e.g. `0x2b6653dc`) for `wallet_switchEthereumChain` and `chainChanged`, and the decimal EVM form (e.g. `728126428`) for EIP-712 `domain.chainId`. See [Networks & Addresses](networks.md).
 - **`ProviderRpcError`** — the EIP-1193 error object emitted on `disconnect`, shaped `{ code: number; message: string; data?: unknown }`.
-- **permission id** — the active permission index used for multi-signature transactions (passed to `tronWeb.trx.multiSign`). See [Multi-Signature Transfer](../dapp/multi-sign-transfer.md).
+- **permission id** — the value of the selected active permission’s `id` field on the transaction owner’s account (passed to `tronWeb.trx.multiSign`). See [Multi-Signature Transfer](../dapp/multi-sign-transfer.md).
 - **base58 / hex address** — the two TRON address encodings (`T...` vs `41...`). See [Networks & Addresses](networks.md#address-formats).
 
 ## AI tooling

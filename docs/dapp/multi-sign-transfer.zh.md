@@ -8,50 +8,74 @@
 
 ## 查询账户的 active permissions
 
-`multiSign` 需要传入一个**有效的** `permissionId`。账户的 active permissions 通过 `tronWeb.trx.getAccount(address)` 返回的 `active_permission[]` 数组取得,每个 entry 暴露 `id`、`permission_name`、`threshold` 以及 `keys[]`(地址 + 权重)。owner 权限 id 固定为 `0`,在 `owner_permission` 字段下单独返回。
+选择持有资金的账户。如果当前签名人就是 owner，可使用其地址；共同签名人应填写被控制账户的地址。在交易所属网络查询该 owner 的权限，选择包含签名人且允许 TRX 转账的活动权限，使用该条目自身的 `id`。
 
 ```javascript
 const tronweb = window.tron.tronWeb;
-const account = await tronweb.trx.getAccount(tronweb.defaultAddress.base58);
-// account.active_permission 是数组——挑选 keys[] 里包含你要签名地址、
-// 且 weight + threshold 足够覆盖本次交易的 id。
-const activePermissions = account.active_permission ?? [];
-console.log(activePermissions.map(p => ({ id: p.id, name: p.permission_name, threshold: p.threshold })));
+const owner = window.prompt("Transaction owner", tronweb.defaultAddress.base58);
+const account = await tronweb.trx.getAccount(owner);
+console.table(account.active_permission);
 ```
-
-把查出来的 `id` 作为下面的 `permissionId` 传入。
 
 ## 技术规范
 
-### 代码示例
+### 签名并检查累计权重
+
+接着使用上面的变量，填写收款人和选定的权限 ID。每次收集新签名后，在同一网络上将更新后的交易传给 `checkAndBroadcast`。节点会按交易 owner 当前的权限验证签名。[GetSignWeight](https://developers.tron.network/reference/getsignweight)
 
 ```javascript
-const tronweb = window.tron.tronWeb;
-const toAddress = "TRKb2nAnCBfwxnLxgoKJro6VbyA6QmsuXq";
-// fromAddress = 资金所在、由该 active 权限控制的账户（交易 owner）。
-// 它不一定是当前连接的签名账户：若当前账户只是该权限 keys[] 里的共同签名人，
-// 请把 fromAddress 改成被控制的账户地址。
-const fromAddress = tronweb.defaultAddress.base58;
-const activePermissionId = 2; // 通过 tronWeb.trx.getAccount(fromAddress).active_permission 查出
-const tx = await tronweb.transactionBuilder.sendTrx(
-    toAddress, 10, fromAddress,
-    { permissionId: activePermissionId }
-); // 步骤1
-try {
-  const signedTx = await tronweb.trx.multiSign(tx, undefined, activePermissionId); // 步骤2
-  const res = await tronweb.trx.sendRawTransaction(signedTx); // 步骤3
-  if (!res.result) {
-    // 节点拒绝以返回值给出，不会抛异常——见下方错误码。
-    console.error(res.code, res.message && tronweb.toUtf8(res.message));
+async function checkAndBroadcast(signedTx) {
+  const contract = signedTx.raw_data.contract[0];
+  const check = await tronweb.trx.getSignWeight(signedTx);
+  if (!check) throw new Error("Sign-weight response unavailable");
+  const { permission, result, current_weight: weight } = check;
+  if (result?.code === "PERMISSION_ERROR") throw new Error("Recheck owner and permission");
+  if (!result || typeof result !== "object" || Array.isArray(result) ||
+      !permission || !Number.isSafeInteger(permission.id) ||
+      !Number.isSafeInteger(permission.threshold) ||
+      permission.threshold <= 0 || !Number.isSafeInteger(weight) || weight < 0 ||
+      !/^[0-9a-f]{64}$/i.test(permission.operations)) {
+    throw new Error("Permission or weight unavailable");
   }
-} catch (e) {}
+  // TransferContract is operation 1 in the active permission bitmap.
+  const allowsTransfer = (parseInt(permission.operations.slice(0, 2), 16) & 2) !== 0;
+  if (permission.type !== "Active" || permission.id !== contract.Permission_id || !allowsTransfer) {
+    throw new Error("Recheck owner and permission");
+  }
+  if (result.code === "NOT_ENOUGH_PERMISSION" && weight < permission.threshold) {
+    return { status: "collect", signedTx };
+  }
+  // The node may omit the default ENOUGH_PERMISSION code in a successful result.
+  if ((result.code !== undefined && result.code !== "ENOUGH_PERMISSION") ||
+      weight < permission.threshold) throw new Error("Weight check failed");
+  const receipt = await tronweb.trx.sendRawTransaction(signedTx);
+  if (!receipt.result) throw new Error([receipt.code, receipt.message].join(" "));
+  return { status: "submitted", txID: signedTx.txID };
+}
+
+const recipient = window.prompt("Recipient address");
+const permissionId = Number(window.prompt("Active permission ID"));
+if (!account.active_permission?.some(p => p.id === permissionId)) {
+  throw new Error("Select an active permission of the transaction owner");
+}
+const tx = await tronweb.transactionBuilder.sendTrx(recipient, 10, owner, { permissionId });
+let signedTx;
+try {
+  signedTx = await tronweb.trx.multiSign(tx, undefined, permissionId);
+} catch (error) {
+  if (error === "Confirmation declined by user") console.info("Signing declined");
+  else console.error(tx.txID, error);
+}
+if (signedTx) {
+  try {
+    console.log(await checkAndBroadcast(signedTx));
+  } catch (error) {
+    console.error(signedTx.txID, error);
+  }
+}
 ```
 
-如果用户在弹窗中选择【拒绝】，则会抛出异常，开发者可捕获此异常进行业务处理。
-
-如果用户在弹窗中选择【签名】，DApp 可以拿到签名后的交易，继续进行广播。
-
-注意:此次调用只收集**一个**签名——完整的多签交易需要凑齐 `threshold`,通常对应**多次** `multiSign` 调用(每个 co-signer 一次)。在凑齐前应在链下(或通过 MCP 的 `tl_multisig_*` 工具)跟踪部分签名的交易,凑齐后再广播。
+返回 `collect` 时，保留部分签名交易并交给下一位有权限的共同签名人。查询失败或缺少必要字段时暂停，恢复后重新执行完整检查。权限已撤销或不再允许本次操作时，停止收集签名，核对 owner、权限 ID 和当前权限后重建交易，重新收集全部签名。广播超时则先按交易 ID 查询结果。
 
 ## 错误码
 
