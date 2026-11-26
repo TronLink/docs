@@ -1,8 +1,8 @@
 # Android 开源核心库
 
-在 Android 应用中集成 TronLink 的钱包功能，可以创建 TRON 钱包、读取地址，并对交易或消息签名。
+**GitHub**: [https://github.com/TronLink/tronlink-android-core](https://github.com/TronLink/tronlink-android-core)
 
-[上游 README](https://github.com/TronLink/tronlink-android-core/blob/main/README.md)
+在 Android 应用中集成 TronLink 的钱包功能，可以创建 TRON 钱包、读取地址，并对交易或消息签名。
 
 ## 安装
 

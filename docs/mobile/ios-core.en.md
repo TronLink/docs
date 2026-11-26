@@ -1,8 +1,8 @@
 # iOS Core (Open Source)
 
-Use TronLink’s native iOS wallet module to create a TRON wallet, read its address, and sign transactions or messages.
+**GitHub**: [https://github.com/TronLink/tronlink-iOS-core](https://github.com/TronLink/tronlink-iOS-core)
 
-[Upstream README](https://github.com/TronLink/tronlink-iOS-core/blob/main/README.md)
+Use TronLink’s native iOS wallet module to create a TRON wallet, read its address, and sign transactions or messages.
 
 ## Installation
 

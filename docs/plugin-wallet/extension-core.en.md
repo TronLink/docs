@@ -1,8 +1,8 @@
 # Extension Core (Open Source)
 
-`@tronlink/core` is the JavaScript and TypeScript wallet library used by the TronLink extension. Embed it in a wallet application to derive TRON and EVM accounts and sign locally. For a DApp that asks the user’s installed extension to connect or sign, use the [extension provider](active-requests.en.md).
+**GitHub**: [https://github.com/TronLink/tronlink-extension-core](https://github.com/TronLink/tronlink-extension-core)
 
-[Upstream README](https://github.com/TronLink/tronlink-extension-core/blob/main/README.md)
+`@tronlink/core` is the JavaScript and TypeScript wallet library used by the TronLink extension. Embed it in a wallet application to derive TRON and EVM accounts and sign locally. For a DApp that asks the user’s installed extension to connect or sign, use the [extension provider](active-requests.en.md).
 
 ## Installation
 

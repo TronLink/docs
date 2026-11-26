@@ -1,8 +1,8 @@
 # iOS 开源核心库
 
-在 iOS 应用中使用 TronLink 的原生钱包模块，可以创建 TRON 钱包、读取地址，并对交易或消息签名。
+**GitHub**: [https://github.com/TronLink/tronlink-iOS-core](https://github.com/TronLink/tronlink-iOS-core)
 
-[上游 README](https://github.com/TronLink/tronlink-iOS-core/blob/main/README.md)
+在 iOS 应用中使用 TronLink 的原生钱包模块，可以创建 TRON 钱包、读取地址，并对交易或消息签名。
 
 ## 安装
 
