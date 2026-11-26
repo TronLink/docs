@@ -4,7 +4,9 @@
 
 TronLink injects a version of TronWeb into the DApp that runs in TronLink's DApp Explorer. This enables the DApp to interact with the TronLink App and the TRON network.
 
-Once the in-app browser has supplied an authorized TronWeb instance, the transaction-building steps in [Start Developing](../dapp/getting-started.md) apply. That guide demonstrates extension discovery, authorization and events. Check support for each of those interfaces on the target App version. From an external mobile browser, use [DeepLink](deeplink.md) to open TronLink.
+The in-app browser supports provider discovery via TIP-6963 and connection authorization via `eth_requestAccounts`. Follow those steps in [Start Developing](../dapp/getting-started.md), then use the authorized TronWeb instance to build transactions. If your DApp relies on `accountsChanged` or `chainChanged`, verify those events on the target App version.
+
+From an external mobile browser, use [DeepLink](deeplink.md) to open TronLink.
 
 
 ## DApp Explorer
