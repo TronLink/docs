@@ -6,7 +6,7 @@
 
 ## 安装
 
-环境要求为 Android API 21 及以上、Java 8 及以上。在 Gradle 解析依赖的仓库列表中加入 JitPack。以下示例使用 Groovy DSL。
+环境要求为 Android API 21 及以上；Java 版本见上游[构建配置](https://github.com/TronLink/tronlink-android-core/blob/main/core/build.gradle)。在 Gradle 解析依赖的仓库列表中加入 JitPack。以下示例使用 Groovy DSL。
 
 ```groovy
 repositories {
@@ -14,11 +14,11 @@ repositories {
 }
 ```
 
-在应用模块中声明 AAR 依赖。
+在应用模块中声明 AAR 依赖。将 `<VERSION>` 替换为[发布页](https://github.com/TronLink/tronlink-android-core/releases)中的标签，通常使用最新版本。
 
 ```groovy
 dependencies {
-    implementation 'com.github.TronLink:tronlink-android-core:1.0.2@aar'
+    implementation 'com.github.TronLink:tronlink-android-core:<VERSION>@aar'
 }
 ```
 
@@ -34,7 +34,7 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名的用法见交易测试。测试中没有消息签名示例，库中的实现位于 `org.tron.common.bip32.Sign`（`signPrefixedMessage`、`signPrefixedMessageV2`）。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [交易签名示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/main/java/org/tron/common/bip32/Sign.java)
+钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名的用法见交易测试。测试中没有消息签名示例，库中的实现位于 `org.tron.common.bip32.Sign`（`signPrefixedMessage`、`signPrefixedMessageV2`）。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [交易签名示例](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/main/java/org/tron/common/bip32/Sign.java)
 
 ## 验证 AAR 签名
 
@@ -50,10 +50,10 @@ gpg --verify release.aar.asc release.aar
 
 ## 隐私
 
-本页示例使用的版本不包含使用统计上报代码。较新的版本加入了上报模块（`org.tron.metrics`），升级前请参阅上游的[隐私说明](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md)。
+集成本库不会自动开始使用统计上报。`org.tron.metrics` 中的上报代码只有在宿主应用接入相应的数据仓库，并调用 `DataUploader.init(...)` 和 `upload(...)` 后，才会记录和上传数据。启用前请参阅上游的[隐私说明](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md)。
 
 <a id="version-license"></a>
 
 ## 版本与许可证
 
-本页内容基于上游 README 的安装示例。升级到更新的版本前，请核实接口变化和上报行为。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+本页示例和链接以上游 `main` 分支为准。固定使用较旧的标签时，请核对其接口是否一致。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/main/LICENSE)

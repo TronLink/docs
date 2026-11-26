@@ -6,7 +6,7 @@ Integrate the wallet functions used by TronLink Android to create a TRON wallet,
 
 ## Installation
 
-The library requires Android API level 21 or later and Java 8 or later. Add JitPack to the repositories Gradle uses to resolve dependencies (Groovy DSL).
+The library requires Android API level 21 or later; the Java version is set in the upstream [build configuration](https://github.com/TronLink/tronlink-android-core/blob/main/core/build.gradle). Add JitPack to the repositories Gradle uses to resolve dependencies (Groovy DSL).
 
 ```groovy
 repositories {
@@ -14,11 +14,11 @@ repositories {
 }
 ```
 
-Add the AAR to the app module’s dependencies.
+Add the AAR to the app module’s dependencies. Replace `<VERSION>` with a tag from the [releases](https://github.com/TronLink/tronlink-android-core/releases), normally the latest.
 
 ```groovy
 dependencies {
-    implementation 'com.github.TronLink:tronlink-android-core:1.0.2@aar'
+    implementation 'com.github.TronLink:tronlink-android-core:<VERSION>@aar'
 }
 ```
 
@@ -34,7 +34,7 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-The wallet tests also show how to restore an address from a mnemonic or private key. For transaction signing, see the transaction tests. The tests include no message-signing example; the library implements it in `org.tron.common.bip32.Sign` (`signPrefixedMessage`, `signPrefixedMessageV2`). [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Transaction signing examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/main/java/org/tron/common/bip32/Sign.java)
+The wallet tests also show how to restore an address from a mnemonic or private key. For transaction signing, see the transaction tests. The tests include no message-signing example; the library implements it in `org.tron.common.bip32.Sign` (`signPrefixedMessage`, `signPrefixedMessageV2`). [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Transaction signing examples](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/main/java/org/tron/common/bip32/Sign.java)
 
 ## Verify the AAR
 
@@ -50,8 +50,8 @@ gpg --verify release.aar.asc release.aar
 
 ## Privacy
 
-The version used on this page includes no usage-reporting code. Later versions add a reporting module (`org.tron.metrics`); read the upstream [privacy policy](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md) before upgrading.
+Embedding the library does not start usage reporting. The reporting code in `org.tron.metrics` records and uploads data only after the host app wires up its repositories and calls `DataUploader.init(...)` and `upload(...)`. Read the upstream [privacy policy](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md) before enabling it.
 
 ## Version & License
 
-This page follows the upstream README’s installation example. Before upgrading, check for API changes and reporting behavior. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+The examples and links on this page follow the upstream `main` branch. When you pin an older tag, check that its APIs match. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/main/LICENSE)
