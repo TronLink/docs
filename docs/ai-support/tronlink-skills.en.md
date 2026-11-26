@@ -157,7 +157,7 @@ Stake 2.0 queries and SR information.
 
 ## Skill ↔ MCP Tool Map
 
-In the v1.0.x command set, `scripts/mcp_server.mjs` exposes **25 of 33 CLI commands** as MCP tools. The wrapper runs the corresponding CLI command and returns text in an MCP tool result. The remaining eight commands are available through the Skills or the CLI.
+In the v1.0.x command set, `scripts/mcp_server.mjs` exposes **25 of 33 CLI commands** as MCP tools. At the default-branch commit `b12b5868`, it exposes 39 of 40 commands; only `swap-route` is CLI-only, so the “CLI-only” markers below apply to v1.0.x. The wrapper runs the corresponding CLI command and returns text in an MCP tool result. The remaining eight commands are available through the Skills or the CLI.
 
 | Skill | CLI command | MCP tool name | Side effect | Retryable |
 |---|---|---|---|:---:|
@@ -235,7 +235,7 @@ Use Skills for queries and estimates. For actions that sign or broadcast, choose
 |---|---|---|
 | "Send 100 TRX to `T…`" | `tron-wallet wallet-balance` then stop — this only checks the balance, never sends. | [signer SDK](tronlink-signer.en.md) `sendTrx` (HITL) or [`mcp-server-tronlink`](mcp-server-tronlink.en.md) `tl_chain_send` |
 | "Freeze 1000 TRX to get Energy" | `tron-resource optimize-cost` — this only computes the recommendation. | [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_stake` (`action="freeze"`, `amount_trx=1000`, `resource="ENERGY"`) |
-| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | [TronLink CLI](tronlink-cli.en.md) `tronlink vote --votes <SR_ADDRESS>:5000` |
+| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | [TronLink CLI](tronlink-cli.en.md) `tronlink vote --votes <SR_ADDRESS>:5000`. A vote replaces all of the account’s current votes; to keep votes for other SRs, list them in the same command. |
 | "Approve USDT spending for the SunSwap router" | `tron-token token-info` / `contract-info` — pure metadata, no approval is broadcast. | [TronLink CLI](tronlink-cli.en.md) `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`. Use the token and router on the selected network. The router is the spender. For 6-decimal USDT, `1000000` authorizes 1 USDT. |
 | "Swap 100 TRX for USDT now" | `tron-swap swap-quote` — only quotes price, never executes. | [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_swap_v3` with `action="execute"` and an explicitly approved `slippage` (%) |
 | "Claim my voting rewards" | `tron-staking staking-info` — only shows the pending balance. | [TronLink CLI](tronlink-cli.en.md) `tronlink reward` |
@@ -293,7 +293,7 @@ tron-resource (check status) → tron-resource (estimate cost) → tron-resource
 - Unfreezing has **14-day wait** before withdrawal
 - Votes reset if you unfreeze; must re-vote after re-freezing
 - Energy obtained by staking depends on the network’s current stake. Estimate the quota per TRX from `TotalEnergyLimit / TotalEnergyWeight` on the target network. `estimate-energy` estimates a contract call’s consumption. [GetAccountResource](https://developers.tron.network/reference/getaccountresource)
-- Voting rewards claimable every 6 hours
+- Voting rewards can be claimed once every 24 hours
 
 ---
 
@@ -319,8 +319,8 @@ No `npm install` needed for read-only operations.
 # Register as MCP server
 claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 
-# Provides 25 MCP tools callable by Claude Desktop / Claude Code
-# (see "Skill ↔ MCP Tool Map" above for the per-command mapping; 8 commands are CLI-only)
+# Provides 39 MCP tools at b12b5868 (25 in v1.0.x), callable by Claude Desktop / Claude Code
+# (only swap-route is CLI-only at b12b5868; see "Skill ↔ MCP Tool Map" above for the v1.0.x mapping)
 ```
 
 ### Method 3: Manual CLI
@@ -328,8 +328,8 @@ claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 ```bash
 # Direct command execution
 node scripts/tron_api.mjs wallet-balance --address TAddress...
-node scripts/tron_api.mjs token-price --token USDT
-node scripts/tron_api.mjs swap-quote --from TRX --to USDT --amount 100
+node scripts/tron_api.mjs token-price --contract USDT
+node scripts/tron_api.mjs swap-quote --from-token TRX --to-token USDT --amount 100
 ```
 
 #### Handling Skills CLI and MCP errors
@@ -554,7 +554,7 @@ claude
 
 # 3. Alternatively, run these in the shell. Set ACCOUNT to the address to query.
 node scripts/tron_api.mjs wallet-balance --address "${ACCOUNT:?set ACCOUNT}"
-node scripts/tron_api.mjs token-price --token USDT
+node scripts/tron_api.mjs token-price --contract USDT
 node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 ```
 
@@ -562,7 +562,7 @@ node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 
 - **Package:** `tronlink-skills` v1.0.1 — the version the command tables on this page describe.
 - **Default branch:** v1.1.0 (commit `b12b5868`, `package.json` `version: 1.1.0`), installed by `git clone` / `install.sh`. Differences from v1.0.1 that affect agents:
-    - 7 additional read-only commands, also exposed as `tron_<command>` MCP tools: `wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`. 40 commands in total; all remain Network Read.
+    - 7 additional read-only commands, also exposed as `tron_<command>` MCP tools. At this commit `mcp_server.mjs` exposes 39 of the 40 commands; only `swap-route` is CLI-only. The new commands: `wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`. 40 commands in total; all remain Network Read.
     - For this commit, [`.nvmrc`](https://github.com/TronLink/tronlink-skills/blob/b12b58685ec38febc21843d2173dd43d969b8eb0/.nvmrc) specifies Node.js 24.22.3. To reproduce [commit `7d2d58cb`](https://github.com/TronLink/tronlink-skills/blob/7d2d58cb/.nvmrc), use Node.js 24.22.1. Run `nvm install && nvm use` in the checked-out repository to select its pinned version.
 - **License:** MIT — `SPDX-License-Identifier: MIT`
 - **Changelog / releases:** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) — no GitHub-tagged releases yet for v1.0.x; track changes by commit until the first tag.
@@ -579,6 +579,6 @@ Skills are at **v1.0.x**, so standard semver applies — only **major** bumps ma
     - The exact field layout of JSON `stdout` payloads — new fields can be added in any minor; renames or removals are major. Use a tolerant parser.
     - Built-in token-symbol shortcut list (`USDT`, `USDC`, `WTRX`, …) — symbols may be added in any minor; existing mappings won't be repointed in a minor.
     - Heuristics and thresholds (`whale-transfers` default cutoff, `optimize-cost` decision tree weights, etc.).
-- **Subset relationship.** The MCP tool subset (currently 25 of 33) may **grow** in a minor (a previously CLI-only command exposed as an MCP tool); it will not **shrink** in a minor.
+- **Subset relationship.** The MCP tool subset (25 of 33 in v1.0.x; 39 of 40 at `b12b5868`) may **grow** in a minor (a previously CLI-only command exposed as an MCP tool); it will not **shrink** in a minor.
 - **Deprecation window.** A command / tool marked deprecated continues to work for at least one minor cycle. Removal lands no earlier than the next major.
 - **Verifying after upgrade.** Re-run `tron_api.mjs --help` and (if using MCP) `tools/list` to confirm the names you depend on are still present. The MCP `serverInfo.version` exposed during `initialize` should match the bumped `package.json` version.

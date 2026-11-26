@@ -174,13 +174,13 @@ Uses `@noble/curves` (secp256k1 ECDSA) and `@noble/hashes` (Keccak-256, SHA256).
 
 ---
 
-## Flow Recipes (24 Built-In)
+## <a id="flow-recipes-32-built-in"></a>Flow Recipes (24 Built-In) {#flow-recipes}
 
 Pre-configured multi-step workflows with dependency checks and parameter templates.
 
 Call `tl_list_flows` for the registry in the running server.
 
-### Playwright Flows (4)
+### Playwright Flows (4) {#playwright-flows}
 | Flow | Description |
 |------|-------------|
 | `switchNetworkFlow` | Switch to Mainnet/Nile/Shasta |
@@ -586,7 +586,7 @@ Reminder: `tl_evaluate` runs arbitrary JS in the controlled Playwright browser. 
 
 Swaps are **Remote Write** and execute against a public DEX router, so they are exposed to **price slippage** and **front-running / MEV** (e.g. sandwich attacks): the realized output can be worse than quoted if the pool moves between quote and execution.
 
-- **Always bound the trade with a minimum-output / slippage limit.** Inspect the `tl_chain_swap_v3` input schema via `list_tools` (the `SwapV3Params` shape) for the exact slippage / minimum-output field names — do **not** rely on an unstated default, and treat a missing or zero minimum-output as unsafe.
+- **Always set `slippage` explicitly.** `tl_chain_swap_v3` has no minimum-output input; the server derives the minimum output from `slippage` (a percentage, default 0.5). Do **not** rely on the default; confirm the tolerance with the user and check the field in the `list_tools` schema.
 - **Quote immediately before executing.** Get a fresh quote/route (e.g. Skills `tron-swap` `swap-quote` / `swap-route`), pick a tolerance you accept, and pass it explicitly.
 - **Check the router.** Set `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` to the Routers listed for your network in SunSwap's official contract addresses (see Environment Variables); a stale or wrong router can route funds unexpectedly.
 - **No auto-retry.** A failed/uncertain swap is a Remote Write — confirm on-chain before re-issuing (`TL_CHAIN_SWAP_FAILED` is not retryable).

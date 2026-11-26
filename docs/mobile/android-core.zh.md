@@ -22,8 +22,6 @@ dependencies {
 }
 ```
 
-本页内容基于上游 README 使用的 `1.0.2`。使用更新的版本前，请先阅读[版本与许可证](#version-license)。
-
 ## 创建钱包
 
 在应用中创建钱包并读取 TRON 地址。
@@ -36,11 +34,11 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名和消息签名的用法见签名测试。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [签名示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
+钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名的用法见交易测试。测试中没有消息签名示例，库中的实现位于 `org.tron.common.bip32.Sign`（`signPrefixedMessage`、`signPrefixedMessageV2`）。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [交易签名示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/main/java/org/tron/common/bip32/Sign.java)
 
 ## 验证 AAR 签名
 
-验签需要 TronLink 签署的 AAR 原件及配套的独立签名文件 `.asc`。[1.0.2](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) 和 [1.0.16](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.16) 的 GitHub 发布页提供源码归档。需要可验签的构建时，请向维护者索取签署的 AAR 和配套签名。[上游验签说明](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) 自 1.0.3 起提供。
+验签需要 TronLink 签署的 AAR 原件及配套的独立签名文件 `.asc`。JitPack 和 GitHub 发布页不提供签名文件，如需验签，请向维护者索取签署的 AAR 和配套签名。参见[上游验签说明](https://github.com/TronLink/tronlink-android-core#integrity-check)。
 
 下载[发布公钥](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA)，保存为 `tronlink-build.asc`。先查看签名子密钥的指纹，与上游公布的 `7B910EA80207596075E6D7BA5D34F7A6550473BA` 核对。一致后导入公钥，再用维护者提供的两个文件验签；请替换下例中的文件名。
 
@@ -52,10 +50,10 @@ gpg --verify release.aar.asc release.aar
 
 ## 隐私
 
-集成 Android Core 1.0.2 不会启动使用统计上报。此版本还没有 `UserStatistics` 模块；该模块在 [1.0.8](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.8) 中引入。
+本页示例使用的版本不包含使用统计上报代码。较新的版本加入了上报模块（`org.tron.metrics`），升级前请参阅上游的[隐私说明](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md)。
 
 <a id="version-license"></a>
 
 ## 版本与许可证
 
-本页内容基于上游 README 安装示例中的 `1.0.2`。之后的标签（截至 `1.0.16`）未经本页核对。自 `1.0.8` 起库中包含 `UserStatistics` 模块，升级前请核实其上报行为，并相应更新上方的隐私说明。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+本页内容基于上游 README 的安装示例。升级到更新的版本前，请核实接口变化和上报行为。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)

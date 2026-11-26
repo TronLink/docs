@@ -1,6 +1,6 @@
 # 多签转账
 
-## 简介
+## <a id="_2"></a>简介 {#overview}
 
 此处可参考[普通转账](transfer.zh.md)
 
@@ -17,9 +17,9 @@ const account = await tronweb.trx.getAccount(owner);
 console.table(account.active_permission);
 ```
 
-## 技术规范
+## <a id="_3"></a>技术规范 {#specification}
 
-### 签名并检查累计权重
+### <a id="_4"></a>签名并检查累计权重 {#sign-and-check-the-weight}
 
 在交易所用网络上，将已授权的 TronWeb 实例传给以下函数。广播前，由节点根据交易 owner 当前的权限检查签名。[GetSignWeight](https://developers.tron.network/reference/getsignweight)
 
@@ -79,7 +79,7 @@ async function signAndCheck(tronweb, tx) {
 }
 ```
 
-### 第一位签名人
+### 第一位签名人 {#first-signer}
 
 替换收款地址，并填写上面从交易 owner 的活动权限中选出的 ID。
 
@@ -95,7 +95,7 @@ const tx = await tronweb.transactionBuilder.sendTrx(recipient, 10, owner, { perm
 const outcome = await signAndCheck(tronweb, tx);
 ```
 
-### 后续共同签名人
+### 后续共同签名人 {#additional-co-signers}
 
 结果为 `collect` 时，通过 DApp 的交接流程将其中的 `signedTx` 传给下一位有权限的共同签名人。每位共同签名人在同一网络连接钱包。签名前，先确认交易数据与其 `txID` 一致，再解析 owner、收款地址、金额和过期时间并展示给共同签名人，确认无误后再继续。调用 `coSignTransfer` 时传入收到的交易对象，以及一个在共同签名人确认后返回 `true` 的 `confirmTransfer` 回调。`signAndCheck` 会在该对象上调用 `multiSign`，保留已有签名和交易 ID。
 
@@ -127,7 +127,7 @@ async function coSignTransfer(partiallySignedTx, confirmTransfer) {
 
 返回 `collect` 时继续交接，返回 `declined` 时停止本次签名。权重查询失败或缺少必要字段时暂停，恢复后重新执行完整权重检查。权限被撤销或已不允许本次操作时，核对交易 owner 和权限 ID，重建交易并重新收集全部签名。广播超时则先按交易 ID 查询结果。
 
-## 错误码
+## <a id="_5"></a>错误码 {#errors}
 
 **错误结构：** 在 TronLink 注入的 `tronWeb` 上（插件 4.0.0 起），用户拒绝 `trx.sign`、`trx.multiSign` 或 `trx.signMessageV2` 时，Promise 以**纯字符串** `'Confirmation declined by user'` reject——不是 `Error` 对象，也没有数字 `code`。`{ code: 4001, message: 'User rejected the request.' }` 对象只由 `window.tron.request(...)` 方法（如 `eth_requestAccounts`）返回。其他失败（钱包未解锁、载荷非法、观察钱包等）返回其他值——参见[处理拒签](../reference/error-code-map.md#handling-rejections)。不要自动重试签名。
 

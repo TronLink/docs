@@ -366,7 +366,7 @@ In [Core 0.1.0](https://www.npmjs.com/package/@tronlink/tronlink-mcp-core/v/0.1.
   result: { /* tool-specific data */ },
   meta: {
     timestamp: "2026-03-09T10:15:23.456Z",
-    sessionId: "tl-1741504523",
+    sessionId: "tl-1773051323",
     durationMs: 234
   }
 }
@@ -379,7 +379,7 @@ In [Core 0.1.0](https://www.npmjs.com/package/@tronlink/tronlink-mcp-core/v/0.1.
     message: "Element not found",
     details: { /* optional */ }
   },
-  meta: { timestamp: "2026-03-09T10:15:23.456Z", sessionId: "tl-1741504523", durationMs: 234 }
+  meta: { timestamp: "2026-03-09T10:15:23.456Z", sessionId: "tl-1773051323", durationMs: 234 }
 }
 ```
 
@@ -401,8 +401,8 @@ This table is the single source of truth for Core error codes and their retry se
 | `TL_WAIT_TIMEOUT` | true | Increase the timeout or wait on a different selector. | `tl_wait_for`, `tl_wait_for_notification` |
 | `TL_SCREENSHOT_FAILED` | true | Transient; retry. | `tl_screenshot`, `tl_describe_screen` |
 | `TL_CAPABILITY_NOT_AVAILABLE` | false | The session was launched without this capability; reconfigure and relaunch. | Any tool that requires an optional capability |
-| `TL_CHAIN_QUERY_FAILED` | true | TronGrid transient or rate-limited; back off and retry. | `tl_chain_get_*` |
-| `TL_CHAIN_SEND_FAILED` | false | Do **not** auto-retry. Verify on-chain state with `tl_chain_get_tx` before re-issuing. | `tl_chain_send`, `tl_chain_stake`, `tl_chain_resource` |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid transient or rate-limited; back off and retry. **Exception:** `tl_chain_resource` also returns this code when a delegate/undelegate write fails, so treat it as `TL_CHAIN_SEND_FAILED` and check the transaction before re-issuing. | `tl_chain_get_*`, `tl_chain_resource` |
+| `TL_CHAIN_SEND_FAILED` | false | Do **not** auto-retry. Verify on-chain state with `tl_chain_get_tx` before re-issuing. | `tl_chain_send`, `tl_chain_stake` |
 | `TL_CHAIN_SWAP_FAILED` | false | Same as send — confirm the previous tx did not land before retrying. | `tl_chain_swap`, `tl_chain_swap_v3` |
 | `TL_GASFREE_QUERY_FAILED` | true | Transient; retry. | `tl_gasfree_get_account`, `tl_gasfree_get_transactions` |
 | `TL_GASFREE_SEND_FAILED` | false | Do **not** auto-retry; query the GasFree service for the latest status. | `tl_gasfree_send` |
@@ -642,7 +642,7 @@ This package defines the tool schemas, error codes, and response envelope used b
 
 - **Semver.** Pre-1.0: a **minor** bump may change the `ISessionManager` interface, capability shapes, or `Tool[]` registration order; a **patch** will not. Post-1.0: standard semver — major-only breaking changes.
 - **Stable contracts** (won't change in a patch):
-    - The `error.code` enum (the SSOT exported as `ERROR_CODES`) — adding a new code is non-breaking; renaming or removing one is breaking.
+    - The `error.code` enum (the SSOT exported as `ErrorCodes`) — adding a new code is non-breaking; renaming or removing one is breaking.
     - The `{ ok, result/error, meta }` response envelope.
     - Tool names and the **shape** of each tool's `inputSchema` (adding optional fields is non-breaking; renaming or making a field required is breaking).
     - The 9 capability interfaces (`OnChainCapability`, `MultiSigCapability`, …) — adding an optional method is non-breaking.

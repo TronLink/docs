@@ -19,7 +19,7 @@ console.table(account.active_permission);
 
 ## Specification
 
-### Sign and check the weight
+### <a id="example"></a>Sign and check the weight
 
 Use these helpers with the authorized TronWeb instance on the transaction network. Before broadcasting, the node checks the signatures against the transaction owner’s current permission. [GetSignWeight](https://developers.tron.network/reference/getsignweight)
 

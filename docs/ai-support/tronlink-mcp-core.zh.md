@@ -366,7 +366,7 @@ interface GasFreeCapability {
   result: { /* 工具特定数据 */ },
   meta: {
     timestamp: "2026-03-09T10:15:23.456Z",
-    sessionId: "tl-1741504523",
+    sessionId: "tl-1773051323",
     durationMs: 234
   }
 }
@@ -379,7 +379,7 @@ interface GasFreeCapability {
     message: "Element not found",
     details: { /* 可选 */ }
   },
-  meta: { timestamp: "2026-03-09T10:15:23.456Z", sessionId: "tl-1741504523", durationMs: 234 }
+  meta: { timestamp: "2026-03-09T10:15:23.456Z", sessionId: "tl-1773051323", durationMs: 234 }
 }
 ```
 
@@ -403,8 +403,8 @@ interface GasFreeCapability {
 | `TL_WAIT_TIMEOUT` | true | 提高超时或换一个 selector。 | `tl_wait_for`、`tl_wait_for_notification` |
 | `TL_SCREENSHOT_FAILED` | true | 偶发故障；可重试。 | `tl_screenshot`、`tl_describe_screen` |
 | `TL_CAPABILITY_NOT_AVAILABLE` | false | 当前 session 未注入该 capability；重配后重启。 | 依赖可选 capability 的工具 |
-| `TL_CHAIN_QUERY_FAILED` | true | TronGrid 暂时不可用或限流；退避后重试。 | `tl_chain_get_*` |
-| `TL_CHAIN_SEND_FAILED` | false | **禁止**自动重试。先用 `tl_chain_get_tx` 确认上一笔是否落账。 | `tl_chain_send`、`tl_chain_stake`、`tl_chain_resource` |
+| `TL_CHAIN_QUERY_FAILED` | true | TronGrid 暂时不可用或限流；退避后重试。**例外：** `tl_chain_resource` 的代理／取消代理写操作失败时也返回此码，应按 `TL_CHAIN_SEND_FAILED` 处理，先核对交易再决定是否重新发起。 | `tl_chain_get_*`、`tl_chain_resource` |
+| `TL_CHAIN_SEND_FAILED` | false | **禁止**自动重试。先用 `tl_chain_get_tx` 确认上一笔是否落账。 | `tl_chain_send`、`tl_chain_stake` |
 | `TL_CHAIN_SWAP_FAILED` | false | 同上——重试前必须确认前一笔未落账。 | `tl_chain_swap`、`tl_chain_swap_v3` |
 | `TL_GASFREE_QUERY_FAILED` | true | 偶发故障；可重试。 | `tl_gasfree_get_account`、`tl_gasfree_get_transactions` |
 | `TL_GASFREE_SEND_FAILED` | false | **禁止**自动重试；先向 GasFree 查询最新状态。 | `tl_gasfree_send` |
@@ -416,7 +416,7 @@ interface GasFreeCapability {
 下游 server 扩展自定义错误码必须满足：
 
 - 不复用上表错误码表达不同含义。
-- 在错误码表中为每个新增错误码写明重试条件和恢复步骤。
+- 为每个新增错误码写明重试条件和恢复步骤。
 - major 版本内含义稳定。
 - 新错误码在使用方文档说明，禁止悄悄引入。
 
@@ -611,7 +611,7 @@ npm run clean      # 删除 dist/
 
 - **语义化版本。** 1.0 之前：**minor** 升级可能改 `ISessionManager` 接口、能力 shape、`Tool[]` 注册顺序；**patch** 不会。1.0 之后：标准 semver，仅 major 允许破坏。
 - **稳定契约**（patch 不会动）：
-    - `error.code` 枚举（导出为 `ERROR_CODES`，SSOT）——新增 code 非破坏；改名或删除是破坏。
+    - `error.code` 枚举（导出为 `ErrorCodes`，SSOT）——新增 code 非破坏；改名或删除是破坏。
     - `{ ok, result/error, meta }` 响应结构。
     - 工具名与各工具 `inputSchema` 的**结构**——新增可选字段非破坏；改名或将字段改必填是破坏。
     - 9 个能力接口（`OnChainCapability`、`MultiSigCapability`…）——新增可选方法非破坏。

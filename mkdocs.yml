@@ -139,6 +139,10 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
+# 隐藏页脚中的 "Made with Material for MkDocs"
+extra:
+  generator: false
+
 # 版权信息
 copyright: Copyright &copy; 2025–2026 TronLink Team
 

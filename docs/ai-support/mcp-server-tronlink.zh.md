@@ -174,13 +174,13 @@ hexToAddress()             0x41... → T 地址
 
 ---
 
-## Flow Recipes（24 个内置流程）
+## <a id="flow-recipes32"></a>Flow Recipes（24 个内置流程） {#flow-recipes}
 
 预配置的多步骤工作流，带依赖检查和参数模板。
 
 调用 `tl_list_flows` 可查看运行中服务的注册清单。
 
-### Playwright 流程（4 个）
+### <a id="playwright_1"></a>Playwright 流程（4 个） {#playwright-flows}
 | 流程 | 说明 |
 |------|------|
 | `switchNetworkFlow` | 切换到主网/Nile/Shasta |
@@ -577,7 +577,7 @@ mcp-server-tronlink/
 
 兑换属于 **远程写**，且对接公开 DEX 路由器，因此暴露在 **价格滑点** 与 **三明治攻击 / MEV** 之下：在报价和执行之间池子价格变动时，实际成交可能比报价更差。
 
-- **必须设置最小输出 / 滑点上限。** 通过 `list_tools` 查看 `tl_chain_swap_v3` 的输入 schema（`SwapV3Params`），核对实际的 minimum-output / 滑点字段名；**不要**依赖未声明的默认值，缺省或为 0 的最小输出一律视为不安全。
+- **必须显式设置 `slippage`。** `tl_chain_swap_v3` 没有最小输出参数，服务端根据 `slippage`（百分比，默认 0.5）计算最小输出。**不要**依赖默认值；请与用户确认滑点，并在 `list_tools` 的 schema 中核对该字段。
 - **执行前现取报价。** 通过 Skills `tron-swap` 的 `swap-quote` / `swap-route`（或同等接口）取最新报价/路径，选定可接受的滑点容忍度并显式传入。
 - **核对 router。** 请将 `TL_SUNSWAP_ROUTER` / `TL_SUNSWAP_V3_ROUTER` 设置为 SunSwap 官方合约地址中对应网络的 Router（见环境变量）；过期或错误的 router 会把资金路由到非预期目标。
 - **不可自动重试。** swap 失败或结果未知都属于远程写——先在链上确认再决定是否重发（`TL_CHAIN_SWAP_FAILED` 不可重试）。

@@ -159,7 +159,7 @@ Stake 2.0 查询与 SR 信息。
 
 ## Skill ↔ MCP 工具映射
 
-在 v1.0.x 命令集中，`scripts/mcp_server.mjs` 将 **33 个 CLI 命令中的 25 个** 暴露为 MCP 工具。包装层运行对应的 CLI 命令，以文本形式返回 MCP 工具结果。其余 8 个命令可通过 Skills 或 CLI 使用。
+在 v1.0.x 命令集中，`scripts/mcp_server.mjs` 将 **33 个 CLI 命令中的 25 个** 暴露为 MCP 工具。在默认分支提交 `b12b5868` 中，40 个命令里有 39 个暴露为 MCP 工具，只有 `swap-route` 仅限 CLI；下表中的“仅 CLI”标记针对 v1.0.x。包装层运行对应的 CLI 命令，以文本形式返回 MCP 工具结果。其余 8 个命令可通过 Skills 或 CLI 使用。
 
 | Skill | CLI 命令 | MCP 工具名 | 副作用 | 可重试 |
 |---|---|---|---|:---:|
@@ -237,7 +237,7 @@ Skills 提供查询和估算。涉及签名或广播时，按下表选择工具�
 |---|---|---|
 | 「给 `T…` 转 100 TRX」 | `tron-wallet wallet-balance` 就停下——只查了余额，没转。 | [signer SDK](tronlink-signer.zh.md) `sendTrx`（HITL）或 [`mcp-server-tronlink`](mcp-server-tronlink.zh.md) `tl_chain_send` |
 | 「冻 1000 TRX 换能量」 | `tron-resource optimize-cost`——只算了建议，没冻。 | [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_stake`（`action="freeze"`，`amount_trx=1000`，`resource="ENERGY"`） |
-| 「给 SR `T…` 投 5000 票」 | `tron-staking sr-list`——只读了 SR 列表，没投票。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink vote --votes <SR_ADDRESS>:5000` |
+| 「给 SR `T…` 投 5000 票」 | `tron-staking sr-list`——只读了 SR 列表，没投票。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink vote --votes <SR_ADDRESS>:5000`。投票会替换该账户当前的全部投票；如需保留对其他 SR 的投票，请在同一条命令中一并列出。 |
 | 「给 SunSwap 路由器授权 USDT 额度」 | `tron-token token-info` / `contract-info`——纯元数据查询，没发送 approve。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`。代币合约和路由器地址须对应所选网络。路由器是被授权方；USDT 精度为 6 时，`1000000` 表示授权 1 USDT。 |
 | 「现在把 100 TRX 换成 USDT」 | `tron-swap swap-quote`——只报了价，没执行。 | [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_swap_v3`（`action="execute"`，`slippage` 填用户确认的滑点百分比） |
 | 「领取我的投票奖励」 | `tron-staking staking-info`——只看了待领数量。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink reward` |
@@ -295,7 +295,7 @@ tron-resource（检查状态）→ tron-resource（估算成本）→ tron-resou
 - 解冻需 **14 天等待期** 才能提取
 - 解冻后投票重置；重新冻结后需重新投票
 - 质押所得能量取决于目标网络当前的质押总量。用该网络的 `TotalEnergyLimit / TotalEnergyWeight` 估算每质押 1 TRX 可获得的额度。`estimate-energy` 用于估算合约调用消耗。[GetAccountResource](https://developers.tron.network/reference/getaccountresource)
-- 投票奖励每 6 小时可领取一次
+- 投票奖励每 24 小时可领取一次
 
 ---
 
@@ -321,8 +321,8 @@ claude   # 自动发现 SKILL.md 文件
 # 注册为 MCP 服务器
 claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 
-# 提供 25 个 MCP 工具，可被 Claude Desktop / Claude Code 直接调用
-# （逐项对照见上文 "Skill ↔ MCP 工具映射"；剩余 8 个命令仅 CLI 可用）
+# b12b5868 提供 39 个 MCP 工具（v1.0.x 为 25 个），可被 Claude Desktop / Claude Code 直接调用
+# （b12b5868 中只有 swap-route 仅限 CLI；v1.0.x 的逐项对照见上文 "Skill ↔ MCP 工具映射"）
 ```
 
 ### 方式三：命令行直接使用
@@ -330,8 +330,8 @@ claude mcp add tronlink -- node ~/.tronlink-skills/scripts/mcp_server.mjs
 ```bash
 # 直接执行命令
 node scripts/tron_api.mjs wallet-balance --address T地址...
-node scripts/tron_api.mjs token-price --token USDT
-node scripts/tron_api.mjs swap-quote --from TRX --to USDT --amount 100
+node scripts/tron_api.mjs token-price --contract USDT
+node scripts/tron_api.mjs swap-quote --from-token TRX --to-token USDT --amount 100
 ```
 
 #### 处理 Skills CLI 和 MCP 错误
@@ -556,7 +556,7 @@ claude
 
 # 3. 也可在 shell 中直接执行。将 ACCOUNT 设为待查询地址。
 node scripts/tron_api.mjs wallet-balance --address "${ACCOUNT:?set ACCOUNT}"
-node scripts/tron_api.mjs token-price --token USDT
+node scripts/tron_api.mjs token-price --contract USDT
 node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 ```
 
@@ -564,7 +564,7 @@ node scripts/tron_api.mjs optimize-cost --address "${ACCOUNT:?set ACCOUNT}"
 
 - **包：** `tronlink-skills` v1.0.1——本页命令表所描述的版本。
 - **默认分支：** v1.1.0（commit `b12b5868`，`package.json` 中 `version: 1.1.0`），`git clone` / `install.sh` 安装的就是该版本。与 v1.0.1 相比，影响 agent 的差异：
-    - 新增 7 个只读命令（同时以 `tron_<command>` 形式暴露为 MCP 工具）：`wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`。共 40 个命令，仍全部为 Network Read。
+    - 新增 7 个只读命令（同时以 `tron_<command>` 形式暴露为 MCP 工具）。该提交中 `mcp_server.mjs` 将 40 个命令中的 39 个暴露为 MCP 工具，只有 `swap-route` 仅限 CLI。新增命令：`wallet-approvals`, `wallet-overview`, `token-overview`, `bandwidth-price`, `tx-cost`, `chain-params`, `health-check`。共 40 个命令，仍全部为 Network Read。
     - 此提交的 [`.nvmrc`](https://github.com/TronLink/tronlink-skills/blob/b12b58685ec38febc21843d2173dd43d969b8eb0/.nvmrc) 指定 Node.js 24.22.3。复现[旧提交 `7d2d58cb`](https://github.com/TronLink/tronlink-skills/blob/7d2d58cb/.nvmrc) 时使用 Node.js 24.22.1。在检出的仓库根目录运行 `nvm install && nvm use`，即可按该提交的配置选择版本。
 - **许可证：** MIT —— `SPDX-License-Identifier: MIT`
 - **变更记录 / 发布：** [https://github.com/TronLink/tronlink-skills/releases](https://github.com/TronLink/tronlink-skills/releases) —— 截至当前 v1.0.x 尚无 GitHub tag 发布；打 tag 之前请直接看 commit 历史。
@@ -581,6 +581,6 @@ Skills 已进入 **v1.0.x**，适用标准 semver——只有 **major** 升级�
     - JSON `stdout` 输出的具体字段——新增字段任意 minor 都允许；改名或删除属于 major。请用宽容解析。
     - 内置代币 symbol 快捷表（`USDT`、`USDC`、`WTRX`…）——minor 允许新增 symbol；已存在的映射 minor 不会重指。
     - 启发式与阈值（`whale-transfers` 默认阈值、`optimize-cost` 决策树权重等）。
-- **子集关系。** MCP 工具子集（目前 25 / 33）可能在 minor 中 **扩大**（CLI-only 命令被新增为 MCP 工具）；不会在 minor 中 **缩小**。
+- **子集关系。** MCP 工具子集（v1.0.x 为 25 / 33；`b12b5868` 为 39 / 40）可能在 minor 中 **扩大**（CLI-only 命令被新增为 MCP 工具）；不会在 minor 中 **缩小**。
 - **废弃窗口。** 被标 deprecated 的命令 / 工具至少在 **一个 minor 周期** 内继续可用；移除最早发生在下一个 major。
 - **升级后校验。** 重新 `tron_api.mjs --help`，使用 MCP 时再跑 `tools/list`，确认依赖的名字仍在。MCP `initialize` 阶段返回的 `serverInfo.version` 应与升级后的 `package.json` 版本一致。

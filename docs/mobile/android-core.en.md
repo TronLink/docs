@@ -22,8 +22,6 @@ dependencies {
 }
 ```
 
-This page documents `1.0.2`, the version in the upstream README. Before using a later tag, read [Version & License](#version-license).
-
 ## Create a wallet
 
 Create a wallet in your app and read its TRON address.
@@ -36,11 +34,11 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-The wallet tests also show how to restore an address from a mnemonic or private key. For transaction and message signing, see the signing tests. [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Signing examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
+The wallet tests also show how to restore an address from a mnemonic or private key. For transaction signing, see the transaction tests. The tests include no message-signing example; the library implements it in `org.tron.common.bip32.Sign` (`signPrefixedMessage`, `signPrefixedMessageV2`). [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Transaction signing examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java) · [`Sign.java`](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/main/java/org/tron/common/bip32/Sign.java)
 
 ## Verify the AAR
 
-Verification requires the exact AAR signed by TronLink and its matching detached `.asc` signature. The public GitHub releases for [1.0.2](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) and [1.0.16](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.16) provide source archives. For a verifiable build, obtain the signed AAR and matching signature from the maintainers. The [upstream verification instructions](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) were introduced in 1.0.3.
+Verification requires the exact AAR signed by TronLink and its matching detached `.asc` signature. JitPack and the GitHub releases do not provide signature files, so obtain the signed AAR and matching signature from the maintainers. See the [upstream verification instructions](https://github.com/TronLink/tronlink-android-core#integrity-check).
 
 Download the [public key](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA) as `tronlink-build.asc`. Check the signing subkey fingerprint against the one in the upstream instructions, `7B910EA80207596075E6D7BA5D34F7A6550473BA`. Once it matches, import the key and verify the two files supplied by the maintainers, substituting their filenames below.
 
@@ -52,8 +50,8 @@ gpg --verify release.aar.asc release.aar
 
 ## Privacy
 
-Embedding Android Core 1.0.2 does not start usage reporting. This tag predates the `UserStatistics` module, which was introduced in [1.0.8](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.8).
+The version used on this page includes no usage-reporting code. Later versions add a reporting module (`org.tron.metrics`); read the upstream [privacy policy](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md) before upgrading.
 
 ## Version & License
 
-This page documents `1.0.2`, the version in the upstream README’s installation example. Later tags, up to `1.0.16`, have not been reviewed for this page. From `1.0.8` the library includes the `UserStatistics` module, so review its reporting behavior and the privacy section above before upgrading. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+This page follows the upstream README’s installation example. Before upgrading, check for API changes and reporting behavior. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
