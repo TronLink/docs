@@ -34,20 +34,24 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名和消息签名的用法见签名测试。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [签名示例](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
+钱包测试还演示了如何通过助记词或私钥恢复地址。交易签名和消息签名的用法见签名测试。[钱包示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [签名示例](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
 
 ## 验证 AAR 签名
 
-发布签名公钥的指纹为 `7B910EA80207596075E6D7BA5D34F7A6550473BA`。导入公钥后，在 AAR 和签名文件所在目录运行以下命令，并将文件名替换为实际下载的名称。
+验签需要 TronLink 签署的 AAR 原件及其配套的独立签名文件 `.asc`。JitPack 只提供 AAR，[1.0.2 发布页](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) 也没有签名附件。如需验证此版本，请向维护者索取签署的 AAR 和配套签名。[上游验签说明](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) 自 1.0.3 起提供。
+
+下载[发布公钥](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA)，保存为 `tronlink-build.asc`。先查看签名子密钥的指纹，与上游公布的 `7B910EA80207596075E6D7BA5D34F7A6550473BA` 核对。一致后导入公钥，再用维护者提供的两个文件验签；请替换下例中的文件名。
 
 ```bash
-gpg --verify tronlink-android-core-VERSION.aar.asc tronlink-android-core-VERSION.aar
+gpg --show-keys --with-subkey-fingerprint tronlink-build.asc
+gpg --import tronlink-build.asc
+gpg --verify release.aar.asc release.aar
 ```
 
 ## 隐私
 
-TronLink Android 在设备上为地址分配 UUID，按金额区间汇总使用数据。在 App 设置中开启基础模式（Basic Mode）后，应用会停止生成和上传统计报告。[Android 隐私说明](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md)
+集成 Android Core 1.0.2 不会启动使用统计上报。此版本还没有 `UserStatistics` 模块；该模块在 [1.0.8](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.8) 中引入。
 
 ## 版本与许可证
 
-上游安装示例使用 `1.0.2`。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/main/LICENSE)
+上游安装示例使用 `1.0.2`。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)

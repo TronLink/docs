@@ -23,17 +23,17 @@ import TLCore
 To explore the wallet APIs in the upstream Xcode project, install its pods from the example directory.
 
 ```bash
-git clone https://github.com/TronLink/tronlink-iOS-core.git
+git clone --branch 2.0.1 https://github.com/TronLink/tronlink-iOS-core.git
 cd tronlink-iOS-core/Example
 pod install
 ```
 
-Open the workspace in `Example/`. The Swift tests show wallet creation, transaction and message signing, and how to export a private key or mnemonic. [Swift wallet examples](https://github.com/TronLink/tronlink-iOS-core/blob/main/Example/Tests/Tests.swift)
+Open the workspace in `Example/`. The Swift tests show wallet creation, transaction and message signing, and how to export a private key or mnemonic. [Swift wallet examples](https://github.com/TronLink/tronlink-iOS-core/blob/2.0.1/Example/Tests/Tests.swift)
 
 ## Privacy
 
-TronLink iOS aggregates usage on the device. Basic Mode disables report creation and upload. Watch-only wallets and Shasta activity are also excluded. In both Debug and Release builds, the host must report an online or pre-release environment for uploads to occur. [iOS privacy policy](https://github.com/TronLink/tronlink-iOS-core/blob/main/PRIVACY-POLICY.md)
+Installing the pod or creating a wallet does not start a statistics upload. The host app must invoke the reporter and implement the upload callback in `TRXMetricsDataSource`. To enable uploads, the app must also identify its environment as production or pre-release. The same check applies to Debug and Release builds. In TronLink iOS, Basic Mode suppresses reporting, as do watch-only wallets and Shasta activity. [iOS privacy policy](https://github.com/TronLink/tronlink-iOS-core/blob/2.0.1/PRIVACY-POLICY.md)
 
 ## Version & License
 
-Version `2.0.1`. [Podspec](https://github.com/TronLink/tronlink-iOS-core/blob/main/tronlink-iOS-core.podspec) · [Apache License 2.0](https://github.com/TronLink/tronlink-iOS-core/blob/main/LICENSE)
+Version `2.0.1`. [Podspec](https://github.com/TronLink/tronlink-iOS-core/blob/2.0.1/tronlink-iOS-core.podspec) · [Apache License 2.0](https://github.com/TronLink/tronlink-iOS-core/blob/2.0.1/LICENSE)

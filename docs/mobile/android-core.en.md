@@ -34,20 +34,24 @@ Wallet wallet = new Wallet(true);
 String address = wallet.getAddress();
 ```
 
-The wallet tests also show how to restore an address from a mnemonic or private key. For transaction and message signing, see the signing tests. [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Signing examples](https://github.com/TronLink/tronlink-android-core/blob/main/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
+The wallet tests also show how to restore an address from a mnemonic or private key. For transaction and message signing, see the signing tests. [Wallet examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/WalletCoreUnitTest.java) · [Signing examples](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/core/src/test/java/org/tron/TransactionCoreUnitTest.java)
 
 ## Verify the AAR
 
-The release signing key fingerprint is `7B910EA80207596075E6D7BA5D34F7A6550473BA`. With the public key imported, run this command in the directory containing the AAR and its detached signature. Use the filenames from your release.
+Verification requires the exact AAR signed by TronLink and its matching detached `.asc` signature. JitPack supplies the AAR alone, and the [1.0.2 release](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) lists no signature attachment. If you need to verify this version, request the signed AAR and matching signature from the maintainers. The [upstream verification instructions](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) were added in 1.0.3.
+
+Download the [public key](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA) as `tronlink-build.asc`. Check the signing subkey fingerprint against the one in the upstream instructions, `7B910EA80207596075E6D7BA5D34F7A6550473BA`. Once it matches, import the key and verify the two files supplied by the maintainers, substituting their filenames below.
 
 ```bash
-gpg --verify tronlink-android-core-VERSION.aar.asc tronlink-android-core-VERSION.aar
+gpg --show-keys --with-subkey-fingerprint tronlink-build.asc
+gpg --import tronlink-build.asc
+gpg --verify release.aar.asc release.aar
 ```
 
 ## Privacy
 
-TronLink Android aggregates usage on the device using per-address UUIDs and amount ranges. Enabling Basic Mode in the app settings disables report creation and upload. [Android privacy policy](https://github.com/TronLink/tronlink-android-core/blob/main/PRIVACY-POLICY.md)
+Embedding Android Core 1.0.2 does not start usage reporting. This tag predates the `UserStatistics` module, which was introduced in [1.0.8](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.8).
 
 ## Version & License
 
-The upstream installation example uses `1.0.2`. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/main/LICENSE)
+The upstream installation example uses `1.0.2`. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
