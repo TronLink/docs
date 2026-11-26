@@ -40,12 +40,8 @@ color: #3C7CF3!important;
     padding-top: 0; /* 移除顶部内边距 */
 }
 
-.md-footer {
-  background-color: var(--md-default-bg-color);
-}
-
-.md-footer {
-  display: none !important;  /* 隐藏底部导航 */
+.md-footer__inner {
+  display: none;  /* 翻页导航已在正文下方展示 */
 }
 
 .md-sidebar--secondary {
