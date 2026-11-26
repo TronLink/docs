@@ -115,6 +115,7 @@ async function getTronWeb() {
         let tx;
         try {
           const to = "替换为实际收款地址";
+          // 构建一笔 10 SUN 的转账（1 TRX = 1_000_000 SUN）。
           tx = await tronweb.transactionBuilder.sendTrx(to, 10, tronweb.defaultAddress.base58);
         } catch (error) {
           return console.error("构建转账失败", error);
@@ -130,7 +131,10 @@ async function getTronWeb() {
 
         try {
           const receipt = await tronweb.trx.sendRawTransaction(signedTx);
-          if (receipt.result === false || receipt.code) return console.error(receipt.code, receipt.message);
+          if (!receipt.result) {
+            const message = receipt.message ? tronweb.toUtf8(receipt.message) : "";
+            return console.error(receipt.code, message);
+          }
           console.log("请查询该交易的链上确认状态", signedTx.txID);
         } catch (error) {
           console.error("广播结果未知，重试前先按交易 ID 查询", signedTx.txID, error);

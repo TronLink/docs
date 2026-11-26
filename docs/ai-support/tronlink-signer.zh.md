@@ -26,6 +26,7 @@ try {
   const { address } = await signer.connectWallet("nile");
   const { balance } = await signer.getBalance(address, "nile");
   console.log(address, balance);
+  // Signer 以 TRX 为单位，这里发送 1 TRX。
   const { txId, status } = await signer.sendTrx(recipient, 1, "nile");
   console.log(txId, status);
 } finally {
@@ -121,6 +122,7 @@ const recipient = process.env.RECIPIENT;
 if (!TronWeb.isAddress(recipient)) throw new Error("Set RECIPIENT to a TRON address");
 await signer.start();
 const { address } = await signer.connectWallet("nile");
+// 交易构建器以 SUN 为单位，这里构建 10 SUN 的转账（1 TRX = 1_000_000 SUN）。
 const tx = await tronWeb.transactionBuilder.sendTrx(recipient, 10, address);
 ```
 

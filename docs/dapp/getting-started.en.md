@@ -117,6 +117,7 @@ The following self-contained HTML example detects TronLink via TIP-6963, request
         let tx;
         try {
           const to = "REPLACE_WITH_RECIPIENT_ADDRESS";
+          // Build a 10 SUN transfer (1 TRX = 1_000_000 SUN).
           tx = await tronweb.transactionBuilder.sendTrx(to, 10, tronweb.defaultAddress.base58);
         } catch (error) {
           return console.error("Could not build transfer", error);
@@ -132,7 +133,10 @@ The following self-contained HTML example detects TronLink via TIP-6963, request
 
         try {
           const receipt = await tronweb.trx.sendRawTransaction(signedTx);
-          if (receipt.result === false || receipt.code) return console.error(receipt.code, receipt.message);
+          if (!receipt.result) {
+            const message = receipt.message ? tronweb.toUtf8(receipt.message) : "";
+            return console.error(receipt.code, message);
+          }
           console.log("Check on-chain confirmation for", signedTx.txID);
         } catch (error) {
           console.error("Broadcast outcome unknown. Check transaction before retrying", signedTx.txID, error);

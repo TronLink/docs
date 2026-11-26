@@ -10,7 +10,14 @@ img {
 }
 </style>
 
-下文每个操作中，`tronlinkoutside://pull.activity?param={}` 的 `param` 参数都是 JSON 格式的协议数据。注意：JSON 字符串放入链接前需要进行 urlencode 编码。
+`param` 查询参数包含 URL 编码后的 JSON。每个示例链接都由其下方的请求对象编码而成。接入时请替换示例值，并重新生成链接。
+
+```javascript
+const buildDeepLink = (request) =>
+  "tronlinkoutside://pull.activity?param=" + encodeURIComponent(JSON.stringify(request));
+```
+
+登录、转账和签名时，请使用自己的 DApp 地址、回调地址、目标 chainId 和新生成的 actionId。交易签名时，将 `data` 设为新构建交易的 JSON 字符串。示例交易的有效期已过。
 
 ## 打开钱包
 
@@ -51,8 +58,6 @@ img {
 
 ## 登录授权
 
-接入时请替换 DApp 的 URL、回调地址、图标、名称、目标网络及本次请求的 actionId，再将请求序列化为 JSON，用 `encodeURIComponent` 编码后填入 `param`。
-
 使用 DeepLink 方式唤起钱包，并在钱包中选择获取钱包地址。可用版本：TronLink v4.11.0 起。
 
 ```html
@@ -92,7 +97,7 @@ img {
 使用 DeepLink 方式唤起 TronLink，并发送转账数据，在钱包中转账并广播。可用版本：TronLink v4.11.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Transfer</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fjustlend.org%2F%23%2Fhome%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22memo%22%3A%22Reward%22%2C%22from%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22to%22%3A%22TXd9duqtcyyj4pBCKvXKNqmazxxDw5SdBa%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22tokenId%22%3A%220%22%2C%22contract%22%3A%22%22%2C%22amount%22%3A%2220%22%2C%22action%22%3A%22transfer%22%2C%22actionId%22%3A%22408170fc-7919-4459-be5e-05a9d4b4065e%22%7D'>Transfer</a>
 ```
 
 `param`（请求）：
@@ -135,7 +140,7 @@ img {
 可用版本：TronLink v4.11.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Sign transaction</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fjustlend.org%2F%23%2Fhome%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22action%22%3A%22sign%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22method%22%3A%22transfer%28address%2Cuint256%29%22%2C%22signType%22%3A%22signTransaction%22%2C%22data%22%3A%22%7B%5C%22visible%5C%22%3Afalse%2C%5C%22txID%5C%22%3A%5C%22dcfaf2c2d75d91994f9a23623e905eaa7d74bc804fa5821640111ada3441376a%5C%22%2C%5C%22raw_data%5C%22%3A%7B%5C%22contract%5C%22%3A%5B%7B%5C%22parameter%5C%22%3A%7B%5C%22value%5C%22%3A%7B%5C%22data%5C%22%3A%5C%22a9059cbb000000000000000000000000ed87a3ae2bf2ab8b95486a23f224487ad75c60200000000000000000000000000000000000000000000000000000000000000014%5C%22%2C%5C%22owner_address%5C%22%3A%5C%2241b42b84bad413dde093e27d01bb02ed9eede52c43%5C%22%2C%5C%22contract_address%5C%22%3A%5C%2241eca9bc828a3005b9a3b909f2cc5c2a54794de05f%5C%22%7D%2C%5C%22type_url%5C%22%3A%5C%22type.googleapis.com%2Fprotocol.TriggerSmartContract%5C%22%7D%2C%5C%22type%5C%22%3A%5C%22TriggerSmartContract%5C%22%7D%5D%2C%5C%22ref_block_bytes%5C%22%3A%5C%2284e1%5C%22%2C%5C%22ref_block_hash%5C%22%3A%5C%221731d6450e11a03f%5C%22%2C%5C%22expiration%5C%22%3A1670168865000%2C%5C%22fee_limit%5C%22%3A100000000%2C%5C%22timestamp%5C%22%3A1670168805340%7D%2C%5C%22raw_data_hex%5C%22%3A%5C%220a0284e122081731d6450e11a03f40e8d1c9eecd305aae01081f12a9010a31747970652e676f6f676c65617069732e636f6d2f70726f746f636f6c2e54726967676572536d617274436f6e747261637412740a1541b42b84bad413dde093e27d01bb02ed9eede52c43121541eca9bc828a3005b9a3b909f2cc5c2a54794de05f2244a9059cbb000000000000000000000000ed87a3ae2bf2ab8b95486a23f224487ad75c6020000000000000000000000000000000000000000000000000000000000000001470dcffc5eecd30900180c2d72f%5C%22%7D%22%2C%22actionId%22%3A%2264fcdb39-2cfa-47f2-85bd-d7e8409809ed%22%7D'>Sign transaction</a>
 ```
 
 `param`（请求）：
@@ -176,7 +181,7 @@ img {
 可用版本：TronLink v4.11.0 起。
 
 ```html
-<a href='tronlinkoutside://pull.activity?param={}'>Sign message</a>
+<a href='tronlinkoutside://pull.activity?param=%7B%22url%22%3A%22https%3A%2F%2Fjustlend.org%2F%23%2Fhome%22%2C%22callbackUrl%22%3A%22https%3A%2F%2Fyour-backend.example.com%2Fapi%2Ftron%2Fv1%2Fcallback%22%2C%22dappIcon%22%3A%22https%3A%2F%2Fyour-dapp.example.com%2Ficon.png%22%2C%22dappName%22%3A%22Test%20demo%22%2C%22protocol%22%3A%22TronLink%22%2C%22version%22%3A%221.0%22%2C%22chainId%22%3A%220x2b6653dc%22%2C%22loginAddress%22%3A%22TSPrmJetAMo6S6RxMd4tswzeRCFVegBNig%22%2C%22signType%22%3A%22signStr%22%2C%22message%22%3A%22abc%22%2C%22action%22%3A%22sign%22%2C%22actionId%22%3A%2250554861-4861-41c4-adf3-abf36213f843%22%7D'>Sign message</a>
 ```
 
 `param`（请求）：
@@ -214,8 +219,6 @@ img {
 
 ## 回传消息码
 
-> `10025` 表示转账资产标识冲突。每次转账只指定一种资产。
-
 | 消息码 | 消息 | 备注 |
 |:-------|:-------|:-------|
 | 0 | success |  |
@@ -243,7 +246,7 @@ img {
 | 10022 | Incorrect loginAddress |  |
 | 10023 | System contract not support |  |
 | 10024 | Incorrect tokenId |  |
-| 10025 | 代币 ID 与合约地址冲突 |  |
+| 10025 | TokenId & Contract address should not exist together | 转账请求中的资产标识冲突。 |
 | 300 | Transaction canceled |  |
 | 301 | Transaction executed in TronLink |  |
 | 302 | Broadcast failure - returned with incorrect info |  |
@@ -342,7 +345,13 @@ img {
 }
 ```
 
-**转账**时，TRX 使用 `tokenId: "0"`，TRC10 使用十进制字符串形式的资产 ID，TRC20 使用 `contract` 指定合约地址。示例将未使用的字段写作空字符串。省略字段会生成不同的 JSON 请求，请在目标 App 版本确认未使用字段的填法。
+**转账**字段按下表填写。沿用转账示例和 DeepLink Demo 的请求格式，将未使用的字段设为空字符串。
+
+| 资产 | `tokenId` | `contract` |
+|---|---|---|
+| TRX | `"0"` | `""` |
+| TRC10 | 十进制字符串形式的代币 ID | `""` |
+| TRC20 | `""` | 代币合约地址 |
 
 ```json
 {

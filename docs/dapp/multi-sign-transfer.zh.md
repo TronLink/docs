@@ -12,7 +12,7 @@
 
 ```javascript
 const tronweb = window.tron.tronWeb;
-const owner = window.prompt("Transaction owner", tronweb.defaultAddress.base58);
+const owner = "REPLACE_WITH_OWNER_ADDRESS";
 const account = await tronweb.trx.getAccount(owner);
 console.table(account.active_permission);
 ```
@@ -21,61 +21,91 @@ console.table(account.active_permission);
 
 ### 签名并检查累计权重
 
-接着使用上面的变量，填写收款人和选定的权限 ID。每次收集新签名后，在同一网络上将更新后的交易传给 `checkAndBroadcast`。节点会按交易 owner 当前的权限验证签名。[GetSignWeight](https://developers.tron.network/reference/getsignweight)
+在交易所用网络上，将已授权的 TronWeb 实例传给以下函数。广播前，由节点根据交易 owner 当前的权限检查签名。[GetSignWeight](https://developers.tron.network/reference/getsignweight)
 
 ```javascript
-async function checkAndBroadcast(signedTx) {
-  const contract = signedTx.raw_data.contract[0];
-  const check = await tronweb.trx.getSignWeight(signedTx);
-  if (!check) throw new Error("Sign-weight response unavailable");
-  const { permission, result, current_weight: weight } = check;
-  if (result?.code === "PERMISSION_ERROR") throw new Error("Recheck owner and permission");
+function validateSignWeight(check, permissionId) {
+  const { permission, result, current_weight: weight } = check ?? {};
+  if (result?.code === "PERMISSION_ERROR") throw new Error("请核对交易 owner 和权限");
   if (!result || typeof result !== "object" || Array.isArray(result) ||
-      !permission || !Number.isSafeInteger(permission.id) ||
-      !Number.isSafeInteger(permission.threshold) ||
+      !permission || !Number.isSafeInteger(permission.threshold) ||
       permission.threshold <= 0 || !Number.isSafeInteger(weight) || weight < 0 ||
       !/^[0-9a-f]{64}$/i.test(permission.operations)) {
-    throw new Error("Permission or weight unavailable");
+    throw new Error("无法确认权限或累计权重");
   }
-  // TransferContract is operation 1 in the active permission bitmap.
+  // 活动权限位图中的第 1 位对应 TransferContract。
   const allowsTransfer = (parseInt(permission.operations.slice(0, 2), 16) & 2) !== 0;
-  if (permission.type !== "Active" || permission.id !== contract.Permission_id || !allowsTransfer) {
-    throw new Error("Recheck owner and permission");
+  if (permission.type !== "Active" || permission.id !== permissionId || !allowsTransfer) {
+    throw new Error("请核对交易 owner 和权限");
   }
-  if (result.code === "NOT_ENOUGH_PERMISSION" && weight < permission.threshold) {
+  return { code: result.code, weight, threshold: permission.threshold };
+}
+
+async function checkAndBroadcast(tronweb, signedTx, permissionId) {
+  const check = await tronweb.trx.getSignWeight(signedTx);
+  const { code, weight, threshold } = validateSignWeight(check, permissionId);
+  if (code === "NOT_ENOUGH_PERMISSION" && weight < threshold) {
     return { status: "collect", signedTx };
   }
-  // The node may omit the default ENOUGH_PERMISSION code in a successful result.
-  if ((result.code !== undefined && result.code !== "ENOUGH_PERMISSION") ||
-      weight < permission.threshold) throw new Error("Weight check failed");
+
+  // 节点可能省略默认的 ENOUGH_PERMISSION 状态码。
+  if ((code !== undefined && code !== "ENOUGH_PERMISSION") || weight < threshold) {
+    throw new Error("签名权重检查失败");
+  }
+
   const receipt = await tronweb.trx.sendRawTransaction(signedTx);
-  if (!receipt.result) throw new Error([receipt.code, receipt.message].join(" "));
+  if (!receipt.result) {
+    const message = receipt.message ? tronweb.toUtf8(receipt.message) : "";
+    throw new Error([receipt.code, message].filter(Boolean).join(" ") || "广播被拒绝");
+  }
   return { status: "submitted", txID: signedTx.txID };
 }
 
-const recipient = window.prompt("Recipient address");
-const permissionId = Number(window.prompt("Active permission ID"));
-if (!account.active_permission?.some(p => p.id === permissionId)) {
-  throw new Error("Select an active permission of the transaction owner");
-}
-const tx = await tronweb.transactionBuilder.sendTrx(recipient, 10, owner, { permissionId });
-let signedTx;
-try {
-  signedTx = await tronweb.trx.multiSign(tx, undefined, permissionId);
-} catch (error) {
-  if (error === "Confirmation declined by user") console.info("Signing declined");
-  else console.error(tx.txID, error);
-}
-if (signedTx) {
-  try {
-    console.log(await checkAndBroadcast(signedTx));
-  } catch (error) {
-    console.error(signedTx.txID, error);
+async function signAndCheck(tronweb, tx) {
+  const permissionId = tx.raw_data.contract[0].Permission_id;
+  if (!Number.isSafeInteger(permissionId) || permissionId < 2) {
+    throw new Error("请填写有效的活动权限 ID");
   }
+
+  let signedTx;
+  try {
+    signedTx = await tronweb.trx.multiSign(tx, undefined, permissionId);
+  } catch (error) {
+    if (error === "Confirmation declined by user") return { status: "declined" };
+    throw error;
+  }
+
+  return checkAndBroadcast(tronweb, signedTx, permissionId);
 }
 ```
 
-返回 `collect` 时，保留部分签名交易并交给下一位有权限的共同签名人。查询失败或缺少必要字段时暂停，恢复后重新执行完整检查。权限已撤销或不再允许本次操作时，停止收集签名，核对 owner、权限 ID 和当前权限后重建交易，重新收集全部签名。广播超时则先按交易 ID 查询结果。
+### 第一位签名人
+
+替换收款地址，并填写上面从交易 owner 的活动权限中选出的 ID。
+
+```javascript
+const recipient = "REPLACE_WITH_RECIPIENT_ADDRESS";
+const permissionId = 2; // 替换为所选活动权限的 ID。
+if (!account.active_permission?.some(p => p.id === permissionId)) {
+  throw new Error("请选择交易 owner 的活动权限");
+}
+
+// 构建一笔 10 SUN 的转账（1 TRX = 1_000_000 SUN）。
+const tx = await tronweb.transactionBuilder.sendTrx(recipient, 10, owner, { permissionId });
+const outcome = await signAndCheck(tronweb, tx);
+```
+
+### 后续共同签名人
+
+结果为 `collect` 时，通过 DApp 的交接流程将其中的 `signedTx` 传给下一位有权限的共同签名人。每位共同签名人在同一网络连接钱包，并核对收到的交易。将收到的交易对象传给下面的函数。`signAndCheck` 会在该对象上调用 `multiSign`，保留已有签名和交易 ID。
+
+```javascript
+async function coSignTransfer(partiallySignedTx) {
+  return signAndCheck(window.tron.tronWeb, partiallySignedTx);
+}
+```
+
+返回 `collect` 时继续交接，返回 `declined` 时停止本次签名。权重查询失败或缺少必要字段时暂停，恢复后重新执行完整权重检查。权限被撤销或已不允许本次操作时，核对交易 owner 和权限 ID，重建交易并重新收集全部签名。广播超时则先按交易 ID 查询结果。
 
 ## 错误码
 
@@ -84,7 +114,7 @@ if (signedTx) {
 | 码 | 含义 | 来源 | 可重试? |
 | :---: | --- | --- | :---: |
 | `'Confirmation declined by user'`（字符串） | 用户在签名弹窗里点【拒绝】 | `tronWeb.trx.multiSign(...)` | 否——用户拒绝 |
-| `code: 'SIGERROR'`，`message` 解码为 `Validate signature error: permission isn't exit` | `fromAddress` 上不存在该 `permissionId`（填错或已撤销）。`sendTrx` **不会**校验权限，由节点在广播时拒绝 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——重新查 `getAccount(fromAddress).active_permission` 后重建交易 |
+| `code: 'SIGERROR'`，`message` 解码为 `Validate signature error: permission isn't exit` | `owner` 上不存在该 `permissionId`（填错或已撤销）。`sendTrx` **不会**校验权限，由节点在广播时拒绝 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——重新查 `getAccount(owner).active_permission` 后重建交易 |
 | `code: 'SIGERROR'`，其他 `Validate signature error: …` 信息 | 签名不满足该权限——如总权重低于 `threshold`，或签名人不在其 `keys[]` 中 | `sendRawTransaction(...)` 的返回值（不抛异常） | 否——补齐缺少的签名（每个 co-signer 一次 `multiSign`） |
 | `REVERT` / `OUT_OF_ENERGY` / `FAILED` | 广播成功但链上执行失败 | `getTransactionInfo(txid)` | **否——交易已 final,永远不要自动重试** |
 

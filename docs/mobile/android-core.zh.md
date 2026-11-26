@@ -38,7 +38,7 @@ String address = wallet.getAddress();
 
 ## 验证 AAR 签名
 
-验签需要 TronLink 签署的 AAR 原件及其配套的独立签名文件 `.asc`。JitPack 只提供 AAR，[1.0.2 发布页](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) 也没有签名附件。如需验证此版本，请向维护者索取签署的 AAR 和配套签名。[上游验签说明](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) 自 1.0.3 起提供。
+验签需要 TronLink 签署的 AAR 原件及配套的独立签名文件 `.asc`。[1.0.2](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) 和 [1.0.16](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.16) 的 GitHub 发布页提供源码归档。需要可验签的构建时，请向维护者索取签署的 AAR 和配套签名。[上游验签说明](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) 自 1.0.3 起提供。
 
 下载[发布公钥](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA)，保存为 `tronlink-build.asc`。先查看签名子密钥的指纹，与上游公布的 `7B910EA80207596075E6D7BA5D34F7A6550473BA` 核对。一致后导入公钥，再用维护者提供的两个文件验签；请替换下例中的文件名。
 
@@ -54,4 +54,4 @@ gpg --verify release.aar.asc release.aar
 
 ## 版本与许可证
 
-上游安装示例使用 `1.0.2`。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+安装示例沿用上游 README 的 `1.0.2`。最新标签为 `1.0.16`。[Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)

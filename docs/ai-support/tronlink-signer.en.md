@@ -26,6 +26,7 @@ try {
   const { address } = await signer.connectWallet("nile");
   const { balance } = await signer.getBalance(address, "nile");
   console.log(address, balance);
+  // Signer takes TRX, so this sends 1 TRX.
   const { txId, status } = await signer.sendTrx(recipient, 1, "nile");
   console.log(txId, status);
 } finally {
@@ -121,6 +122,7 @@ const recipient = process.env.RECIPIENT;
 if (!TronWeb.isAddress(recipient)) throw new Error("Set RECIPIENT to a TRON address");
 await signer.start();
 const { address } = await signer.connectWallet("nile");
+// The builder takes SUN, so this creates a 10 SUN transfer (1 TRX = 1_000_000 SUN).
 const tx = await tronWeb.transactionBuilder.sendTrx(recipient, 10, address);
 ```
 

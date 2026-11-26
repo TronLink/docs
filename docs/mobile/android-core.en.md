@@ -38,7 +38,7 @@ The wallet tests also show how to restore an address from a mnemonic or private 
 
 ## Verify the AAR
 
-Verification requires the exact AAR signed by TronLink and its matching detached `.asc` signature. JitPack supplies the AAR alone, and the [1.0.2 release](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) lists no signature attachment. If you need to verify this version, request the signed AAR and matching signature from the maintainers. The [upstream verification instructions](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) were added in 1.0.3.
+Verification requires the exact AAR signed by TronLink and its matching detached `.asc` signature. The public GitHub releases for [1.0.2](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.2) and [1.0.16](https://github.com/TronLink/tronlink-android-core/releases/tag/1.0.16) provide source archives. For a verifiable build, obtain the signed AAR and matching signature from the maintainers. The [upstream verification instructions](https://github.com/TronLink/tronlink-android-core/blob/1.0.3/README.md#integrity-check) were introduced in 1.0.3.
 
 Download the [public key](https://keys.openpgp.org/vks/v1/by-fingerprint/7B910EA80207596075E6D7BA5D34F7A6550473BA) as `tronlink-build.asc`. Check the signing subkey fingerprint against the one in the upstream instructions, `7B910EA80207596075E6D7BA5D34F7A6550473BA`. Once it matches, import the key and verify the two files supplied by the maintainers, substituting their filenames below.
 
@@ -54,4 +54,4 @@ Embedding Android Core 1.0.2 does not start usage reporting. This tag predates t
 
 ## Version & License
 
-The upstream installation example uses `1.0.2`. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
+The installation snippet follows the upstream README’s `1.0.2` example. The latest tag is `1.0.16`. [Apache License 2.0](https://github.com/TronLink/tronlink-android-core/blob/1.0.2/LICENSE)
