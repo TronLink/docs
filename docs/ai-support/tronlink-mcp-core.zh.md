@@ -387,7 +387,7 @@ interface GasFreeCapability {
 
 ### 错误码
 
-根据返回的 `error.code` 查下表，判断是否可重试以及如何恢复。**Retryable** 和 **Hint** 是文档中的两列。Core 0.1.0 的响应不包含 `error.retryable`、`error.hint` 或 `meta.schemaVersion`。远程写操作结果未知时，先核对交易状态，再决定是否重试。基于 Core 的下游服务（如 `mcp-server-tronlink`）可以扩展此表；独立的 `mcp-tronlink-signer` 使用自己的错误格式。
+本表是 Core 错误码及其重试规则的唯一权威来源（SSOT）。根据返回的 `error.code` 查下表，判断是否可重试以及如何恢复。**Retryable** 和 **Hint** 是文档中的两列。Core 0.1.0 的响应不包含 `error.retryable`、`error.hint` 或 `meta.schemaVersion`。远程写操作结果未知时，先核对交易状态，再决定是否重试。基于 Core 的下游服务（如 `mcp-server-tronlink`）可以扩展此表；独立的 `mcp-tronlink-signer` 使用自己的错误格式。
 
 | 错误码 | Retryable | Hint | 典型触发 |
 |---|:---:|---|---|
@@ -618,5 +618,5 @@ npm run clean      # 删除 dist/
 - **不稳定契约**（随时可能变化）：
     - `src/internal/*` 下的内部 helper 导出、Knowledge Store key、recipe-runner 内部。
     - 预检查错误 `details` 文本（分支用 `code`，别用 `details.reason`）。
-- **废弃窗口。** 废弃的工具 / 字段 / 能力方法在 `list_tools` 中带 `meta.deprecated` 标记，至少保留 **一个 minor 周期** 与替代并存，移除最早发生在再下一周期。
+- **弃用检查。** [@tronlink/tronlink-mcp-core 0.1.0](https://www.npmjs.com/package/@tronlink/tronlink-mcp-core/v/0.1.0) 的已注册工具没有弃用标记。升级前请查阅目标版本的发布说明，并用 `tools/list` 比对依赖的工具名称和输入字段。
 - **下游升级。** 记录实际安装的包版本。用 `tools/list` 核对客户端依赖的工具名和输入 schema，再用只读工具的成功与失败响应检验客户端的处理逻辑。

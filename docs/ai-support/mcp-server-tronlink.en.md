@@ -741,5 +741,5 @@ npm install && npm run build
     - Prose `message` text, log line formats, stderr output
     - Internal Knowledge Store keys (consumers should not parse them)
     - Pre-check error detail strings (branch on `code`, not on `details.reason`)
-- **Deprecation window.** When a tool or input field is deprecated, the next minor release retains the old form alongside the new one for at least one minor cycle, with a `meta.deprecated` flag exposed via `list_tools`; removal lands no earlier than the cycle after that.
+- **Deprecations.** [@tronlink/mcp-server-tronlink 0.1.1](https://www.npmjs.com/package/@tronlink/mcp-server-tronlink/v/0.1.1) exposes no deprecation flag for its registered tools. Before upgrading, review the target release notes and compare the tool names and input fields returned by `tools/list`.
 - **Verifying after upgrade.** Record the installed server and Core versions. Recheck tool names and `inputSchema` with `tools/list`, then verify your client handles both `ok: true` and `ok: false` for a read-only tool.

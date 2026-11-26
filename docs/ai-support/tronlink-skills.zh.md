@@ -69,7 +69,7 @@ tron_api.mjs (Node.js 24.22.3, 原生 fetch, 零依赖)
 
 **特点：** 同时支持 Base58Check（T...）和 hex 地址格式，内置常用代币符号，自动转换精度。
 
-**何时不要用：** 发送 TRX / 代币——这些命令是只读的，请走 [signer SDK](tronlink-signer.md) 或 [MCP Server TronLink](mcp-server-tronlink.md)。代币层面的深度分析（rug-pull / 流动性锁定）请用 `tron-token`。
+**何时不要用：** 转出 TRX 或 TRC-20 代币并由用户在浏览器中批准时，使用 [Signer SDK](tronlink-signer.zh.md) 的 `sendTrx` 或 `sendTrc20`。使用本地 agent 钱包时，调用 [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_send`。代币风险与流动性分析使用 `tron-token`。
 
 ### 2. tron-token（7 个命令）
 
@@ -120,7 +120,7 @@ DEX 兑换报价与路由优化。
 
 **特点：** 聚合多源流动性、估算能量成本、处理多跳路由。
 
-**何时不要用：** 真正执行 swap——报价是只读的，实际兑换走 [MCP Server TronLink](mcp-server-tronlink.md)（`tl_chain_swap_v3`）或 signer SDK；历史成交数据——`tron-market`。
+**何时不要用：** 执行兑换时，调用 [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_swap_v3`，将 `action` 设为 `"execute"`，并按用户确认的滑点百分比填写 `slippage`。历史成交数据使用 `tron-market`。
 
 ### 5. tron-resource（6 个命令）
 
@@ -137,7 +137,7 @@ DEX 兑换报价与路由优化。
 
 **特点：** 成本优化决策树逻辑、追踪每日免费带宽、计算 TRX 燃烧等值。
 
-**何时不要用：** 真正冻结 TRX 获取能量/带宽——那是 Remote Write，请走 signer SDK / MCP Server；冻结后的 SR 投票策略——见 `tron-staking`。
+**何时不要用：** 冻结 TRX 获取能量或带宽时，调用 [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_stake`，将 `action` 设为 `"freeze"`。投票前查询超级代表信息可使用 `tron-staking`。
 
 ### 6. tron-staking（3 个命令）
 
@@ -151,7 +151,7 @@ Stake 2.0 查询与 SR 信息。
 
 **特点：** Stake 2.0 状态查询、APY 计算、SR 佣金追踪。
 
-投票使用 `tronlink vote`，冻结或解冻 TRX 使用 `tl_chain_stake`。估算单次操作的能量消耗请用 `tron-resource`。
+**何时不要用：** 投票使用 [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink vote`，领取投票奖励使用同一 CLI 的 `tronlink reward`。冻结或解冻 TRX 使用 [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_stake`。估算能量消耗使用 `tron-resource`。
 
 ---
 
@@ -236,11 +236,11 @@ Skills 提供查询和估算。涉及签名或广播时，按下表选择工具�
 | 用户提问（意图） | ❌ 误路由（看起来合理，但只读） | ✅ 正确路由 |
 |---|---|---|
 | 「给 `T…` 转 100 TRX」 | `tron-wallet wallet-balance` 就停下——只查了余额，没转。 | [signer SDK](tronlink-signer.zh.md) `sendTrx`（HITL）或 [`mcp-server-tronlink`](mcp-server-tronlink.zh.md) `tl_chain_send` |
-| 「冻 1000 TRX 换能量」 | `tron-resource optimize-cost`——只算了建议，没冻。 | `tl_chain_stake` (`action="freeze"`, `amount_trx=1000`, `resource="ENERGY"`) |
-| 「给 SR `T…` 投 5000 票」 | `tron-staking sr-list`——只读了 SR 列表，没投票。 | `tronlink vote --votes <SR_ADDRESS>:5000` |
-| 「给 SunSwap 路由器授权 USDT 额度」 | `tron-token token-info` / `contract-info`——纯元数据查询，没发送 approve。 | 使用 `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`。代币合约和路由器地址须对应所选网络。路由器是被授权方；USDT 精度为 6 时，`1000000` 表示授权 1 USDT。 |
-| 「现在把 100 TRX 换成 USDT」 | `tron-swap swap-quote`——只报了价，没执行。 | `tl_chain_swap_v3` （`action="execute"`，`slippage` 填用户确认的滑点百分比） |
-| 「领取我的投票奖励」 | `tron-staking staking-info`——只看了待领数量。 | `tronlink reward` |
+| 「冻 1000 TRX 换能量」 | `tron-resource optimize-cost`——只算了建议，没冻。 | [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_stake`（`action="freeze"`，`amount_trx=1000`，`resource="ENERGY"`） |
+| 「给 SR `T…` 投 5000 票」 | `tron-staking sr-list`——只读了 SR 列表，没投票。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink vote --votes <SR_ADDRESS>:5000` |
+| 「给 SunSwap 路由器授权 USDT 额度」 | `tron-token token-info` / `contract-info`——纯元数据查询，没发送 approve。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`。代币合约和路由器地址须对应所选网络。路由器是被授权方；USDT 精度为 6 时，`1000000` 表示授权 1 USDT。 |
+| 「现在把 100 TRX 换成 USDT」 | `tron-swap swap-quote`——只报了价，没执行。 | [mcp-server-tronlink](mcp-server-tronlink.zh.md) 的 `tl_chain_swap_v3`（`action="execute"`，`slippage` 填用户确认的滑点百分比） |
+| 「领取我的投票奖励」 | `tron-staking staking-info`——只看了待领数量。 | [TronLink CLI](tronlink-cli.zh.md) 的 `tronlink reward` |
 
 **判断口诀。** 用户动词只要出现 *send / freeze / unfreeze / vote / unvote / approve / swap（执行）/ claim / sign / broadcast*，答案就**不在**这个 Skills 集里起步。Skills 仍然可以做**前置**（报价、估算成本、校验地址、查余额）——只是别声称"Skills 调用完成了用户的请求"。
 
@@ -508,7 +508,7 @@ tronlink-skills/
 | 副作用 | 每个命令都是 **Network Read**：调用公共 API,但不改变任何状态。所有命令均可安全重试,无需人工确认（HITL） |
 | 无需密钥 | 仅可选 TRONGRID_API_KEY 用于提高请求频率 |
 | 频率限制 | 公共 TronGrid API；使用 TRONGRID_API_KEY 获取更高限额 |
-| 错误处理 | 失败均为查询类错误：限流（可重试,需退避）、网络错误（可重试）、地址/参数非法（不可重试——修正输入）。如需执行交易（转账、兑换、质押）,请使用 [signer SDK](tronlink-signer.md) 或 [MCP Server TronLink](mcp-server-tronlink.md)——这些技能本身从不签名或广播 |
+| 错误处理 | 失败均为查询类错误：限流（可重试,需退避）、网络错误（可重试）、地址/参数非法（不可重试——修正输入）。 |
 
 ---
 

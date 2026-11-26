@@ -385,7 +385,7 @@ In [Core 0.1.0](https://www.npmjs.com/package/@tronlink/tronlink-mcp-core/v/0.1.
 
 ### Error Codes
 
-Look up `error.code` in the table below for retry guidance and recovery steps. **Retryable** and **Hint** are documentation columns. Core 0.1.0 omits `error.retryable`, `error.hint`, and `meta.schemaVersion` from the response. For a Remote Write with an unknown outcome, verify the transaction before considering another attempt. Downstream servers such as `mcp-server-tronlink` can extend this table. The independent `mcp-tronlink-signer` server uses its own errors.
+This table is the single source of truth for Core error codes and their retry semantics. Look up `error.code` in the table below for retry guidance and recovery steps. **Retryable** and **Hint** are documentation columns. Core 0.1.0 omits `error.retryable`, `error.hint`, and `meta.schemaVersion` from the response. For a Remote Write with an unknown outcome, verify the transaction before considering another attempt. Downstream servers such as `mcp-server-tronlink` can extend this table. The independent `mcp-tronlink-signer` server uses its own errors.
 
 | Code | Retryable | Hint | Typical trigger |
 |------|:---:|------|-----------------|
@@ -649,5 +649,5 @@ This package defines the tool schemas, error codes, and response envelope used b
 - **Volatile contracts** (may change at any time):
     - Internal helper exports under `src/internal/*`, `Knowledge Store` keys, recipe-runner internals.
     - Pre-check error `details` strings (branch on `code`, not `details.reason`).
-- **Deprecation window.** A deprecated tool / field / capability method stays present for at least one minor cycle alongside its replacement, marked with `meta.deprecated` in `list_tools` output; removal lands no earlier than the cycle after.
+- **Deprecations.** [@tronlink/tronlink-mcp-core 0.1.0](https://www.npmjs.com/package/@tronlink/tronlink-mcp-core/v/0.1.0) exposes no deprecation flag for its registered tools. Before upgrading, review the target release notes and compare the tool names and input fields returned by `tools/list`.
 - **Upgrading Core.** Record the installed package version. Compare `tools/list` against the tool names and input schemas your client uses, then check that the client handles a successful result and an error from a read-only tool.

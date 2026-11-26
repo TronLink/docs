@@ -69,7 +69,7 @@ Wallet queries and account information.
 
 **Features:** Handles both Base58Check (T...) and hex address formats, supports known token symbols, auto-converts decimals.
 
-**When NOT to use:** Sending TRX/tokens — these are read-only; use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md). For deep token-level analytics (rug-pull / liquidity locks), prefer `tron-token`.
+**When NOT to use:** To transfer TRX or TRC-20 tokens with browser approval, use [Signer SDK](tronlink-signer.en.md) `sendTrx` or `sendTrc20`. For a local agent wallet, use [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_send`. Use `tron-token` for token risk and liquidity analysis.
 
 ### 2. tron-token (7 commands)
 
@@ -120,7 +120,7 @@ DEX swap quotes and route optimization.
 
 **Features:** Aggregates liquidity from multiple sources, estimates Energy cost, handles multi-hop routes.
 
-**When NOT to use:** Executing the swap — quotes are read-only; the swap itself goes through [MCP Server TronLink](mcp-server-tronlink.md) (`tl_chain_swap_v3`) or the signer SDK. Historical trade data — `tron-market`.
+**When NOT to use:** To execute a swap, use [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_swap_v3` with `action="execute"` and a user-approved `slippage`. Use `tron-market` for historical trade data.
 
 ### 5. tron-resource (6 commands)
 
@@ -137,7 +137,7 @@ Energy & Bandwidth management — TRON-specific.
 
 **Features:** Decision tree logic for cost optimization, tracks daily free bandwidth, calculates TRX burn equivalent.
 
-**When NOT to use:** Actually freezing TRX to acquire Energy/Bandwidth — that's a Remote Write; use the signer SDK / MCP Server. SR voting strategy after freezing — see `tron-staking`.
+**When NOT to use:** To freeze TRX for Energy or Bandwidth, use [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_stake` with `action="freeze"`. Use `tron-staking` to research SRs before voting.
 
 ### 6. tron-staking (3 commands)
 
@@ -151,7 +151,7 @@ Stake 2.0 queries and SR information.
 
 **Features:** Stake 2.0 status queries, APY calculation, SR commission tracking.
 
-For voting, use `tronlink vote`. For freezing or unfreezing TRX, use `tl_chain_stake`. For energy estimates, use `tron-resource`.
+**When NOT to use:** Cast votes with [TronLink CLI](tronlink-cli.en.md) `tronlink vote` and claim voting rewards with `tronlink reward`. To freeze or unfreeze TRX, use [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_stake`. Use `tron-resource` for energy estimates.
 
 ---
 
@@ -234,11 +234,11 @@ Use Skills for queries and estimates. For actions that sign or broadcast, choose
 | User says (intent) | ❌ Wrong route (looks plausible, but read-only) | ✅ Correct route |
 |---|---|---|
 | "Send 100 TRX to `T…`" | `tron-wallet wallet-balance` then stop — this only checks the balance, never sends. | [signer SDK](tronlink-signer.en.md) `sendTrx` (HITL) or [`mcp-server-tronlink`](mcp-server-tronlink.en.md) `tl_chain_send` |
-| "Freeze 1000 TRX to get Energy" | `tron-resource optimize-cost` — this only computes the recommendation. | `tl_chain_stake` (`action="freeze"`, `amount_trx=1000`, `resource="ENERGY"`) |
-| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | `tronlink vote --votes <SR_ADDRESS>:5000` |
-| "Approve USDT spending for the SunSwap router" | `tron-token token-info` / `contract-info` — pure metadata, no approval is broadcast. | Call `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`. Use the token and router on the selected network. The router is the spender. For 6-decimal USDT, `1000000` authorizes 1 USDT. |
-| "Swap 100 TRX for USDT now" | `tron-swap swap-quote` — only quotes price, never executes. | `tl_chain_swap_v3` with `action="execute"` and an explicitly approved `slippage` (%) |
-| "Claim my voting rewards" | `tron-staking staking-info` — only shows the pending balance. | `tronlink reward` |
+| "Freeze 1000 TRX to get Energy" | `tron-resource optimize-cost` — this only computes the recommendation. | [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_stake` (`action="freeze"`, `amount_trx=1000`, `resource="ENERGY"`) |
+| "Vote 5000 votes for SR `T…`" | `tron-staking sr-list` — only reads the SR list, no vote is cast. | [TronLink CLI](tronlink-cli.en.md) `tronlink vote --votes <SR_ADDRESS>:5000` |
+| "Approve USDT spending for the SunSwap router" | `tron-token token-info` / `contract-info` — pure metadata, no approval is broadcast. | [TronLink CLI](tronlink-cli.en.md) `tronlink trigger --contract <USDT_CONTRACT> --method 'approve(address,uint256)' --args '["<ROUTER_ADDRESS>","1000000"]'`. Use the token and router on the selected network. The router is the spender. For 6-decimal USDT, `1000000` authorizes 1 USDT. |
+| "Swap 100 TRX for USDT now" | `tron-swap swap-quote` — only quotes price, never executes. | [mcp-server-tronlink](mcp-server-tronlink.en.md) `tl_chain_swap_v3` with `action="execute"` and an explicitly approved `slippage` (%) |
+| "Claim my voting rewards" | `tron-staking staking-info` — only shows the pending balance. | [TronLink CLI](tronlink-cli.en.md) `tronlink reward` |
 
 **Heuristic.** If the user's verb is *send / freeze / unfreeze / vote / unvote / approve / swap (execute) / claim / sign / broadcast*, the answer never starts in this Skills set. Skills can still **precede** the write (quote, estimate cost, validate address, check balance) — just don't claim a Skills call finished the user's request.
 
@@ -506,7 +506,7 @@ tronlink-skills/
 | Side effects | Every command is **Network Read**: it calls public APIs but changes no state. All commands are safe to retry; no human-in-the-loop confirmation is needed |
 | No secrets required | Only optional TRONGRID_API_KEY for higher rate limits |
 | Rate limits | Public TronGrid API; use TRONGRID_API_KEY for higher limits |
-| Error handling | Failures are query errors: rate limit (retryable, back off), network errors (retryable), invalid address/parameters (not retryable — fix the input). To execute a transaction (transfer, swap, stake), use the [signer SDK](tronlink-signer.md) or [MCP Server TronLink](mcp-server-tronlink.md) — these skills never sign or broadcast |
+| Error handling | Failures are query errors: rate limit (retryable, back off), network errors (retryable), invalid address/parameters (not retryable — fix the input). |
 
 ---
 

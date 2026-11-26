@@ -736,5 +736,5 @@ export TL_TRONGRID_URL="https://nile.trongrid.io"
     - `message` 自然语言文本、日志行格式、stderr 输出
     - 内部 Knowledge Store key（消费者不应解析）
     - 预检查的错误 detail 文本（分支用 `code`，别用 `details.reason`）
-- **废弃窗口。** 工具或入参字段被废弃时，下一 minor 至少保留旧形式与新形式并存 **一个 minor 周期**，`list_tools` 会带 `meta.deprecated` 标记；移除最早在再下一周期。
+- **弃用检查。** [@tronlink/mcp-server-tronlink 0.1.1](https://www.npmjs.com/package/@tronlink/mcp-server-tronlink/v/0.1.1) 的已注册工具没有弃用标记。升级前请查阅目标版本的发布说明，并用 `tools/list` 比对依赖的工具名称和输入字段。
 - **升级后校验。** 记录已安装的 Server 和 Core 版本，通过 `tools/list` 核对依赖的工具名和 `inputSchema`，再验证客户端能处理只读工具的 `ok: true` 和 `ok: false` 两种响应。
